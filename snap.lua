@@ -12,6 +12,13 @@ local function rpc_error_to_string(err)
   return tostring(err)
 end
 
+local function err_write(msg)
+  if msg == nil then
+    msg = "unknown error"
+  end
+  io.stderr:write(tostring(msg), "\n")
+end
+
 local function usage()
   return table.concat({
     "usage:",
@@ -239,7 +246,11 @@ local function normalize_path(base, path)
 end
 
 local function load_case(opts)
-  local case_dir = vim.fs.normalize(vim.fn.fnamemodify(opts.case, ":p"))
+  local case_path = opts.case
+  if type(case_path) ~= "string" or case_path == "" then
+    return nil, "case path is required"
+  end
+  local case_dir = vim.fs.normalize(vim.fn.fnamemodify(case_path, ":p"))
   if vim.fn.isdirectory(case_dir) ~= 1 then
     return nil, string.format("case dir not found: %s", case_dir)
   end
@@ -261,10 +272,14 @@ local function load_case(opts)
     end
   end
 
-  local scenario = config.scenario or "scenario.lua"
+  local scenario = config.scenario
+  if type(scenario) ~= "string" then
+    scenario = "scenario.lua"
+  end
+  ---@cast scenario string
   local scenario_path = normalize_path(case_dir, scenario)
-  if vim.fn.filereadable(scenario_path) ~= 1 then
-    return nil, string.format("scenario not found: %s", scenario_path)
+  if not scenario_path or vim.fn.filereadable(scenario_path) ~= 1 then
+    return nil, string.format("scenario not found: %s", scenario_path or scenario)
   end
 
   if type(config.width) == "number" then
@@ -452,7 +467,7 @@ local function new_rpc_client(proc, opts)
     unpacker = vim.mpack.Unpacker(),
     responses = {},
     rpc_timeout = opts.rpc_timeout,
-    on_notification = function() end,
+    on_notification = function(_, _) end,
     stderr_chunks = {},
   }
 
@@ -1060,14 +1075,14 @@ function M.main(args)
   end
   if opts.case then
     if opts._flags.json_out or opts._flags.ansi_out or opts._flags.html_out or opts._flags.script then
-      vim.api.nvim_err_writeln("--case cannot be combined with output/script options")
-      vim.api.nvim_err_writeln(usage())
+      err_write("--case cannot be combined with output/script options")
+      err_write(usage())
       vim.cmd("cq")
       return
     end
     local loaded, err = load_case(opts)
     if not loaded then
-      vim.api.nvim_err_writeln(err or "failed to load case")
+      err_write(err or "failed to load case")
       vim.cmd("cq")
       return
     end
@@ -1083,30 +1098,30 @@ function M.main(args)
     end
   end
   if stdout_count > 1 then
-    vim.api.nvim_err_writeln("stdout is shared by multiple outputs; choose one")
-    vim.api.nvim_err_writeln(usage())
+    err_write("stdout is shared by multiple outputs; choose one")
+    err_write(usage())
     vim.cmd("cq")
     return
   end
   if opts.invalid then
-    vim.api.nvim_err_writeln("invalid args:")
+    err_write("invalid args:")
     for _, msg in ipairs(opts.invalid) do
-      vim.api.nvim_err_writeln("  " .. msg)
+      err_write("  " .. msg)
     end
-    vim.api.nvim_err_writeln(usage())
+    err_write(usage())
     vim.cmd("cq")
     return
   end
   if opts.unknown then
-    vim.api.nvim_err_writeln("unknown args: " .. table.concat(opts.unknown, " "))
-    vim.api.nvim_err_writeln(usage())
+    err_write("unknown args: " .. table.concat(opts.unknown, " "))
+    err_write(usage())
     vim.cmd("cq")
     return
   end
 
   local snapshot, err = collect_snapshot(opts)
   if not snapshot then
-    vim.api.nvim_err_writeln(err or "snapshot failed")
+    err_write(err or "snapshot failed")
     vim.cmd("cq")
     return
   end
@@ -1115,7 +1130,7 @@ function M.main(args)
     local encoded = vim.json.encode(snapshot)
     local ok, write_err = write_output(opts.json_out, encoded)
     if not ok then
-      vim.api.nvim_err_writeln(write_err or "failed to write output")
+      err_write(write_err or "failed to write output")
       vim.cmd("cq")
     end
   end
@@ -1123,7 +1138,7 @@ function M.main(args)
     local ansi = render_ansi(snapshot)
     local ok_ansi, err_ansi = write_output(opts.ansi_out, ansi)
     if not ok_ansi then
-      vim.api.nvim_err_writeln(err_ansi or "failed to write ansi output")
+      err_write(err_ansi or "failed to write ansi output")
       vim.cmd("cq")
     end
   end
@@ -1131,7 +1146,7 @@ function M.main(args)
     local html = render_html(snapshot)
     local ok_html, err_html = write_output(opts.html_out, html)
     if not ok_html then
-      vim.api.nvim_err_writeln(err_html or "failed to write html output")
+      err_write(err_html or "failed to write html output")
       vim.cmd("cq")
     end
   end
@@ -1143,6 +1158,6 @@ end
 
 local ok, err = pcall(M.main, _G.arg or {})
 if not ok then
-  vim.api.nvim_err_writeln(err)
+  err_write(err)
   vim.cmd("cq")
 end
