@@ -1,5 +1,4 @@
 {
-  "$schema": "case.schema.json",
   "scenario": "scenario.lua",
   "width": 80,
   "height": 24,

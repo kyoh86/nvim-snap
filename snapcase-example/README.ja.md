@@ -1,4 +1,4 @@
-# snap case
+# snapcase-example
 
 `snap.lua` をケースディレクトリとして実行するための最小構成です。
 
@@ -6,16 +6,16 @@
 
 ```sh
 nvim --headless -u NONE -i NONE -l snap.lua \
-  --case snap_case
+  capture --case snapcase-example
 ```
 
 ## 構成
 
-- `case.json` ケース定義
-- `case.schema.json` JSON Schema
+- `snapcase.json` ケース定義
+- `snapcase.schema.json` JSON Schema
 - `scenario.lua` 操作シナリオ
 
-## case.json の主なキー
+## snapcase.json の主なキー
 
 - `scenario` シナリオのパス（デフォルト: `scenario.lua`）
 - `width` / `height` UIサイズ

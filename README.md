@@ -6,16 +6,22 @@ NeovimのUI描画スナップショットを取得するためのPoCです。ケ
 ## 使い方
 
 ```sh
-nvim --headless -u NONE -i NONE -l snap.lua --case snap_case
+nvim --headless -u NONE -i NONE -l snap.lua capture --case snapcase-example
 ```
 
-生成物は `snap_case/.out/` に出力されます。
+生成物は `snapcase-example/.out/` に出力されます（`capture` は省略可）。
+
+## コマンド
+
+- `capture` スナップショット生成（デフォルト）
+- `normalize` スナップショットJSONの正規化
+- `compare` スナップショットJSONの比較
 
 ## ケース構成
 
-- `snap_case/case.json` ケース定義
-- `snap_case/case.schema.json` JSON Schema
-- `snap_case/scenario.lua` 操作シナリオ
+- `snapcase-example/snapcase.json` ケース定義
+- `snapcase-example/snapcase.schema.json` JSON Schema
+- `snapcase-example/scenario.lua` 操作シナリオ
 
 ## 開発メモ
 
