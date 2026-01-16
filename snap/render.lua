@@ -1,5 +1,115 @@
 local M = {}
 
+function M.render_text(snapshot)
+  local grid = nil
+  for _, g in ipairs(snapshot.grids or {}) do
+    if g.id == 1 then
+      grid = g
+      break
+    end
+  end
+  if not grid and snapshot.grids and snapshot.grids[1] then
+    grid = snapshot.grids[1]
+  end
+  if not grid then
+    return ""
+  end
+
+  local out = {}
+  for r = 1, grid.rows do
+    local row_cells = grid.cells[r] or {}
+    local line = {}
+    for c = 1, grid.cols do
+      local cell = row_cells[c] or { text = " ", hl_id = 0 }
+      local text = cell.text
+      if text == "" then
+        text = " "
+      end
+      table.insert(line, text)
+    end
+    table.insert(out, table.concat(line))
+  end
+  return table.concat(out, "\n")
+end
+
+local function build_attr_map(snapshot)
+  local default_fg = snapshot.default_colors and snapshot.default_colors.rgb_fg or nil
+  local default_bg = snapshot.default_colors and snapshot.default_colors.rgb_bg or nil
+  local attr_map = {}
+  for _, attr in ipairs(snapshot.hl_attrs or {}) do
+    attr_map[attr.id] = attr.rgb_attr or {}
+  end
+  return attr_map, default_fg, default_bg
+end
+
+local function style_from(attr_map, default_fg, default_bg, hl_id)
+  local attr = attr_map[hl_id] or {}
+  local fg = attr.foreground
+  local bg = attr.background
+  local reverse = attr.reverse == true
+  if fg == nil then
+    fg = default_fg
+  end
+  if bg == nil then
+    bg = default_bg
+  end
+  if reverse then
+    fg, bg = bg, fg
+  end
+  return {
+    fg = fg,
+    bg = bg,
+    bold = attr.bold == true,
+    italic = attr.italic == true,
+    underline = attr.underline == true
+      or attr.undercurl == true
+      or attr.underdouble == true
+      or attr.underdotted == true
+      or attr.underdashed == true,
+    strikethrough = attr.strikethrough == true,
+    reverse = reverse,
+  }
+end
+
+local function to_hex_color(color)
+  if color == nil or color == vim.NIL then
+    return nil
+  end
+  if type(color) ~= "number" or color < 0 then
+    return nil
+  end
+  return string.format("#%06x", color)
+end
+
+local function style_to_css(style)
+  local parts = {}
+  local fg = to_hex_color(style.fg)
+  local bg = to_hex_color(style.bg)
+  if fg then
+    table.insert(parts, "color:" .. fg)
+  end
+  if bg then
+    table.insert(parts, "background-color:" .. bg)
+  end
+  if style.bold then
+    table.insert(parts, "font-weight:700")
+  end
+  if style.italic then
+    table.insert(parts, "font-style:italic")
+  end
+  local decorations = {}
+  if style.underline then
+    table.insert(decorations, "underline")
+  end
+  if style.strikethrough then
+    table.insert(decorations, "line-through")
+  end
+  if #decorations > 0 then
+    table.insert(parts, "text-decoration:" .. table.concat(decorations, " "))
+  end
+  return table.concat(parts, ";")
+end
+
 local function rgb_to_ansi(color, is_bg)
   if color == nil or color == vim.NIL then
     return nil
@@ -28,41 +138,10 @@ function M.render_ansi(snapshot)
     return ""
   end
 
-  local default_fg = snapshot.default_colors and snapshot.default_colors.rgb_fg or nil
-  local default_bg = snapshot.default_colors and snapshot.default_colors.rgb_bg or nil
-
-  local attr_map = {}
-  for _, attr in ipairs(snapshot.hl_attrs or {}) do
-    attr_map[attr.id] = attr.rgb_attr or {}
-  end
+  local attr_map, default_fg, default_bg = build_attr_map(snapshot)
 
   local function to_style(hl_id)
-    local attr = attr_map[hl_id] or {}
-    local fg = attr.foreground
-    local bg = attr.background
-    local reverse = attr.reverse == true
-    if fg == nil then
-      fg = default_fg
-    end
-    if bg == nil then
-      bg = default_bg
-    end
-    if reverse then
-      fg, bg = bg, fg
-    end
-    return {
-      fg = fg,
-      bg = bg,
-      bold = attr.bold == true,
-      italic = attr.italic == true,
-      underline = attr.underline == true
-        or attr.undercurl == true
-        or attr.underdouble == true
-        or attr.underdotted == true
-        or attr.underdashed == true,
-      strikethrough = attr.strikethrough == true,
-      reverse = reverse,
-    }
+    return style_from(attr_map, default_fg, default_bg, hl_id)
   end
 
   local function style_equal(a, b)
@@ -132,16 +211,6 @@ function M.render_ansi(snapshot)
   return table.concat(out, "\n")
 end
 
-local function to_hex_color(color)
-  if color == nil or color == vim.NIL then
-    return nil
-  end
-  if type(color) ~= "number" or color < 0 then
-    return nil
-  end
-  return string.format("#%06x", color)
-end
-
 local function escape_html(text)
   return (text:gsub("[&<>\"']", {
     ["&"] = "&amp;",
@@ -152,7 +221,7 @@ local function escape_html(text)
   }))
 end
 
-function M.render_html(snapshot)
+function M.render_html_fragment(snapshot)
   local grid = nil
   for _, g in ipairs(snapshot.grids or {}) do
     if g.id == 1 then
@@ -167,40 +236,12 @@ function M.render_html(snapshot)
     return ""
   end
 
-  local default_fg = snapshot.default_colors and snapshot.default_colors.rgb_fg or nil
-  local default_bg = snapshot.default_colors and snapshot.default_colors.rgb_bg or nil
-
-  local attr_map = {}
-  for _, attr in ipairs(snapshot.hl_attrs or {}) do
-    attr_map[attr.id] = attr.rgb_attr or {}
-  end
+  local attr_map, default_fg, default_bg = build_attr_map(snapshot)
 
   local function to_style(hl_id)
-    local attr = attr_map[hl_id] or {}
-    local fg = attr.foreground
-    local bg = attr.background
-    local reverse = attr.reverse == true
-    if fg == nil then
-      fg = default_fg
-    end
-    if bg == nil then
-      bg = default_bg
-    end
-    if reverse then
-      fg, bg = bg, fg
-    end
-    return {
-      fg = fg,
-      bg = bg,
-      bold = attr.bold == true,
-      italic = attr.italic == true,
-      underline = attr.underline == true
-        or attr.undercurl == true
-        or attr.underdouble == true
-        or attr.underdotted == true
-        or attr.underdashed == true,
-      strikethrough = attr.strikethrough == true,
-    }
+    local style = style_from(attr_map, default_fg, default_bg, hl_id)
+    style.reverse = nil
+    return style
   end
 
   local function style_equal(a, b)
@@ -210,35 +251,6 @@ function M.render_html(snapshot)
       and a.italic == b.italic
       and a.underline == b.underline
       and a.strikethrough == b.strikethrough
-  end
-
-  local function style_to_css(style)
-    local parts = {}
-    local fg = to_hex_color(style.fg)
-    local bg = to_hex_color(style.bg)
-    if fg then
-      table.insert(parts, "color:" .. fg)
-    end
-    if bg then
-      table.insert(parts, "background-color:" .. bg)
-    end
-    if style.bold then
-      table.insert(parts, "font-weight:700")
-    end
-    if style.italic then
-      table.insert(parts, "font-style:italic")
-    end
-    local decorations = {}
-    if style.underline then
-      table.insert(decorations, "underline")
-    end
-    if style.strikethrough then
-      table.insert(decorations, "line-through")
-    end
-    if #decorations > 0 then
-      table.insert(parts, "text-decoration:" .. table.concat(decorations, " "))
-    end
-    return table.concat(parts, ";")
   end
 
   local lines = {}
@@ -288,6 +300,74 @@ function M.render_html(snapshot)
 
   local bg = to_hex_color(default_bg) or "#000000"
   local fg = to_hex_color(default_fg) or "#ffffff"
+  return {
+    bg = bg,
+    fg = fg,
+    html = "<pre>" .. table.concat(lines, "\n") .. "</pre>",
+  }
+end
+
+function M.render_html_cells(snapshot, diff_map, diff_kind)
+  local grid = nil
+  for _, g in ipairs(snapshot.grids or {}) do
+    if g.id == 1 then
+      grid = g
+      break
+    end
+  end
+  if not grid and snapshot.grids and snapshot.grids[1] then
+    grid = snapshot.grids[1]
+  end
+  if not grid then
+    return { bg = "#000000", fg = "#ffffff", html = "" }
+  end
+
+  local attr_map, default_fg, default_bg = build_attr_map(snapshot)
+  local bg = to_hex_color(default_bg) or "#000000"
+  local fg = to_hex_color(default_fg) or "#ffffff"
+
+  local lines = {}
+  for r = 1, grid.rows do
+    local row_cells = grid.cells[r] or {}
+    local line_classes = { "line" }
+    if diff_map and diff_map.lines and diff_map.lines[r] then
+      table.insert(line_classes, "diff")
+      table.insert(line_classes, diff_kind)
+    end
+    local line = { '<div class="' .. table.concat(line_classes, " ") .. '">' }
+    for c = 1, grid.cols do
+      local cell = row_cells[c] or { text = " ", hl_id = 0 }
+      local text = cell.text
+      if text == "" then
+        text = " "
+      end
+      local style = style_from(attr_map, default_fg, default_bg, cell.hl_id or 0)
+      local css = style_to_css(style)
+      local cell_classes = { "cell" }
+      if diff_map and diff_map.cells and diff_map.cells[r] and diff_map.cells[r][c] then
+        table.insert(cell_classes, "diff")
+        table.insert(cell_classes, diff_kind)
+      end
+      local open = '<span class="' .. table.concat(cell_classes, " ") .. '"'
+      if css ~= "" then
+        open = open .. ' style="' .. css .. '"'
+      end
+      open = open .. ">"
+      table.insert(line, open .. escape_html(text) .. "</span>")
+    end
+    table.insert(line, "</div>")
+    table.insert(lines, table.concat(line))
+  end
+
+  return {
+    bg = bg,
+    fg = fg,
+    html = table.concat(lines, "\n"),
+  }
+end
+
+function M.render_html(snapshot)
+  local fragment = M.render_html_fragment(snapshot)
   return table.concat({
     "<!doctype html>",
     "<html>",
@@ -297,8 +377,8 @@ function M.render_html(snapshot)
     "  <style>",
     "    body {",
     "      margin: 0;",
-    "      background: " .. bg .. ";",
-    "      color: " .. fg .. ";",
+    "      background: " .. fragment.bg .. ";",
+    "      color: " .. fragment.fg .. ";",
     "      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;",
     "      line-height: 1.2;",
     "    }",
@@ -310,7 +390,7 @@ function M.render_html(snapshot)
     "  </style>",
     "</head>",
     "<body>",
-    "  <pre>" .. table.concat(lines, "\n") .. "</pre>",
+    "  " .. fragment.html,
     "</body>",
     "</html>",
   }, "\n")
