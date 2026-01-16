@@ -84,5 +84,3 @@ mise use 'github:kyoh86/nvim-snap[asset_pattern=nvim-snap]'
 
 - If your scenario needs plugins, using `vim.pack.add()` is recommended.
 - When using `vim.pack.add()`, set `--data-home` / `--config-home` explicitly.
-- PNG output requires one of: `google-chrome`/`chromium`/`msedge`/`wkhtmltoimage`.
-  - On Ubuntu, `apt install chromium` installs the snap build which may not work here; prefer the deb `google-chrome` or `wkhtmltoimage`.
