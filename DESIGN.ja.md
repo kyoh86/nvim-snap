@@ -84,18 +84,20 @@ nvim-snapは、NeovimのUIスナップショットに基づくテストを実行
         ]
       }
       ```
+- 終了コード: 成功=0、失敗=1
 - `run`: テストケースを実行してactualを生成する
   - 入力: テストケース定義（`--root` で探索、既定は `.`）、タグ/ケースIDによる絞り込み
   - 出力: 各ケースの`actual/`配下にスナップショット
   - 絞り込み: `--tag` / `--case`
   - 出力形式: `--format=json,ansi,html`（既定は `json`）
+- 終了コード: 成功=0、失敗=1
 - `compare`: expectedとactualを比較し、結果をサマリ出力する
   - 入力: テストケース定義（`--root` で探索、既定は `.`）、タグ/ケースIDによる絞り込み
   - 出力: 標準出力のサマリ、ケースごとの`diff/`配下にHTML差分（必要時）
   - 絞り込み: `--tag` / `--case`
   - 出力形式: `--format=text,ansi,html`（既定は `text`）
   - HTML差分は不一致時のみ生成し、`--diff-always` で常時生成できる
-  - サマリ項目: id/name/kind/tags/result/diff_path/error_reason
+  - サマリ項目: id/name/kind/tags/result/diff_paths/error_reason
   - resultは `no_diff` / `diff` / `error`
   - JSON出力:
     - `root` ルートディレクトリ
@@ -134,6 +136,7 @@ nvim-snapは、NeovimのUIスナップショットに基づくテストを実行
         ]
       }
       ```
+- 終了コード: 成功=0、差分あり=1、エラーあり=2
 - `update-expected`: expectedを更新する
   - 入力: テストケース定義（`--root` で探索、既定は `.`）、タグ/ケースIDによる絞り込み
   - 出力: `expected/`配下の更新
@@ -143,6 +146,7 @@ nvim-snapは、NeovimのUIスナップショットに基づくテストを実行
   - `--dry-run` で更新内容を表示のみ
   - 規定は対話確認
   - `--no-confirm`（または `--yes`）で対話を省略して実行
+- 終了コード: 成功=0、失敗=1
 
 ### テストケース定義
 
