@@ -29,13 +29,13 @@ Set `NVIM` to choose which Neovim binary to run.
 
 ### Single-file bundle
 
-Use `luabundler` to generate `dist/snap.lua`.
+Use `luabundler` to generate `dist/nvim-snap`.
 
 ```sh
 scripts/bundle.sh
 ```
 
-The generated `dist/snap.lua` can be distributed as a single file.
+The generated `dist/nvim-snap` can be distributed as a single file.
 
 ## Commands
 

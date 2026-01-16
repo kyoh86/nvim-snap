@@ -29,13 +29,13 @@ cd nvim-snap
 
 ### 単一ファイル配布
 
-`luabundler` を使って `dist/snap.lua` を生成できます。
+`luabundler` を使って `dist/nvim-snap` を生成できます。
 
 ```sh
 scripts/bundle.sh
 ```
 
-生成された `dist/snap.lua` は単一ファイルで配布できます。
+生成された `dist/nvim-snap` は単一ファイルで配布できます。
 
 ## コマンド
 
