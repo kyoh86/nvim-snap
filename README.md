@@ -27,6 +27,16 @@ Ensure `~/.local/bin` is on your PATH.
 Set `NVIM_SNAP_LUA` to point at `snap.lua` explicitly.
 Set `NVIM` to choose which Neovim binary to run.
 
+### Single-file bundle
+
+Use `luabundler` to generate `dist/snap.lua`.
+
+```sh
+scripts/bundle.sh
+```
+
+The generated `dist/snap.lua` can be distributed as a single file.
+
 ## Commands
 
 - `list` list test cases

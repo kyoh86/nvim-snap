@@ -27,6 +27,16 @@ cd nvim-snap
 `NVIM_SNAP_LUA` で `snap.lua` のパスを明示できます。
 `NVIM` で実行するNeovimのパスを指定できます。
 
+### 単一ファイル配布
+
+`luabundler` を使って `dist/snap.lua` を生成できます。
+
+```sh
+scripts/bundle.sh
+```
+
+生成された `dist/snap.lua` は単一ファイルで配布できます。
+
 ## コマンド
 
 - `list` テストケース一覧
