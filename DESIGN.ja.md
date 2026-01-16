@@ -71,3 +71,23 @@ nvim-snapは、NeovimのUIスナップショットに基づくテストを実行
   - 出力: expectedの更新
   - リグレッションはactualをexpectedとして採用
   - ゴールデンテストはゴールデンシナリオを実行してexpectedを生成
+
+### テストケース定義
+
+テストケースは1ケース=1ディレクトリで管理する。
+各ディレクトリにケース定義（JSON）とシナリオと成果物を配置する。
+
+ケースディレクトリ構成:
+- `case.json` ケース定義ファイル（後述）
+- `expected/` 期待値（`snapshot.json` など）
+- `actual/` 実行結果（`snapshot.json` など）
+- `diff/` 比較結果（HTMLなど、任意）
+- `scenario.lua` リグレッションテスト用のシナリオ
+- `golden.lua` ゴールデンテスト用のゴールデンシナリオ
+- `target.lua` ゴールデンテスト用の実装結果シナリオ
+
+ケース定義（`case.json`）:
+- `version` 定義のバージョン
+- `id` 一意な識別子
+- `kind` `regression` または `golden`
+- `tags` タグ配列（任意）
