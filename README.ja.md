@@ -37,6 +37,8 @@ nvim --headless -u NONE -i NONE -l snap.lua capture \
    `nvim --headless -u NONE -i NONE -l snap.lua compare --actual snapcase-example/.out/snapshot.json --expected snapcase-example/.expected/snapshot.json --update --pretty`
 3. 比較（CI向け）  
    `nvim --headless -u NONE -i NONE -l snap.lua compare --actual snapcase-example/.out/snapshot.json --expected snapcase-example/.expected/snapshot.json --diff`
+4. 人間向けdiff（HTML）  
+   `nvim --headless -u NONE -i NONE -l snap.lua compare --actual snapcase-example/.out/snapshot.json --expected snapcase-example/.expected/snapshot.json --diff --diff-format html --diff-out snapcase-example/.out/diff.html`
 
 ## サンプル構成
 
