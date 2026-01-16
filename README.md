@@ -14,6 +14,7 @@ Test cases manage scenarios and expected snapshots, and can be executed in batch
 ## Commands
 
 - `list` list test cases
+- `new` scaffold a test case
 - `run` run test cases (generate snapshots)
 - `compare` compare test cases
 - `update-expected` update expected snapshots

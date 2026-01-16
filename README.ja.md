@@ -14,6 +14,7 @@ nvim-snapは、NeovimのUIスナップショットに基づくテストを実行
 ## コマンド
 
 - `list` テストケース一覧
+- `new` テストケース雛形の作成
 - `run` テストケース実行（スナップショット生成）
 - `compare` テストケース比較
 - `update-expected` expected更新

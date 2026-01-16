@@ -25,6 +25,7 @@ local capture = require("snap.command_capture")
 local normalize = require("snap.command_normalize")
 local compare = require("snap.command_compare")
 local list = require("snap.command_list")
+local new_case = require("snap.command_new")
 local run = require("snap.command_run")
 local suite_compare = require("snap.command_suite_compare")
 local update_expected = require("snap.command_update_expected")
@@ -37,6 +38,7 @@ local function usage()
     "",
     "commands:",
     "  list             List test cases (high-level)",
+    "  new              Create a new test case (high-level)",
     "  run              Run test cases (high-level)",
     "  compare          Compare test cases (high-level)",
     "  update-expected  Update expected snapshots (high-level)",
@@ -58,6 +60,9 @@ function M.main(args_list)
   table.remove(args, 1)
   if command == "list" then
     return list.run(args)
+  end
+  if command == "new" then
+    return new_case.run(args)
   end
   if command == "run" then
     return run.run(args)
