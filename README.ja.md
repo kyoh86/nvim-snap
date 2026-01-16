@@ -27,6 +27,12 @@ cd nvim-snap
 `NVIM_SNAP_LUA` で `snap.lua` のパスを明示できます。
 `NVIM` で実行するNeovimのパスを指定できます。
 
+### 依存関係
+
+- Neovim（`nvim`）
+- 単一ファイル配布の生成に `luabundler`（Node.js）
+- PNG出力に `google-chrome`/`chromium`/`msedge`/`wkhtmltoimage`
+
 ### 単一ファイル配布
 
 `luabundler` を使って `dist/nvim-snap` を生成できます。

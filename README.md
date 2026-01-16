@@ -27,6 +27,12 @@ Ensure `~/.local/bin` is on your PATH.
 Set `NVIM_SNAP_LUA` to point at `snap.lua` explicitly.
 Set `NVIM` to choose which Neovim binary to run.
 
+### Requirements
+
+- Neovim (`nvim`)
+- `luabundler` (Node.js) for single-file bundle generation
+- `google-chrome`/`chromium`/`msedge`/`wkhtmltoimage` for PNG output
+
 ### Single-file bundle
 
 Use `luabundler` to generate `dist/nvim-snap`.
