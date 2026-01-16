@@ -184,3 +184,7 @@ nvim-snapは、NeovimのUIスナップショットに基づくテストを実行
   ]
 }
 ```
+
+#### スキーマ
+
+`case.json` 用のJSON Schemaを用意する。
