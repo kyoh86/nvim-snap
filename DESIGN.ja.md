@@ -55,6 +55,8 @@ nvim-snapは、NeovimのUIスナップショットに基づくテストを実行
   - 出力: 一致/不一致の判定と、必要に応じたdiff出力（text/ansi/html）
   - 期待値の更新は高レイヤーで行う
 
+CLIでは `snap.lua core <command>` で呼び出す。
+
 ### 高レイヤーのコマンド
 
 - `list`: テストケースの一覧を表示する

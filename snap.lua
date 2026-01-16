@@ -24,6 +24,10 @@ add_package_path()
 local capture = require("snap.command_capture")
 local normalize = require("snap.command_normalize")
 local compare = require("snap.command_compare")
+local list = require("snap.command_list")
+local run = require("snap.command_run")
+local suite_compare = require("snap.command_suite_compare")
+local update_expected = require("snap.command_update_expected")
 local util = require("snap.util")
 
 local function usage()
@@ -32,11 +36,13 @@ local function usage()
     "  nvim -l snap.lua [command] [options]",
     "",
     "commands:",
-    "  capture   Capture a UI snapshot (default)",
-    "  normalize Normalize snapshot JSON",
-    "  compare   Compare snapshot JSON",
+    "  list             List test cases (high-level)",
+    "  run              Run test cases (high-level)",
+    "  compare          Compare test cases (high-level)",
+    "  update-expected  Update expected snapshots (high-level)",
+    "  core             Low-level commands (capture/normalize/compare)",
     "",
-    "run 'nvim -l snap.lua capture --help' for capture options",
+    "run 'nvim -l snap.lua core capture --help' for low-level options",
   }, "\n")
 end
 
@@ -50,14 +56,40 @@ function M.main(args_list)
     return
   end
   table.remove(args, 1)
-  if command == "capture" then
-    return capture.run(args)
+  if command == "list" then
+    return list.run(args)
   end
-  if command == "normalize" then
-    return normalize.run(args)
+  if command == "run" then
+    return run.run(args)
   end
   if command == "compare" then
-    return compare.run(args)
+    return suite_compare.run(args)
+  end
+  if command == "update-expected" then
+    return update_expected.run(args)
+  end
+  if command == "core" then
+    local core_cmd = args[1]
+    if core_cmd == nil or vim.startswith(core_cmd, "-") then
+      util.err_write("core command is required")
+      util.err_write("usage: nvim -l snap.lua core [capture|normalize|compare] [options]")
+      vim.cmd("cq")
+      return
+    end
+    table.remove(args, 1)
+    if core_cmd == "capture" then
+      return capture.run(args)
+    end
+    if core_cmd == "normalize" then
+      return normalize.run(args)
+    end
+    if core_cmd == "compare" then
+      return compare.run(args)
+    end
+    util.err_write("unknown core command: " .. core_cmd)
+    util.err_write("usage: nvim -l snap.lua core [capture|normalize|compare] [options]")
+    vim.cmd("cq")
+    return
   end
   if command == "help" or command == "--help" or command == "-h" then
     print(usage())

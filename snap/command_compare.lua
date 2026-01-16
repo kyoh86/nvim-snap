@@ -8,13 +8,11 @@ local M = {}
 local function usage()
   return table.concat({
     "usage:",
-    "  nvim -l snap.lua compare [options]",
+    "  nvim -l snap.lua core compare [options]",
     "",
     "options:",
     "  --actual PATH      Snapshot JSON path ('-' for stdin)",
     "  --expected PATH    Expected JSON path",
-    "  --update           Overwrite expected with actual",
-    "  --pretty           Pretty-print JSON when updating",
     "  --diff             Print unified diff on mismatch",
     "  --diff-format FMT  Diff source: text|ansi|html (default: text)",
     "  --diff-out PATH    Write diff to PATH (default: stdout)",
@@ -26,8 +24,6 @@ local function parse_args(args)
   local opts = {
     actual = nil,
     expected = nil,
-    update = false,
-    pretty = false,
     diff = false,
     diff_format = "text",
     diff_out = "-",
@@ -57,10 +53,6 @@ local function parse_args(args)
       end
     elseif vim.startswith(arg, "--expected=") then
       opts.expected = string.sub(arg, 12)
-    elseif arg == "--update" then
-      opts.update = true
-    elseif arg == "--pretty" then
-      opts.pretty = true
     elseif arg == "--diff" then
       opts.diff = true
     elseif arg == "--diff-format" then
@@ -137,13 +129,6 @@ local function deep_equal(a, b)
     end
   end
   return true
-end
-
-local function encode_json(value, pretty)
-  if pretty then
-    return vim.json.encode(value, { indent = "  " })
-  end
-  return vim.json.encode(value)
 end
 
 local function escape_html(text)
@@ -527,42 +512,26 @@ function M.run(args_list)
   end
 
   local expected_text, expected_err = read_input(opts.expected)
-  local expected_snapshot = nil
-  if expected_text then
-    local decoded, decode_err = decode_json(expected_text)
-    if not decoded then
-      util.err_write(decode_err or "failed to parse expected")
-      vim.cmd("cq")
-      return
-    end
-    expected_snapshot = decoded
-  elseif not opts.update then
+  if not expected_text then
     util.err_write(expected_err or "failed to read expected")
+    vim.cmd("cq")
+    return
+  end
+  local expected_snapshot, decode_err = decode_json(expected_text)
+  if not expected_snapshot then
+    util.err_write(decode_err or "failed to parse expected")
     vim.cmd("cq")
     return
   end
 
   local normalized_actual = normalize.normalize(actual_snapshot)
-  local normalized_expected = expected_snapshot and normalize.normalize(expected_snapshot) or nil
+  local normalized_expected = normalize.normalize(expected_snapshot)
 
-  if normalized_expected and deep_equal(normalized_actual, normalized_expected) then
+  if deep_equal(normalized_actual, normalized_expected) then
     print("match")
     return
   end
-
-  if opts.update then
-    local encoded = encode_json(normalized_actual, opts.pretty)
-    local ok, write_err = output.write(opts.expected, encoded)
-    if not ok then
-      util.err_write(write_err or "failed to update expected")
-      vim.cmd("cq")
-      return
-    end
-    print("updated")
-    return
-  end
-
-  if opts.diff and normalized_expected then
+  if opts.diff then
     if opts.diff_format == "html" then
       local expected_render_text = render.render_text(normalized_expected)
       local actual_render_text = render.render_text(normalized_actual)
@@ -586,7 +555,7 @@ function M.run(args_list)
         "added"
       )
       local rendered = wrap_html_diff(
-        highlight_unified(unified),
+        highlight_unified(unified or ""),
         expected_plain,
         actual_plain,
         expected_aligned,

@@ -7,7 +7,7 @@ local M = {}
 local function usage()
   return table.concat({
     "usage:",
-    "  nvim -l snap.lua normalize [options]",
+    "  nvim -l snap.lua core normalize [options]",
     "",
     "options:",
     "  --in PATH       Input JSON path ('-' for stdin)",
