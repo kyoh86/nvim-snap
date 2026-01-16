@@ -135,17 +135,6 @@ local function encode_json(value, pretty)
   return vim.json.encode(value)
 end
 
-local function maybe_diff(expected_text, actual_text)
-  if not vim.diff then
-    return nil
-  end
-  local ok, diff = pcall(vim.diff, expected_text, actual_text, { result_type = "unified", ctxlen = 3 })
-  if not ok then
-    return nil
-  end
-  return diff
-end
-
 function M.run(args_list)
   local opts = parse_args(args_list)
   if opts.help then
@@ -265,7 +254,7 @@ function M.run(args_list)
   if opts.diff then
     local expected_out = encode_json(normalized_expected, true)
     local actual_out = encode_json(normalized_actual, true)
-    local diff = maybe_diff(expected_out, actual_out)
+    local diff = vim.textdiff(expected_out, actual_out, { result_type = "unified", ctxlen = 3 })
     if diff then
       io.write(diff)
     end
