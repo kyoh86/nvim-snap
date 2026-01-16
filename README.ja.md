@@ -1,63 +1,33 @@
 # nvim-snap
 
-NeovimのUI描画のスナップショットを取得するためのPoCです。
-スナップショットはJSON/ANSI/HTMLで出力できます。
+nvim-snapは、NeovimのUIスナップショットに基づくテストを実行できるようにするためのツールです。
+
+## コンセプト
+
+シナリオを実行して現在のUIスナップショットを生成し、保存済みの期待値と比較することで表示の一致を検証する。
+テストケース単位でシナリオと期待値を管理し、一括実行やタグでの絞り込みができる。
 
 ## 使い方
 
-`snapcase-example/scenario.lua` を同梱しているので、そのまま呼び出して実際の動作を確認できます。
-
-```sh
-nvim --headless -u NONE -i NONE -l snap.lua core capture \
-  --scenario snapcase-example/scenario.lua \
-  --out-dir snapcase-example/.out \
-  --data-home snapcase-example/.nvim-data \
-  --config-home snapcase-example/.nvim-config \
-  --json --ansi --html
-```
-
-生成物は `snapcase-example/.out/` に出力されます。
+`snapcase-example` を同梱しているので、そのままケースを実行して動作を確認できます。
 
 ## コマンド
 
-- `list` テストケース一覧（高レイヤー）
-- `run` テストケース実行（高レイヤー）
-- `compare` テストケース比較（高レイヤー）
-- `update-expected` expected更新（高レイヤー）
-- `core capture` スナップショット生成（低レイヤー）
-- `core normalize` スナップショットJSONの正規化（低レイヤー）
-- `core compare` スナップショットJSONの比較（低レイヤー）
+- `list` テストケース一覧
+- `run` テストケース実行（スナップショット生成）
+- `compare` テストケース比較
+- `update-expected` expected更新
 
 ## 典型ワークフロー
 
-1. actualを生成  
+1. スナップショットを生成  
    `nvim --headless -u NONE -i NONE -l snap.lua run --root snapcase-example --format json`
 2. 比較（CI向け）  
    `nvim --headless -u NONE -i NONE -l snap.lua compare --root snapcase-example --format text`
 3. 人間向けdiff（HTML）  
    `nvim --headless -u NONE -i NONE -l snap.lua compare --root snapcase-example --format html`
-4. expectedを更新  
+4. 期待値を更新  
    `nvim --headless -u NONE -i NONE -l snap.lua update-expected --root snapcase-example`
-
-## 差分の例（行追加/行変更/行削除）
-
-```sh
-nvim --headless -u NONE -i NONE -l snap.lua core capture \
-  --scenario snapcase-example/scenario_baseline.lua \
-  --out-dir snapcase-example/.out/base \
-  --json
-nvim --headless -u NONE -i NONE -l snap.lua core capture \
-  --scenario snapcase-example/scenario_alt.lua \
-  --out-dir snapcase-example/.out/alt \
-  --json
-```
-
-```sh
-nvim --headless -u NONE -i NONE -l snap.lua core compare \
-  --actual snapcase-example/.out/alt/snapshot.json \
-  --expected snapcase-example/.out/base/snapshot.json \
-  --diff --diff-format html --diff-out snapcase-example/.out/diff-alt.html
-```
 
 ## サンプル構成
 
