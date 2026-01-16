@@ -134,7 +134,7 @@ nvim-snapは、NeovimのUIスナップショットに基づくテストを実行
         ]
       }
       ```
-- `accept`: expectedを更新する
+- `update-expected`: expectedを更新する
   - 入力: テストケース定義（`--root` で探索、既定は `.`）、タグ/ケースIDによる絞り込み
   - 出力: `expected/`配下の更新
   - リグレッションはactualをexpectedとして採用
