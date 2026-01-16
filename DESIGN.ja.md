@@ -153,7 +153,8 @@ nvim-snapは、NeovimのUIスナップショットに基づくテストを実行
 テストケースは1ケース=1ディレクトリで管理する。
 各ディレクトリにケース定義（JSON）とシナリオと成果物を配置する。
 
-ケースディレクトリ構成:
+#### ケースディレクトリ構成
+
 - `case.json` ケース定義ファイル（後述）
 - `expected/` 期待値（`snapshot.json` など）
 - `actual/` 実行結果（`snapshot.json` など）
@@ -162,9 +163,24 @@ nvim-snapは、NeovimのUIスナップショットに基づくテストを実行
 - `golden.lua` ゴールデンテスト用のゴールデンシナリオ
 - `target.lua` ゴールデンテスト用の実装結果シナリオ
 
-ケース定義（`case.json`）:
+#### ケース定義（`case.json`）
+
 - `version` 定義のバージョン
 - `id` 一意な識別子
 - `name` 表示名（任意、既定はディレクトリ名）
 - `kind` `regression` または `golden`
 - `tags` タグ配列（任意）
+
+例:
+```json
+{
+  "version": 1,
+  "id": "basic-regression",
+  "name": "Basic Regression",
+  "kind": "regression",
+  "tags": [
+    "ui",
+    "regression"
+  ]
+}
+```
