@@ -25,6 +25,7 @@ cd nvim-snap
 `~/.local/bin` がPATHに入っていない場合は追加してください。
 
 単一ファイルの `nvim-snap` を `~/.local/bin` に配置します。
+`dist/nvim-snap` が存在しない場合は `scripts/bundle.sh` を実行します。
 
 ### 依存関係
 

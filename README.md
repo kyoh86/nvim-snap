@@ -25,6 +25,7 @@ Set `PREFIX` to change the install location (default: `~/.local`).
 Ensure `~/.local/bin` is on your PATH.
 
 This installs the single-file `nvim-snap` binary into `~/.local/bin`.
+If `dist/nvim-snap` is missing, it runs `scripts/bundle.sh`.
 
 ### Requirements
 
