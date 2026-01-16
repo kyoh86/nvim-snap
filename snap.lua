@@ -110,10 +110,6 @@ function M.main(args_list)
   vim.cmd("cq")
 end
 
-if ... then
-  return M
-end
-
 local ok, err = pcall(M.main, _G.arg or {})
 if not ok then
   util.err_write(err)
