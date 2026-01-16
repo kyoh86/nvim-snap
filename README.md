@@ -37,6 +37,12 @@ scripts/bundle.sh
 
 The generated `dist/nvim-snap` can be distributed as a single file.
 
+### Using mise
+
+```sh
+mise use 'github:kyoh86/nvim-snap[asset_pattern=nvim-snap]'
+```
+
 ## Commands
 
 - `list` list test cases
