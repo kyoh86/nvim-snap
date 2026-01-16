@@ -183,7 +183,7 @@ local function render_for_diff(snapshot, format)
   return render.render_text(snapshot)
 end
 
-local function wrap_html_diff(unified_diff, expected_block, actual_block)
+local function wrap_html_diff(unified_diff, expected_plain, actual_plain, expected_aligned, actual_aligned)
   return table.concat({
     "<!doctype html>",
     "<html>",
@@ -208,15 +208,13 @@ local function wrap_html_diff(unified_diff, expected_block, actual_block)
       "      color: #fff; border-color: #5a8; background: #143;",
     "    }",
     "    .section { padding: 12px 16px 16px; }",
-    "    .line.diff.added { background: rgba(0,200,120,0.28); }",
-    "    .line.diff.removed { background: rgba(220,70,70,0.28); }",
     "    .cell.diff.added { background: rgba(0,200,120,0.55); box-shadow: inset 0 0 0 1px rgba(0,200,120,0.8); }",
     "    .cell.diff.removed { background: rgba(220,70,70,0.55); box-shadow: inset 0 0 0 1px rgba(220,70,70,0.8); }",
-    "    .view .line.diff, .view .cell.diff { background: none; box-shadow: none; }",
-    "    #view-side-diff:checked ~ .page .view .line.diff.added { background: rgba(0,200,120,0.28); }",
-    "    #view-side-diff:checked ~ .page .view .line.diff.removed { background: rgba(220,70,70,0.28); }",
-    "    #view-side-diff:checked ~ .page .view .cell.diff.added { background: rgba(0,200,120,0.55); box-shadow: inset 0 0 0 1px rgba(0,200,120,0.8); }",
-    "    #view-side-diff:checked ~ .page .view .cell.diff.removed { background: rgba(220,70,70,0.55); box-shadow: inset 0 0 0 1px rgba(220,70,70,0.8); }",
+    "    .view-plain .line.diff, .view-plain .line.diff .cell, .view-plain .cell.diff { background: none; box-shadow: none; }",
+    "    #view-side-diff:checked ~ .page #side .view-aligned .line.diff.added .cell { box-shadow: inset 0 0 0 9999px rgba(0,200,120,0.18); }",
+    "    #view-side-diff:checked ~ .page #side .view-aligned .line.diff.removed .cell { box-shadow: inset 0 0 0 9999px rgba(220,70,70,0.18); }",
+    "    #view-side-diff:checked ~ .page #side .view-aligned .cell.diff.added { box-shadow: inset 0 0 0 9999px rgba(0,200,120,0.5), inset 0 0 0 1px rgba(0,200,120,0.8); }",
+    "    #view-side-diff:checked ~ .page #side .view-aligned .cell.diff.removed { box-shadow: inset 0 0 0 9999px rgba(220,70,70,0.5), inset 0 0 0 1px rgba(220,70,70,0.8); }",
     "    .udiff { color: #ddd; }",
     "    .udiff .line { padding: 0 4px; }",
     "    .udiff .line.add { background: rgba(0,200,120,0.22); }",
@@ -224,6 +222,11 @@ local function wrap_html_diff(unified_diff, expected_block, actual_block)
     "    .udiff .line.hunk { color: #9ad; }",
     "    #view-unified:not(:checked) ~ .page #unified { display: none; }",
     "    #view-side:not(:checked) ~ .page #side { display: none; }",
+    "    #view-side-diff:not(:checked) ~ .page #side { display: none; }",
+    "    #view-side:checked ~ .page #side .view-plain { display: block; }",
+    "    #view-side:checked ~ .page #side .view-aligned { display: none; }",
+    "    #view-side-diff:checked ~ .page #side .view-plain { display: none; }",
+    "    #view-side-diff:checked ~ .page #side .view-aligned { display: block; }",
     "    #view-side-diff:checked ~ .page #side { display: block; }",
     "    .grid { display: inline-block; }",
     "    .line { display: block; white-space: pre; }",
@@ -251,11 +254,13 @@ local function wrap_html_diff(unified_diff, expected_block, actual_block)
     "    <div class=\"wrap\">",
     "      <div class=\"panel\">",
     "        <div class=\"title\">expected</div>",
-    "        <div class=\"content view\" style=\"background:" .. expected_block.bg .. ";color:" .. expected_block.fg .. ";\"><div class=\"grid\">" .. expected_block.html .. "</div></div>",
+    "        <div class=\"content view-plain\" style=\"background:" .. expected_plain.bg .. ";color:" .. expected_plain.fg .. ";\"><div class=\"grid\">" .. expected_plain.html .. "</div></div>",
+    "        <div class=\"content view-aligned\" style=\"background:" .. expected_aligned.bg .. ";color:" .. expected_aligned.fg .. ";\"><div class=\"grid\">" .. expected_aligned.html .. "</div></div>",
     "      </div>",
     "      <div class=\"panel\">",
     "        <div class=\"title\">actual</div>",
-    "        <div class=\"content view\" style=\"background:" .. actual_block.bg .. ";color:" .. actual_block.fg .. ";\"><div class=\"grid\">" .. actual_block.html .. "</div></div>",
+    "        <div class=\"content view-plain\" style=\"background:" .. actual_plain.bg .. ";color:" .. actual_plain.fg .. ";\"><div class=\"grid\">" .. actual_plain.html .. "</div></div>",
+    "        <div class=\"content view-aligned\" style=\"background:" .. actual_aligned.bg .. ";color:" .. actual_aligned.fg .. ";\"><div class=\"grid\">" .. actual_aligned.html .. "</div></div>",
     "      </div>",
     "    </div>",
     "  </div>",
@@ -296,6 +301,136 @@ local function grid_text_matrix(snapshot)
     matrix[r] = line
   end
   return rows, cols, matrix
+end
+
+local function lines_from_matrix(rows, cols, matrix)
+  local lines = {}
+  for r = 1, rows do
+    local row = matrix[r] or {}
+    lines[r] = table.concat(row, "")
+  end
+  return lines
+end
+
+local function align_lines(expected_lines, actual_lines)
+  local expected_text = table.concat(expected_lines, "\n")
+  local actual_text = table.concat(actual_lines, "\n")
+  local diffs = vim.text.diff(expected_text, actual_text, {
+    result_type = "indices",
+    algorithm = "patience",
+    linematch = true,
+    indent_heuristic = true,
+  })
+  local pairs = {}
+  local e = 1
+  local a = 1
+  for _, d in ipairs(diffs) do
+    local a_start, a_count, b_start, b_count = d[1], d[2], d[3], d[4]
+    local expected_unchanged = (a_count == 0) and (a_start - e + 1) or (a_start - e)
+    local actual_unchanged = (b_count == 0) and (b_start - a + 1) or (b_start - a)
+    if expected_unchanged < 0 then
+      expected_unchanged = 0
+    end
+    if actual_unchanged < 0 then
+      actual_unchanged = 0
+    end
+    local common = math.min(expected_unchanged, actual_unchanged)
+    for i = 0, common - 1 do
+      table.insert(pairs, { e = e + i, a = a + i, kind = nil })
+    end
+    if expected_unchanged > common then
+      for i = 0, expected_unchanged - common - 1 do
+        table.insert(pairs, { e = e + common + i, a = 0, kind = "removed" })
+      end
+    elseif actual_unchanged > common then
+      for i = 0, actual_unchanged - common - 1 do
+        table.insert(pairs, { e = 0, a = a + common + i, kind = "added" })
+      end
+    end
+    local e_change = (a_count == 0) and (a_start + 1) or a_start
+    local a_change = (b_count == 0) and (b_start + 1) or b_start
+    e = e_change
+    a = a_change
+    local maxc = math.max(a_count, b_count)
+    for i = 0, maxc - 1 do
+      local er = (i < a_count) and (e + i) or 0
+      local ar = (i < b_count) and (a + i) or 0
+      local kind = nil
+      if er == 0 and ar > 0 then
+        kind = "added"
+      elseif ar == 0 and er > 0 then
+        kind = "removed"
+      else
+        kind = "changed"
+      end
+      table.insert(pairs, { e = er, a = ar, kind = kind })
+    end
+    e = e + a_count
+    a = a + b_count
+  end
+  local expected_remaining = math.max(#expected_lines - e + 1, 0)
+  local actual_remaining = math.max(#actual_lines - a + 1, 0)
+  local common = math.min(expected_remaining, actual_remaining)
+  for i = 0, common - 1 do
+    table.insert(pairs, { e = e + i, a = a + i, kind = nil })
+  end
+  if expected_remaining > common then
+    for i = 0, expected_remaining - common - 1 do
+      table.insert(pairs, { e = e + common + i, a = 0, kind = "removed" })
+    end
+  elseif actual_remaining > common then
+    for i = 0, actual_remaining - common - 1 do
+      table.insert(pairs, { e = 0, a = a + common + i, kind = "added" })
+    end
+  end
+  return pairs
+end
+
+local function build_aligned_maps(expected_snapshot, actual_snapshot)
+  local erows, ecols, ematrix = grid_text_matrix(expected_snapshot)
+  local arows, acols, amatrix = grid_text_matrix(actual_snapshot)
+  local expected_lines = lines_from_matrix(erows, ecols, ematrix)
+  local actual_lines = lines_from_matrix(arows, acols, amatrix)
+  local pairs = align_lines(expected_lines, actual_lines)
+  local cols = math.max(ecols, acols)
+  local expected_rows = {}
+  local actual_rows = {}
+  local expected_line_kinds = {}
+  local actual_line_kinds = {}
+  local expected_cells = {}
+  local actual_cells = {}
+  for idx, pair in ipairs(pairs) do
+    expected_rows[idx] = pair.e
+    actual_rows[idx] = pair.a
+    if pair.kind == "removed" then
+      expected_line_kinds[idx] = "removed"
+    elseif pair.kind == "added" then
+      actual_line_kinds[idx] = "added"
+    elseif pair.kind == "changed" then
+      expected_line_kinds[idx] = "removed"
+      actual_line_kinds[idx] = "added"
+    end
+    if pair.e and pair.e > 0 and pair.a and pair.a > 0 then
+      for c = 1, cols do
+        local etext = ematrix[pair.e] and ematrix[pair.e][c] or " "
+        local atext = amatrix[pair.a] and amatrix[pair.a][c] or " "
+        if etext ~= atext then
+          expected_cells[pair.e] = expected_cells[pair.e] or {}
+          actual_cells[pair.a] = actual_cells[pair.a] or {}
+          expected_cells[pair.e][c] = true
+          actual_cells[pair.a][c] = true
+        end
+      end
+    end
+  end
+  return {
+    expected_rows = expected_rows,
+    actual_rows = actual_rows,
+    expected_line_kinds = expected_line_kinds,
+    actual_line_kinds = actual_line_kinds,
+    expected_cells = expected_cells,
+    actual_cells = actual_cells,
+  }
 end
 
 local function build_diff_map(expected_snapshot, actual_snapshot)
@@ -421,12 +556,29 @@ function M.run(args_list)
       local actual_render_text = render.render_text(normalized_actual)
       local unified = vim.text.diff(expected_render_text, actual_render_text, { result_type = "unified", ctxlen = 3 })
       local diff_map = build_diff_map(normalized_expected, normalized_actual)
-      local expected_cells = render.render_html_cells(normalized_expected, diff_map.expected, "removed")
-      local actual_cells = render.render_html_cells(normalized_actual, diff_map.actual, "added")
+      local expected_plain = render.render_html_cells(normalized_expected, diff_map.expected, "removed")
+      local actual_plain = render.render_html_cells(normalized_actual, diff_map.actual, "added")
+      local aligned = build_aligned_maps(normalized_expected, normalized_actual)
+      local expected_aligned = render.render_html_aligned(
+        normalized_expected,
+        aligned.expected_rows,
+        aligned.expected_line_kinds,
+        aligned.expected_cells,
+        "removed"
+      )
+      local actual_aligned = render.render_html_aligned(
+        normalized_actual,
+        aligned.actual_rows,
+        aligned.actual_line_kinds,
+        aligned.actual_cells,
+        "added"
+      )
       local rendered = wrap_html_diff(
         highlight_unified(unified),
-        expected_cells,
-        actual_cells
+        expected_plain,
+        actual_plain,
+        expected_aligned,
+        actual_aligned
       )
       local ok, write_err = output.write(opts.diff_out, rendered)
       if not ok then
