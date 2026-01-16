@@ -40,6 +40,26 @@ nvim --headless -u NONE -i NONE -l snap.lua capture \
 4. 人間向けdiff（HTML）  
    `nvim --headless -u NONE -i NONE -l snap.lua compare --actual snapcase-example/.out/snapshot.json --expected snapcase-example/.expected/snapshot.json --diff --diff-format html --diff-out snapcase-example/.out/diff.html`
 
+## 差分の例（行追加/行変更/行削除）
+
+```sh
+nvim --headless -u NONE -i NONE -l snap.lua capture \
+  --scenario snapcase-example/scenario_baseline.lua \
+  --out-dir snapcase-example/.out/base \
+  --json
+nvim --headless -u NONE -i NONE -l snap.lua capture \
+  --scenario snapcase-example/scenario_alt.lua \
+  --out-dir snapcase-example/.out/alt \
+  --json
+```
+
+```sh
+nvim --headless -u NONE -i NONE -l snap.lua compare \
+  --actual snapcase-example/.out/alt/snapshot.json \
+  --expected snapcase-example/.out/base/snapshot.json \
+  --diff --diff-format html --diff-out snapcase-example/.out/diff-alt.html
+```
+
 ## サンプル構成
 
 - `snapcase-example/snapcase.json` 高レイヤー用のケース定義（予定）

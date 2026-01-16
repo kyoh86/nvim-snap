@@ -307,7 +307,7 @@ function M.render_html_fragment(snapshot)
   }
 end
 
-function M.render_html_cells(snapshot, diff_map, diff_kind)
+function M.render_html_aligned(snapshot, row_indices, line_kinds, cell_diff, diff_kind)
   local grid = nil
   for _, g in ipairs(snapshot.grids or {}) do
     if g.id == 1 then
@@ -325,17 +325,22 @@ function M.render_html_cells(snapshot, diff_map, diff_kind)
   local attr_map, default_fg, default_bg = build_attr_map(snapshot)
   local bg = to_hex_color(default_bg) or "#000000"
   local fg = to_hex_color(default_fg) or "#ffffff"
+  local cols = grid.cols or 0
 
   local lines = {}
-  for r = 1, grid.rows do
-    local row_cells = grid.cells[r] or {}
+  for idx, row_index in ipairs(row_indices) do
+    local row_cells = {}
+    if row_index and row_index > 0 then
+      row_cells = grid.cells[row_index] or {}
+    end
     local line_classes = { "line" }
-    if diff_map and diff_map.lines and diff_map.lines[r] then
+    local kind = line_kinds and line_kinds[idx] or nil
+    if kind then
       table.insert(line_classes, "diff")
-      table.insert(line_classes, diff_kind)
+      table.insert(line_classes, kind)
     end
     local line = { '<div class="' .. table.concat(line_classes, " ") .. '">' }
-    for c = 1, grid.cols do
+    for c = 1, cols do
       local cell = row_cells[c] or { text = " ", hl_id = 0 }
       local text = cell.text
       if text == "" then
@@ -344,7 +349,7 @@ function M.render_html_cells(snapshot, diff_map, diff_kind)
       local style = style_from(attr_map, default_fg, default_bg, cell.hl_id or 0)
       local css = style_to_css(style)
       local cell_classes = { "cell" }
-      if diff_map and diff_map.cells and diff_map.cells[r] and diff_map.cells[r][c] then
+      if row_index and row_index > 0 and cell_diff and cell_diff[row_index] and cell_diff[row_index][c] then
         table.insert(cell_classes, "diff")
         table.insert(cell_classes, diff_kind)
       end
@@ -364,6 +369,31 @@ function M.render_html_cells(snapshot, diff_map, diff_kind)
     fg = fg,
     html = table.concat(lines),
   }
+end
+
+function M.render_html_cells(snapshot, diff_map, diff_kind)
+  local grid = nil
+  for _, g in ipairs(snapshot.grids or {}) do
+    if g.id == 1 then
+      grid = g
+      break
+    end
+  end
+  if not grid and snapshot.grids and snapshot.grids[1] then
+    grid = snapshot.grids[1]
+  end
+  if not grid then
+    return { bg = "#000000", fg = "#ffffff", html = "" }
+  end
+  local row_indices = {}
+  local line_kinds = {}
+  for r = 1, grid.rows do
+    row_indices[r] = r
+    if diff_map and diff_map.lines and diff_map.lines[r] then
+      line_kinds[r] = diff_kind
+    end
+  end
+  return M.render_html_aligned(snapshot, row_indices, line_kinds, diff_map and diff_map.cells or nil, diff_kind)
 end
 
 function M.render_html(snapshot)

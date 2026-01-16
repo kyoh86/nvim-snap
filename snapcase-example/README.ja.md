@@ -20,6 +20,8 @@ nvim --headless -u NONE -i NONE -l snap.lua \
 - `snapcase.json` 高レイヤー用のケース定義（予定）
 - `snapcase.schema.json` JSON Schema
 - `scenario.lua` 操作シナリオ
+- `scenario_baseline.lua` 行数と内容が基準のサンプル
+- `scenario_alt.lua` 行追加/行変更/行削除が入ったサンプル
 
 ## 補足
 
