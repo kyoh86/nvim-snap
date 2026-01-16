@@ -54,6 +54,8 @@ mise use 'github:kyoh86/nvim-snap[asset_pattern=nvim-snap]'
 
 ## Commands
 
+The examples below assume cases are under `tests/cases/<case-id>/case.json`.
+
 - `list` list test cases
 - `new` scaffold a test case
 - `ci init` scaffold a CI workflow

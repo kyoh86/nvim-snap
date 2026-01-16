@@ -54,6 +54,8 @@ mise use 'github:kyoh86/nvim-snap[asset_pattern=nvim-snap]'
 
 ## コマンド
 
+以下の説明は、テストケースが `tests/cases/<case-id>/case.json` のように配置されている前提です。
+
 - `list` テストケース一覧
 - `new` テストケース雛形の作成
 - `ci init` CI向けワークフロー雛形の作成
