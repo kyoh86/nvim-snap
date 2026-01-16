@@ -11,7 +11,7 @@ Test cases manage scenarios and expected snapshots, and can be executed in batch
 
 ![diff overlay example](docs/diff-overlay.png)
 
-`snapcase-example` is included, so you can run the cases as-is to confirm behavior.
+This repository includes `snapcase-example`, so you can run the cases as-is to confirm behavior.
 
 ## Installation
 
@@ -137,12 +137,6 @@ nvim-snap ci init --path .github/workflows/nvim-snap.yml
 
 - Regression: verify the same scenario matches the stored expected snapshot
 - Golden: compare the expected (golden) output with the implementation result (target)
-
-## Sample Layout
-
-- `snapcase-example/case.json` case definition for high-level usage
-- `snapcase-example/case.schema.json` JSON Schema
-- `snapcase-example/scenario.lua` scenario
 
 ## Notes
 

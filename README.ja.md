@@ -11,7 +11,7 @@ nvim-snapは、NeovimのUIスナップショットに基づくテストを実行
 
 ![diff overlayの例](docs/diff-overlay.png)
 
-`snapcase-example` を同梱しているので、そのままケースを実行して動作を確認できます。
+このリポジトリ内に `snapcase-example` を同梱しているので、そのままケースを実行して動作を確認できます。
 
 ## インストール
 
@@ -137,12 +137,6 @@ nvim-snap ci init --path .github/workflows/nvim-snap.yml
 
 - リグレッション: 同一シナリオの結果が過去の期待値と一致するか確認する
 - ゴールデン: 期待表示（golden）と実装結果（target）の一致を確認する
-
-## サンプル構成
-
-- `snapcase-example/case.json` 高レイヤー用のケース定義
-- `snapcase-example/case.schema.json` JSON Schema
-- `snapcase-example/scenario.lua` 操作シナリオ
 
 ## 注意点
 
