@@ -62,6 +62,28 @@ nvim-snapは、NeovimのUIスナップショットに基づくテストを実行
   - 出力: 一覧（id/name/kind/tags/path）
   - 形式: 既定はテキスト、`--json` でJSON出力
   - 絞り込み: `--tag` / `--case`
+  - JSON出力:
+    - `root` ルートディレクトリ
+    - `cases[]` ケース配列
+      - `id` / `name` / `kind` / `tags` / `path`
+    - 例:
+      ```json
+      {
+        "root": ".",
+        "cases": [
+          {
+            "id": "case-id",
+            "name": "Case Name",
+            "kind": "regression",
+            "tags": [
+              "ui",
+              "regression"
+            ],
+            "path": "tests/cases/case-id"
+          }
+        ]
+      }
+      ```
 - `run`: テストケースを実行してactualを生成する
   - 入力: テストケース定義（`--root` で探索、既定は `.`）、タグ/ケースIDによる絞り込み
   - 出力: 各ケースの`actual/`配下にスナップショット
@@ -75,6 +97,43 @@ nvim-snapは、NeovimのUIスナップショットに基づくテストを実行
   - HTML差分は不一致時のみ生成し、`--diff-always` で常時生成できる
   - サマリ項目: id/name/kind/tags/result/diff_path/error_reason
   - resultは `no_diff` / `diff` / `error`
+  - JSON出力:
+    - `root` ルートディレクトリ
+    - `summary` 集計
+      - `total` / `no_diff` / `diff` / `error`
+    - `cases[]` ケース配列
+      - `id` / `name` / `kind` / `tags` / `result` / `diff_paths` / `error_reason`
+      - `diff_paths` は出力形式ごとのパス
+    - 例:
+      ```json
+      {
+        "root": ".",
+        "summary": {
+          "total": 1,
+          "no_diff": 0,
+          "diff": 1,
+          "error": 0
+        },
+        "cases": [
+          {
+            "id": "case-id",
+            "name": "Case Name",
+            "kind": "golden",
+            "tags": [
+              "ui",
+              "golden"
+            ],
+            "result": "diff",
+            "diff_paths": {
+              "text": "tests/cases/case-id/diff/diff.txt",
+              "ansi": "tests/cases/case-id/diff/diff.ansi",
+              "html": "tests/cases/case-id/diff/diff.html"
+            },
+            "error_reason": null
+          }
+        ]
+      }
+      ```
 - `accept`: expectedを更新する
   - 入力: テストケース定義（`--root` で探索、既定は `.`）、タグ/ケースIDによる絞り込み
   - 出力: `expected/`配下の更新
