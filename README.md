@@ -18,6 +18,10 @@ Test cases manage scenarios and expected snapshots, and can be executed in batch
 - `compare` compare test cases
 - `update-expected` update expected snapshots
 
+## Example
+
+![diff overlay example](docs/diff-overlay.png)
+
 ## Typical Workflow
 
 1. Generate snapshots

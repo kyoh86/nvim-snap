@@ -18,6 +18,10 @@ nvim-snapは、NeovimのUIスナップショットに基づくテストを実行
 - `compare` テストケース比較
 - `update-expected` expected更新
 
+## 例
+
+![diff overlayの例](docs/diff-overlay.png)
+
 ## 典型ワークフロー
 
 1. スナップショットを生成  
