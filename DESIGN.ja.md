@@ -66,10 +66,12 @@ nvim-snapは、NeovimのUIスナップショットに基づくテストを実行
   - 入力: テストケース定義（`--root` で探索、既定は `.`）、タグ/ケースIDによる絞り込み
   - 出力: 各ケースの`actual/`配下にスナップショット
   - 絞り込み: `--tag` / `--case`
+  - 出力形式: `--format=json,ansi,html`（既定は `json`）
 - `compare`: expectedとactualを比較し、結果をサマリ出力する
   - 入力: テストケース定義（`--root` で探索、既定は `.`）、タグ/ケースIDによる絞り込み
   - 出力: 標準出力のサマリ、ケースごとの`diff/`配下にHTML差分（必要時）
   - 絞り込み: `--tag` / `--case`
+  - 出力形式: `--format=text,ansi,html`（既定は `text`）
   - HTML差分は不一致時のみ生成し、`--diff-always` で常時生成できる
   - サマリ項目: id/name/kind/tags/result/diff_path/error_reason
   - resultは `no_diff` / `diff` / `error`
