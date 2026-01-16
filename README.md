@@ -24,8 +24,7 @@ cd nvim-snap
 Set `PREFIX` to change the install location (default: `~/.local`).
 Ensure `~/.local/bin` is on your PATH.
 
-Set `NVIM_SNAP_LUA` to point at `snap.lua` explicitly.
-Set `NVIM` to choose which Neovim binary to run.
+This installs the single-file `nvim-snap` binary into `~/.local/bin`.
 
 ### Requirements
 

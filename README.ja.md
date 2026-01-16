@@ -24,8 +24,7 @@ cd nvim-snap
 `PREFIX` を指定するとインストール先を変更できます（既定は `~/.local`）。
 `~/.local/bin` がPATHに入っていない場合は追加してください。
 
-`NVIM_SNAP_LUA` で `snap.lua` のパスを明示できます。
-`NVIM` で実行するNeovimのパスを指定できます。
+単一ファイルの `nvim-snap` を `~/.local/bin` に配置します。
 
 ### 依存関係
 
