@@ -1,0 +1,41 @@
+# nvim-snap
+
+nvim-snap is a tool for running tests based on Neovim UI snapshots.
+
+## Concept
+
+Run a scenario to generate the current UI snapshot, then compare it with stored expected snapshots to verify display correctness.
+Test cases manage scenarios and expected snapshots, and can be executed in batch or filtered by tags.
+
+## Usage
+
+`snapcase-example` is included, so you can run the cases as-is to confirm behavior.
+
+## Commands
+
+- `list` list test cases
+- `run` run test cases (generate snapshots)
+- `compare` compare test cases
+- `update-expected` update expected snapshots
+
+## Typical Workflow
+
+1. Generate snapshots
+   `nvim --headless -u NONE -i NONE -l snap.lua run --root snapcase-example --format json`
+2. Compare (CI)
+   `nvim --headless -u NONE -i NONE -l snap.lua compare --root snapcase-example --format text`
+3. Human-friendly diff (HTML)
+   `nvim --headless -u NONE -i NONE -l snap.lua compare --root snapcase-example --format html`
+4. Update expected
+   `nvim --headless -u NONE -i NONE -l snap.lua update-expected --root snapcase-example`
+
+## Sample Layout
+
+- `snapcase-example/case.json` case definition for high-level usage
+- `snapcase-example/case.schema.json` JSON Schema
+- `snapcase-example/scenario.lua` scenario
+
+## Notes
+
+- If your scenario needs plugins, using `vim.pack.add()` is recommended.
+- When using `vim.pack.add()`, set `--data-home` / `--config-home` explicitly.
