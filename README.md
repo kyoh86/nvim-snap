@@ -7,6 +7,12 @@ nvim-snap is a tool for running tests based on Neovim UI snapshots.
 Run a scenario to generate the current UI snapshot, then compare it with stored expected snapshots to verify display correctness.
 Test cases manage scenarios and expected snapshots, and can be executed in batch or filtered by tags.
 
+## Example
+
+![diff overlay example](docs/diff-overlay.png)
+
+`snapcase-example` is included, so you can run the cases as-is to confirm behavior.
+
 ## Installation
 
 Use the simple installer:
@@ -45,14 +51,6 @@ It is also attached to releases, so you can download it directly from the releas
 ```sh
 mise use 'github:kyoh86/nvim-snap[asset_pattern=nvim-snap]'
 ```
-
-## Example
-
-![diff overlay example](docs/diff-overlay.png)
-
-## Usage
-
-`snapcase-example` is included, so you can run the cases as-is to confirm behavior.
 
 ## Commands
 

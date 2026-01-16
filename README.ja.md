@@ -7,6 +7,12 @@ nvim-snapは、NeovimのUIスナップショットに基づくテストを実行
 シナリオを実行して現在のUIスナップショットを生成し、保存済みの期待値と比較することで表示の一致を検証する。
 テストケース単位でシナリオと期待値を管理し、一括実行やタグでの絞り込みができる。
 
+## 例
+
+![diff overlayの例](docs/diff-overlay.png)
+
+`snapcase-example` を同梱しているので、そのままケースを実行して動作を確認できます。
+
 ## インストール
 
 簡易インストーラを使う場合:
@@ -45,14 +51,6 @@ scripts/bundle.sh
 ```sh
 mise use 'github:kyoh86/nvim-snap[asset_pattern=nvim-snap]'
 ```
-
-## 例
-
-![diff overlayの例](docs/diff-overlay.png)
-
-## 使い方
-
-`snapcase-example` を同梱しているので、そのままケースを実行して動作を確認できます。
 
 ## コマンド
 
