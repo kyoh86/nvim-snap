@@ -44,7 +44,10 @@ function M.main(args_list)
   local args = vim.deepcopy(args_list or {})
   local command = args[1]
   if command == nil or vim.startswith(command, "-") then
-    return capture.run(args)
+    util.err_write("command is required")
+    util.err_write(usage())
+    vim.cmd("cq")
+    return
   end
   table.remove(args, 1)
   if command == "capture" then
