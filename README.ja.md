@@ -60,13 +60,13 @@ mise use 'github:kyoh86/nvim-snap[asset_pattern=nvim-snap]'
 ## 典型ワークフロー
 
 1. スナップショットを生成  
-   `nvim --headless -u NONE -i NONE -l snap.lua run --root snapcase-example --format json`
+   `nvim-snap run --root snapcase-example --format json`
 2. 比較（CI向け）  
-   `nvim --headless -u NONE -i NONE -l snap.lua compare --root snapcase-example --format text`
+   `nvim-snap compare --root snapcase-example --format text`
 3. 人間向けdiff（HTML）  
-   `nvim --headless -u NONE -i NONE -l snap.lua compare --root snapcase-example --format html`
+   `nvim-snap compare --root snapcase-example --format html`
 4. 期待値を更新  
-   `nvim --headless -u NONE -i NONE -l snap.lua update-expected --root snapcase-example`
+   `nvim-snap update-expected --root snapcase-example`
 
 ## サンプル構成
 
