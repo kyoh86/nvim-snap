@@ -362,7 +362,7 @@ function M.render_html_cells(snapshot, diff_map, diff_kind)
   return {
     bg = bg,
     fg = fg,
-    html = table.concat(lines, "\n"),
+    html = table.concat(lines),
   }
 end
 

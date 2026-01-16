@@ -226,7 +226,7 @@ local function wrap_html_diff(unified_diff, expected_block, actual_block)
     "    #view-side:not(:checked) ~ .page #side { display: none; }",
     "    #view-side-diff:checked ~ .page #side { display: block; }",
     "    .grid { display: inline-block; }",
-    "    .line { display: block; }",
+    "    .line { display: block; white-space: pre; }",
     "    .cell { display: inline-block; }",
     "  </style>",
     "</head>",
