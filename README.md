@@ -50,6 +50,10 @@ It is also attached to releases, so you can download it directly from the releas
 mise use 'github:kyoh86/nvim-snap[asset_pattern=nvim-snap]'
 ```
 
+## Example
+
+![diff overlay example](docs/diff-overlay.png)
+
 ## Commands
 
 - `list` list test cases
@@ -115,10 +119,6 @@ Scaffold a CI workflow.
 ```sh
 nvim-snap ci init --path .github/workflows/nvim-snap.yml
 ```
-
-## Example
-
-![diff overlay example](docs/diff-overlay.png)
 
 ## Typical Workflow
 

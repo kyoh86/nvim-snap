@@ -50,6 +50,10 @@ scripts/bundle.sh
 mise use 'github:kyoh86/nvim-snap[asset_pattern=nvim-snap]'
 ```
 
+## 例
+
+![diff overlayの例](docs/diff-overlay.png)
+
 ## コマンド
 
 - `list` テストケース一覧
@@ -115,10 +119,6 @@ CI向けワークフロー雛形を作成します。
 ```sh
 nvim-snap ci init --path .github/workflows/nvim-snap.yml
 ```
-
-## 例
-
-![diff overlayの例](docs/diff-overlay.png)
 
 ## 典型ワークフロー
 
