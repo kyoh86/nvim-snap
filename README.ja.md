@@ -11,6 +11,22 @@ nvim-snapは、NeovimのUIスナップショットに基づくテストを実行
 
 `snapcase-example` を同梱しているので、そのままケースを実行して動作を確認できます。
 
+## インストール
+
+簡易インストーラを使う場合:
+
+```sh
+git clone https://github.com/kyoh86/nvim-snap.git
+cd nvim-snap
+./install.sh
+```
+
+`PREFIX` を指定するとインストール先を変更できます（既定は `~/.local`）。
+`~/.local/bin` がPATHに入っていない場合は追加してください。
+
+`NVIM_SNAP_LUA` で `snap.lua` のパスを明示できます。
+`NVIM` で実行するNeovimのパスを指定できます。
+
 ## コマンド
 
 - `list` テストケース一覧

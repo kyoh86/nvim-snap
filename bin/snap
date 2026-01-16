@@ -1,0 +1,9 @@
+#!/bin/sh
+set -eu
+
+NVIM_BIN="${NVIM:-nvim}"
+
+script_dir=$(cd "$(dirname "$0")" && pwd)
+snap_lua="${NVIM_SNAP_LUA:-$script_dir/../snap.lua}"
+
+exec "$NVIM_BIN" --headless -u NONE -i NONE -l "$snap_lua" "$@"

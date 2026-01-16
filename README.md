@@ -11,6 +11,22 @@ Test cases manage scenarios and expected snapshots, and can be executed in batch
 
 `snapcase-example` is included, so you can run the cases as-is to confirm behavior.
 
+## Installation
+
+Use the simple installer:
+
+```sh
+git clone https://github.com/kyoh86/nvim-snap.git
+cd nvim-snap
+./install.sh
+```
+
+Set `PREFIX` to change the install location (default: `~/.local`).
+Ensure `~/.local/bin` is on your PATH.
+
+Set `NVIM_SNAP_LUA` to point at `snap.lua` explicitly.
+Set `NVIM` to choose which Neovim binary to run.
+
 ## Commands
 
 - `list` list test cases
