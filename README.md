@@ -36,6 +36,7 @@ scripts/bundle.sh
 ```
 
 The generated `dist/nvim-snap` can be distributed as a single file.
+It is also attached to releases, so you can download it directly from the release page.
 
 ### Using mise
 
