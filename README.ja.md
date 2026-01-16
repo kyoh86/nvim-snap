@@ -30,7 +30,7 @@ cd nvim-snap
 ### 依存関係
 
 - Neovim（`nvim`）
-- 単一ファイル配布の生成に `luabundler`（Node.js）
+- 単一ファイル配布の生成に `luabundler`（Node.js、開発時のみ）
 - PNG出力に `google-chrome`/`chromium`/`msedge`/`wkhtmltoimage`
 
 ### 単一ファイル配布

@@ -30,7 +30,7 @@ Set `NVIM` to choose which Neovim binary to run.
 ### Requirements
 
 - Neovim (`nvim`)
-- `luabundler` (Node.js) for single-file bundle generation
+- `luabundler` (Node.js, dev-only) for single-file bundle generation
 - `google-chrome`/`chromium`/`msedge`/`wkhtmltoimage` for PNG output
 
 ### Single-file bundle
