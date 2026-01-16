@@ -146,17 +146,6 @@ local function encode_json(value, pretty)
   return vim.json.encode(value)
 end
 
-local function maybe_diff(expected_text, actual_text)
-  if not vim.diff then
-    return nil
-  end
-  local ok, diff = pcall(vim.diff, expected_text, actual_text, { result_type = "unified", ctxlen = 3 })
-  if not ok then
-    return nil
-  end
-  return diff
-end
-
 local function escape_html(text)
   return (text:gsub("[&<>\"']", {
     ["&"] = "&amp;",
@@ -428,9 +417,9 @@ function M.run(args_list)
 
   if opts.diff and normalized_expected then
     if opts.diff_format == "html" then
-      local expected_text = render.render_text(normalized_expected)
-      local actual_text = render.render_text(normalized_actual)
-      local unified = maybe_diff(expected_text, actual_text) or ""
+      local expected_render_text = render.render_text(normalized_expected)
+      local actual_render_text = render.render_text(normalized_actual)
+      local unified = vim.text.diff(expected_render_text, actual_render_text, { result_type = "unified", ctxlen = 3 })
       local diff_map = build_diff_map(normalized_expected, normalized_actual)
       local expected_cells = render.render_html_cells(normalized_expected, diff_map.expected, "removed")
       local actual_cells = render.render_html_cells(normalized_actual, diff_map.actual, "added")
@@ -448,7 +437,7 @@ function M.run(args_list)
     else
       local expected_out = render_for_diff(normalized_expected, opts.diff_format)
       local actual_out = render_for_diff(normalized_actual, opts.diff_format)
-      local diff = maybe_diff(expected_out, actual_out)
+      local diff = vim.text.diff(expected_out, actual_out, { result_type = "unified", ctxlen = 3 })
       if diff then
         local ok, write_err = output.write(opts.diff_out, diff)
         if not ok then
