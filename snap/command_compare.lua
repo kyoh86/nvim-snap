@@ -1,5 +1,6 @@
 local normalize = require("snap.normalize")
 local output = require("snap.output")
+local png = require("snap.png")
 local render = require("snap.render")
 local util = require("snap.util")
 
@@ -14,7 +15,7 @@ local function usage()
     "  --actual PATH      Snapshot JSON path ('-' for stdin)",
     "  --expected PATH    Expected JSON path",
     "  --diff             Print unified diff on mismatch",
-    "  --diff-format FMT  Diff source: text|ansi|html (default: text)",
+    "  --diff-format FMT  Diff source: text|ansi|html|png (default: text)",
     "  --diff-out PATH    Write diff to PATH (default: stdout)",
     "  -h, --help         Show this help",
   }, "\n")
@@ -168,7 +169,45 @@ local function render_for_diff(snapshot, format)
   return render.render_text(snapshot)
 end
 
-local function wrap_html_diff(unified_diff, expected_plain, actual_plain, expected_aligned, actual_aligned)
+local function render_html_diff(expected, actual, default_view)
+  local expected_render_text = render.render_text(expected)
+  local actual_render_text = render.render_text(actual)
+  local unified = vim.text.diff(expected_render_text, actual_render_text, { result_type = "unified", ctxlen = 3 })
+  local diff_map = build_diff_map(expected, actual)
+  local expected_plain = render.render_html_cells(expected, diff_map.expected, "removed")
+  local actual_plain = render.render_html_cells(actual, diff_map.actual, "added")
+  local aligned = build_aligned_maps(expected, actual)
+  local expected_aligned = render.render_html_aligned(
+    expected,
+    aligned.expected_rows,
+    aligned.expected_line_kinds,
+    aligned.expected_cells,
+    "removed"
+  )
+  local actual_aligned = render.render_html_aligned(
+    actual,
+    aligned.actual_rows,
+    aligned.actual_line_kinds,
+    aligned.actual_cells,
+    "added"
+  )
+  return wrap_html_diff(
+    highlight_unified(unified or ""),
+    expected_plain,
+    actual_plain,
+    expected_aligned,
+    actual_aligned,
+    default_view
+  )
+end
+
+local function wrap_html_diff(unified_diff, expected_plain, actual_plain, expected_aligned, actual_aligned, default_view)
+  if default_view ~= "side" and default_view ~= "overlay" then
+    default_view = "unified"
+  end
+  local unified_checked = default_view == "unified" and " checked" or ""
+  local side_checked = default_view == "side" and " checked" or ""
+  local overlay_checked = default_view == "overlay" and " checked" or ""
   return table.concat({
     "<!doctype html>",
     "<html>",
@@ -232,9 +271,9 @@ local function wrap_html_diff(unified_diff, expected_plain, actual_plain, expect
     "  </style>",
     "</head>",
     "<body>",
-    "  <input id=\"view-unified\" class=\"toggles\" type=\"radio\" name=\"diff-view\" checked />",
-    "  <input id=\"view-side\" class=\"toggles\" type=\"radio\" name=\"diff-view\" />",
-    "  <input id=\"view-side-diff\" class=\"toggles\" type=\"radio\" name=\"diff-view\" />",
+    "  <input id=\"view-unified\" class=\"toggles\" type=\"radio\" name=\"diff-view\"" .. unified_checked .. " />",
+    "  <input id=\"view-side\" class=\"toggles\" type=\"radio\" name=\"diff-view\"" .. side_checked .. " />",
+    "  <input id=\"view-side-diff\" class=\"toggles\" type=\"radio\" name=\"diff-view\"" .. overlay_checked .. " />",
     "  <div class=\"tabs\">",
     "    <span class=\"label\">view</span>",
     "    <label for=\"view-unified\">unified</label>",
@@ -492,8 +531,13 @@ function M.run(args_list)
     vim.cmd("cq")
     return
   end
-  if opts.diff_format ~= "text" and opts.diff_format ~= "ansi" and opts.diff_format ~= "html" then
-    util.err_write("--diff-format must be text, ansi, or html")
+  if
+    opts.diff_format ~= "text"
+    and opts.diff_format ~= "ansi"
+    and opts.diff_format ~= "html"
+    and opts.diff_format ~= "png"
+  then
+    util.err_write("--diff-format must be text, ansi, html, or png")
     util.err_write(usage())
     vim.cmd("cq")
     return
@@ -533,40 +577,28 @@ function M.run(args_list)
     return
   end
   if opts.diff then
-    if opts.diff_format == "html" then
-      local expected_render_text = render.render_text(normalized_expected)
-      local actual_render_text = render.render_text(normalized_actual)
-      local unified = vim.text.diff(expected_render_text, actual_render_text, { result_type = "unified", ctxlen = 3 })
-      local diff_map = build_diff_map(normalized_expected, normalized_actual)
-      local expected_plain = render.render_html_cells(normalized_expected, diff_map.expected, "removed")
-      local actual_plain = render.render_html_cells(normalized_actual, diff_map.actual, "added")
-      local aligned = build_aligned_maps(normalized_expected, normalized_actual)
-      local expected_aligned = render.render_html_aligned(
-        normalized_expected,
-        aligned.expected_rows,
-        aligned.expected_line_kinds,
-        aligned.expected_cells,
-        "removed"
-      )
-      local actual_aligned = render.render_html_aligned(
-        normalized_actual,
-        aligned.actual_rows,
-        aligned.actual_line_kinds,
-        aligned.actual_cells,
-        "added"
-      )
-      local rendered = wrap_html_diff(
-        highlight_unified(unified or ""),
-        expected_plain,
-        actual_plain,
-        expected_aligned,
-        actual_aligned
-      )
-      local ok, write_err = output.write(opts.diff_out, rendered)
-      if not ok then
-        util.err_write(write_err or "failed to write diff")
+    if opts.diff_format == "html" or opts.diff_format == "png" then
+      if opts.diff_format == "png" and opts.diff_out == "-" then
+        util.err_write("--diff-out must be a file path for png")
         vim.cmd("cq")
         return
+      end
+      local default_view = opts.diff_format == "png" and "overlay" or "unified"
+      local rendered = render_html_diff(normalized_expected, normalized_actual, default_view)
+      if opts.diff_format == "html" then
+        local ok, write_err = output.write(opts.diff_out, rendered)
+        if not ok then
+          util.err_write(write_err or "failed to write diff")
+          vim.cmd("cq")
+          return
+        end
+      else
+        local ok, write_err = png.write_png_from_html(rendered, opts.diff_out)
+        if not ok then
+          util.err_write(write_err or "failed to write diff png")
+          vim.cmd("cq")
+          return
+        end
       end
     else
       local expected_out = render_for_diff(normalized_expected, opts.diff_format)

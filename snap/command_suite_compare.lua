@@ -1,6 +1,7 @@
 local case_def = require("snap.case_def")
 local normalize = require("snap.normalize")
 local output = require("snap.output")
+local png = require("snap.png")
 local render = require("snap.render")
 local util = require("snap.util")
 
@@ -15,7 +16,7 @@ local function usage()
     "  --root PATH       Root directory to search (default: .)",
     "  --tag TAG         Filter by tag (repeatable, comma-separated)",
     "  --case ID         Filter by case id (repeatable, comma-separated)",
-    "  --format FMT      Diff formats: text,ansi,html (default: text)",
+    "  --format FMT      Diff formats: text,ansi,html,png (default: text)",
     "  --diff-always     Always generate diffs",
     "  --json            Output JSON summary",
     "  -h, --help        Show this help",
@@ -376,7 +377,13 @@ local function build_diff_map(expected_snapshot, actual_snapshot)
   return { expected = expected, actual = actual }
 end
 
-local function wrap_html_diff(unified_diff, expected_plain, actual_plain, expected_aligned, actual_aligned)
+local function wrap_html_diff(unified_diff, expected_plain, actual_plain, expected_aligned, actual_aligned, default_view)
+  if default_view ~= "side" and default_view ~= "overlay" then
+    default_view = "unified"
+  end
+  local unified_checked = default_view == "unified" and " checked" or ""
+  local side_checked = default_view == "side" and " checked" or ""
+  local overlay_checked = default_view == "overlay" and " checked" or ""
   return table.concat({
     "<!doctype html>",
     "<html>",
@@ -439,9 +446,9 @@ local function wrap_html_diff(unified_diff, expected_plain, actual_plain, expect
     "  </style>",
     "</head>",
     "<body>",
-    "  <input id=\"view-unified\" class=\"toggles\" type=\"radio\" name=\"diff-view\" checked />",
-    "  <input id=\"view-side\" class=\"toggles\" type=\"radio\" name=\"diff-view\" />",
-    "  <input id=\"view-side-diff\" class=\"toggles\" type=\"radio\" name=\"diff-view\" />",
+    "  <input id=\"view-unified\" class=\"toggles\" type=\"radio\" name=\"diff-view\"" .. unified_checked .. " />",
+    "  <input id=\"view-side\" class=\"toggles\" type=\"radio\" name=\"diff-view\"" .. side_checked .. " />",
+    "  <input id=\"view-side-diff\" class=\"toggles\" type=\"radio\" name=\"diff-view\"" .. overlay_checked .. " />",
     "  <div class=\"tabs\">",
     "    <span class=\"label\">view</span>",
     "    <label for=\"view-unified\">unified</label>",
@@ -475,7 +482,7 @@ local function wrap_html_diff(unified_diff, expected_plain, actual_plain, expect
   }, "\n")
 end
 
-local function render_html_diff(expected, actual)
+local function render_html_diff(expected, actual, default_view)
   local expected_render_text = render.render_text(expected)
   local actual_render_text = render.render_text(actual)
   local unified = vim.text.diff(expected_render_text, actual_render_text, { result_type = "unified", ctxlen = 3 })
@@ -502,7 +509,8 @@ local function render_html_diff(expected, actual)
     expected_plain,
     actual_plain,
     expected_aligned,
-    actual_aligned
+    actual_aligned,
+    default_view
   )
 end
 
@@ -523,7 +531,10 @@ local function diff_files(expected, actual, formats)
     results.ansi = diff or ""
   end
   if formats.html then
-    results.html = render_html_diff(expected, actual)
+    results.html = render_html_diff(expected, actual, "unified")
+  end
+  if formats.png then
+    results.png = render_html_diff(expected, actual, "overlay")
   end
   return results
 end
@@ -557,6 +568,14 @@ local function write_diff_outputs(c, outputs)
       return nil, write_err or "failed to write diff.html"
     end
     diff_paths.html = path
+  end
+  if outputs.png ~= nil then
+    local path = vim.fs.joinpath(c.diff_dir, "diff.png")
+    local ok_write, write_err = png.write_png_from_html(outputs.png, path)
+    if not ok_write then
+      return nil, write_err or "failed to write diff.png"
+    end
+    diff_paths.png = path
   end
   return diff_paths
 end
