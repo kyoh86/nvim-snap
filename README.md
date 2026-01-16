@@ -59,6 +59,63 @@ mise use 'github:kyoh86/nvim-snap[asset_pattern=nvim-snap]'
 - `compare` compare test cases
 - `update-expected` update expected snapshots
 
+### list
+
+List test cases.
+
+```sh
+nvim-snap list --root .
+nvim-snap list --tag ui --tag regression
+nvim-snap list --case basic-regression
+nvim-snap list --json
+```
+
+### new
+
+Create a case scaffold.
+
+```sh
+nvim-snap new --root tests/cases --id basic-regression --kind regression
+nvim-snap new --dir tests/cases/sample --kind golden --name "Sample Golden"
+```
+
+### run
+
+Run cases and write snapshots under `actual/`.
+
+```sh
+nvim-snap run --root tests/cases --format json,html
+nvim-snap run --tag ui
+```
+
+### compare
+
+Compare `expected/` and `actual/`, writing diffs under `diff/` when needed.
+
+```sh
+nvim-snap compare --root tests/cases --format text
+nvim-snap compare --root tests/cases --format html --diff-always
+nvim-snap compare --root tests/cases --format png --diff-always
+```
+
+### update-expected
+
+Update expected snapshots. Regression accepts `actual`, golden runs `golden.lua`.
+
+```sh
+nvim-snap update-expected --root tests/cases
+nvim-snap update-expected --root tests/cases --dry-run
+nvim-snap update-expected --root tests/cases --no-confirm
+```
+
+### ci init
+
+Scaffold a CI workflow.
+
+```sh
+nvim-snap ci init --path .github/workflows/nvim-snap.yml
+```
+
 ## Example
 
 ![diff overlay example](docs/diff-overlay.png)

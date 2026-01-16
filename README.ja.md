@@ -59,6 +59,63 @@ mise use 'github:kyoh86/nvim-snap[asset_pattern=nvim-snap]'
 - `compare` テストケース比較
 - `update-expected` expected更新
 
+### list
+
+テストケースを一覧表示します。
+
+```sh
+nvim-snap list --root .
+nvim-snap list --tag ui --tag regression
+nvim-snap list --case basic-regression
+nvim-snap list --json
+```
+
+### new
+
+テストケースの雛形を作成します。
+
+```sh
+nvim-snap new --root tests/cases --id basic-regression --kind regression
+nvim-snap new --dir tests/cases/sample --kind golden --name "Sample Golden"
+```
+
+### run
+
+テストケースを実行して `actual/` にスナップショットを生成します。
+
+```sh
+nvim-snap run --root tests/cases --format json,html
+nvim-snap run --tag ui
+```
+
+### compare
+
+`expected/` と `actual/` を比較し、差分がある場合は `diff/` に出力します。
+
+```sh
+nvim-snap compare --root tests/cases --format text
+nvim-snap compare --root tests/cases --format html --diff-always
+nvim-snap compare --root tests/cases --format png --diff-always
+```
+
+### update-expected
+
+期待値を更新します。リグレッションは `actual` を採用し、ゴールデンは `golden.lua` を実行します。
+
+```sh
+nvim-snap update-expected --root tests/cases
+nvim-snap update-expected --root tests/cases --dry-run
+nvim-snap update-expected --root tests/cases --no-confirm
+```
+
+### ci init
+
+CI向けワークフロー雛形を作成します。
+
+```sh
+nvim-snap ci init --path .github/workflows/nvim-snap.yml
+```
+
 ## 例
 
 ![diff overlayの例](docs/diff-overlay.png)
