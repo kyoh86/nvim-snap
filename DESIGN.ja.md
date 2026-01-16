@@ -58,19 +58,30 @@ nvim-snapは、NeovimのUIスナップショットに基づくテストを実行
 ### 高レイヤーのコマンド
 
 - `list`: テストケースの一覧を表示する
-  - 入力: テストケース定義
-  - 出力: 一覧（id/tags/scenario/expected）
+  - 入力: テストケース定義（`--root` で探索、既定は `.`）
+  - 出力: 一覧（id/name/kind/tags/path）
+  - 形式: 既定はテキスト、`--json` でJSON出力
+  - 絞り込み: `--tag` / `--case`
 - `run`: テストケースを実行してactualを生成する
-  - 入力: テストケース定義、タグ/ケースIDによる絞り込み
-  - 出力: 各ケースのactualスナップショット
+  - 入力: テストケース定義（`--root` で探索、既定は `.`）、タグ/ケースIDによる絞り込み
+  - 出力: 各ケースの`actual/`配下にスナップショット
+  - 絞り込み: `--tag` / `--case`
 - `compare`: expectedとactualを比較し、結果をサマリ出力する
-  - 入力: テストケース定義、タグ/ケースIDによる絞り込み
-  - 出力: 標準出力のサマリ、ケースごとのHTML差分（必要時）
+  - 入力: テストケース定義（`--root` で探索、既定は `.`）、タグ/ケースIDによる絞り込み
+  - 出力: 標準出力のサマリ、ケースごとの`diff/`配下にHTML差分（必要時）
+  - 絞り込み: `--tag` / `--case`
+  - HTML差分は不一致時のみ生成し、`--diff-always` で常時生成できる
+  - サマリ項目: id/name/kind/tags/result/diff_path/error_reason
+  - resultは `no_diff` / `diff` / `error`
 - `accept`: expectedを更新する
-  - 入力: テストケース定義、タグ/ケースIDによる絞り込み
-  - 出力: expectedの更新
+  - 入力: テストケース定義（`--root` で探索、既定は `.`）、タグ/ケースIDによる絞り込み
+  - 出力: `expected/`配下の更新
   - リグレッションはactualをexpectedとして採用
   - ゴールデンテストはゴールデンシナリオを実行してexpectedを生成
+  - 絞り込み: `--tag` / `--case`
+  - `--dry-run` で更新内容を表示のみ
+  - 規定は対話確認
+  - `--no-confirm`（または `--yes`）で対話を省略して実行
 
 ### テストケース定義
 
@@ -89,5 +100,6 @@ nvim-snapは、NeovimのUIスナップショットに基づくテストを実行
 ケース定義（`case.json`）:
 - `version` 定義のバージョン
 - `id` 一意な識別子
+- `name` 表示名（任意、既定はディレクトリ名）
 - `kind` `regression` または `golden`
 - `tags` タグ配列（任意）
