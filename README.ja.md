@@ -43,3 +43,5 @@ nvim-snapは、NeovimのUIスナップショットに基づくテストを実行
 
 - シナリオの中でプラグインが必要な場合は、 `vim.pack.add()` を使うのがおすすめです。
 - `vim.pack.add()` を使う場合は `--data-home` / `--config-home` を明示的に設定してください。
+- PNG出力には `google-chrome`/`chromium`/`msedge`/`wkhtmltoimage` のいずれかが必要です。
+  - Ubuntuでは `apt install chromium` がsnap版になり動かない場合があるため、`google-chrome` のdeb版や `wkhtmltoimage` を利用してください。
