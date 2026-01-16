@@ -1,3 +1,9 @@
 .nvim-data/
 .nvim-config/
 .out/
+actual/
+diff/
+**/.nvim-data/
+**/.nvim-config/
+**/actual/
+**/diff/

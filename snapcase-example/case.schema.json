@@ -1,0 +1,43 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "case.schema.json",
+  "title": "nvim-snap case definition",
+  "type": "object",
+  "properties": {
+    "version": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "case.jsonのバージョン"
+    },
+    "id": {
+      "type": "string",
+      "minLength": 1,
+      "description": "ケースの識別子"
+    },
+    "name": {
+      "type": "string",
+      "description": "表示名（省略時はディレクトリ名）"
+    },
+    "kind": {
+      "type": "string",
+      "enum": [
+        "regression",
+        "golden"
+      ],
+      "description": "テスト種別"
+    },
+    "tags": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "タグの配列"
+    }
+  },
+  "required": [
+    "version",
+    "id",
+    "kind"
+  ],
+  "additionalProperties": false
+}

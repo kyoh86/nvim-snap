@@ -1,0 +1,11 @@
+{
+  "version": 1,
+  "id": "quickfix-golden",
+  "name": "Quickfix Golden",
+  "kind": "golden",
+  "tags": [
+    "quickfix",
+    "golden",
+    "example"
+  ]
+}

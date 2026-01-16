@@ -1,0 +1,11 @@
+{
+  "version": 1,
+  "id": "layout-splits",
+  "name": "Layout Splits",
+  "kind": "regression",
+  "tags": [
+    "layout",
+    "regression",
+    "example"
+  ]
+}

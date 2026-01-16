@@ -1,0 +1,11 @@
+{
+  "version": 1,
+  "id": "floating-golden",
+  "name": "Floating Window Golden",
+  "kind": "golden",
+  "tags": [
+    "float",
+    "golden",
+    "example"
+  ]
+}
