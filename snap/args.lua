@@ -6,13 +6,13 @@ function M.usage()
     "  nvim -l snap.lua capture [options]",
     "",
     "options:",
-    "  --case PATH        Run case directory (snapcase.json + scenario.lua)",
-    "  --json-out PATH    JSON output path ('-' for stdout, 'none' to skip)",
-    "  --ansi-out PATH    Write ANSI preview ('-' for stdout)",
-    "  --html-out PATH    Write HTML preview ('-' for stdout)",
+    "  --scenario PATH    Lua scenario file to run (repeatable)",
+    "  --out-dir PATH     Output directory for snapshot files",
+    "  --json             Write snapshot.json (default)",
+    "  --ansi             Write snapshot.ansi",
+    "  --html             Write snapshot.html",
     "  --width N          UI columns (default: 80)",
     "  --height N         UI lines (default: 24)",
-    "  --script PATH      Execute Lua scenario file before snapshot (repeatable)",
     "  --data-home PATH   XDG_DATA_HOME for embedded nvim",
     "  --config-home PATH XDG_CONFIG_HOME for embedded nvim",
     "  --wait MS          Wait for redraw flush (default: 200)",
@@ -25,94 +25,57 @@ end
 
 function M.parse(args)
   local opts = {
-    scripts = {},
+    scenarios = {},
+    out_dir = nil,
+    json = false,
+    ansi = false,
+    html = false,
     wait = 200,
-    json_out = "-",
     width = 80,
     height = 24,
     nvim = "nvim",
     rpc_timeout = 2000,
-    ansi_out = nil,
-    html_out = nil,
     data_home = nil,
     config_home = nil,
-    case = nil,
+    multigrid = false,
     _flags = {
-      json_out = false,
-      ansi_out = false,
-      html_out = false,
-      script = false,
-      case = false,
+      output = false,
     },
   }
   local i = 1
   while i <= #args do
     local arg = args[i]
-    if arg == "--case" then
+    if arg == "--scenario" then
       local value = args[i + 1]
       if value == nil then
         opts.invalid = opts.invalid or {}
-        table.insert(opts.invalid, "--case requires a value")
+        table.insert(opts.invalid, "--scenario requires a value")
       else
-        opts.case = value
-        opts._flags.case = true
+        table.insert(opts.scenarios, value)
         i = i + 1
       end
-    elseif vim.startswith(arg, "--case=") then
-      opts.case = string.sub(arg, 8)
-      opts._flags.case = true
-    elseif arg == "--out" then
+    elseif vim.startswith(arg, "--scenario=") then
+      table.insert(opts.scenarios, string.sub(arg, 12))
+    elseif arg == "--out-dir" then
       local value = args[i + 1]
       if value == nil then
         opts.invalid = opts.invalid or {}
-        table.insert(opts.invalid, "--out requires a value")
+        table.insert(opts.invalid, "--out-dir requires a value")
       else
-        opts.json_out = value
-        opts._flags.json_out = true
+        opts.out_dir = value
         i = i + 1
       end
-    elseif vim.startswith(arg, "--out=") then
-      opts.json_out = string.sub(arg, 7)
-      opts._flags.json_out = true
-    elseif arg == "--json-out" then
-      local value = args[i + 1]
-      if value == nil then
-        opts.invalid = opts.invalid or {}
-        table.insert(opts.invalid, "--json-out requires a value")
-      else
-        opts.json_out = value
-        opts._flags.json_out = true
-        i = i + 1
-      end
-    elseif vim.startswith(arg, "--json-out=") then
-      opts.json_out = string.sub(arg, 12)
-      opts._flags.json_out = true
-    elseif arg == "--ansi-out" then
-      local value = args[i + 1]
-      if value == nil then
-        opts.invalid = opts.invalid or {}
-        table.insert(opts.invalid, "--ansi-out requires a value")
-      else
-        opts.ansi_out = value
-        opts._flags.ansi_out = true
-        i = i + 1
-      end
-    elseif vim.startswith(arg, "--ansi-out=") then
-      opts.ansi_out = string.sub(arg, 12)
-      opts._flags.ansi_out = true
-    elseif arg == "--html-out" then
-      local value = args[i + 1]
-      if value == nil then
-        opts.invalid = opts.invalid or {}
-        table.insert(opts.invalid, "--html-out requires a value")
-      else
-        opts.html_out = value
-        opts._flags.html_out = true
-        i = i + 1
-      end
-    elseif vim.startswith(arg, "--html-out=") then
-      opts.html_out = string.sub(arg, 12)
-      opts._flags.html_out = true
+    elseif vim.startswith(arg, "--out-dir=") then
+      opts.out_dir = string.sub(arg, 11)
+    elseif arg == "--json" then
+      opts.json = true
+      opts._flags.output = true
+    elseif arg == "--ansi" then
+      opts.ansi = true
+      opts._flags.output = true
+    elseif arg == "--html" then
+      opts.html = true
+      opts._flags.output = true
     elseif arg == "--width" then
       local value = args[i + 1]
       if value == nil then
@@ -135,19 +98,6 @@ function M.parse(args)
       end
     elseif vim.startswith(arg, "--height=") then
       opts.height = tonumber(string.sub(arg, 10)) or opts.height
-    elseif arg == "--script" then
-      local value = args[i + 1]
-      if value == nil then
-        opts.invalid = opts.invalid or {}
-        table.insert(opts.invalid, "--script requires a value")
-      else
-        table.insert(opts.scripts, value)
-        opts._flags.script = true
-        i = i + 1
-      end
-    elseif vim.startswith(arg, "--script=") then
-      table.insert(opts.scripts, string.sub(arg, 10))
-      opts._flags.script = true
     elseif arg == "--data-home" then
       local value = args[i + 1]
       if value == nil then
@@ -212,6 +162,9 @@ function M.parse(args)
       table.insert(opts.unknown, arg)
     end
     i = i + 1
+  end
+  if not opts._flags.output then
+    opts.json = true
   end
   return opts
 end

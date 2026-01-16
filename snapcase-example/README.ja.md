@@ -2,27 +2,25 @@
 
 このREADMEはサンプルケースの最小構成と実行方法に限定した説明です。
 
-`snap.lua` をケースディレクトリとして実行するための最小構成です。
+`snap.lua` を使ったスナップショット生成の最小構成です。
 
 ## 使い方
 
 ```sh
 nvim --headless -u NONE -i NONE -l snap.lua \
-  capture --case snapcase-example
+  capture --scenario snapcase-example/scenario.lua \
+  --out-dir snapcase-example/.out \
+  --data-home snapcase-example/.nvim-data \
+  --config-home snapcase-example/.nvim-config \
+  --json --ansi --html
 ```
 
 ## 構成
 
-- `snapcase.json` ケース定義
+- `snapcase.json` 高レイヤー用のケース定義（予定）
 - `snapcase.schema.json` JSON Schema
 - `scenario.lua` 操作シナリオ
 
-## snapcase.json の主なキー
+## 補足
 
-- `scenario` シナリオのパス（デフォルト: `scenario.lua`）
-- `width` / `height` UIサイズ
-- `data_home` / `config_home` XDGパス
-- `out_dir` 出力先ディレクトリ
-- `outputs` 出力ファイル名や無効化設定
-
-`outputs` は `"none"` または `false` で無効化できます。
+`snapcase.json` は高レイヤーのcase管理向けに予約しているため、現状の `capture` は参照しません。

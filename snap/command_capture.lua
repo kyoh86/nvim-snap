@@ -1,5 +1,4 @@
 local args = require("snap.args")
-local case = require("snap.case")
 local output = require("snap.output")
 local render = require("snap.render")
 local snapshot = require("snap.snapshot")
@@ -7,40 +6,17 @@ local util = require("snap.util")
 
 local M = {}
 
+local function normalize_out_dir(path)
+  if not path then
+    return nil
+  end
+  return vim.fs.normalize(vim.fn.fnamemodify(path, ":p"))
+end
+
 function M.run(args_list)
   local opts = args.parse(args_list)
   if opts.help then
     print(args.usage())
-    return
-  end
-  if opts.case then
-    if opts._flags.json_out or opts._flags.ansi_out or opts._flags.html_out or opts._flags.script then
-      util.err_write("--case cannot be combined with output/script options")
-      util.err_write(args.usage())
-      vim.cmd("cq")
-      return
-    end
-    local loaded, err = case.load(opts)
-    if not loaded then
-      util.err_write(err or "failed to load case")
-      vim.cmd("cq")
-      return
-    end
-    opts = loaded
-  end
-  if opts.json_out == "none" then
-    opts.json_out = nil
-  end
-  local stdout_count = 0
-  for _, out in ipairs({ opts.json_out, opts.ansi_out, opts.html_out }) do
-    if out == "-" then
-      stdout_count = stdout_count + 1
-    end
-  end
-  if stdout_count > 1 then
-    util.err_write("stdout is shared by multiple outputs; choose one")
-    util.err_write(args.usage())
-    vim.cmd("cq")
     return
   end
   if opts.invalid then
@@ -58,6 +34,26 @@ function M.run(args_list)
     vim.cmd("cq")
     return
   end
+  if #opts.scenarios == 0 then
+    util.err_write("--scenario is required")
+    util.err_write(args.usage())
+    vim.cmd("cq")
+    return
+  end
+  if not opts.out_dir or opts.out_dir == "" then
+    util.err_write("--out-dir is required")
+    util.err_write(args.usage())
+    vim.cmd("cq")
+    return
+  end
+
+  opts.scripts = opts.scenarios
+  local out_dir = normalize_out_dir(opts.out_dir)
+  if not out_dir then
+    util.err_write("failed to resolve --out-dir")
+    vim.cmd("cq")
+    return
+  end
 
   local result, err = snapshot.collect(opts)
   if not result then
@@ -66,25 +62,25 @@ function M.run(args_list)
     return
   end
 
-  if opts.json_out then
+  if opts.json then
     local encoded = vim.json.encode(result)
-    local ok, write_err = output.write(opts.json_out, encoded)
+    local ok, write_err = output.write(vim.fs.joinpath(out_dir, "snapshot.json"), encoded)
     if not ok then
-      util.err_write(write_err or "failed to write output")
+      util.err_write(write_err or "failed to write json output")
       vim.cmd("cq")
     end
   end
-  if opts.ansi_out then
+  if opts.ansi then
     local ansi = render.render_ansi(result)
-    local ok_ansi, err_ansi = output.write(opts.ansi_out, ansi)
+    local ok_ansi, err_ansi = output.write(vim.fs.joinpath(out_dir, "snapshot.ansi"), ansi)
     if not ok_ansi then
       util.err_write(err_ansi or "failed to write ansi output")
       vim.cmd("cq")
     end
   end
-  if opts.html_out then
+  if opts.html then
     local html = render.render_html(result)
-    local ok_html, err_html = output.write(opts.html_out, html)
+    local ok_html, err_html = output.write(vim.fs.joinpath(out_dir, "snapshot.html"), html)
     if not ok_html then
       util.err_write(err_html or "failed to write html output")
       vim.cmd("cq")

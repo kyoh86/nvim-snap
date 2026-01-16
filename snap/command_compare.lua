@@ -1,8 +1,5 @@
-local args = require("snap.args")
-local case = require("snap.case")
 local normalize = require("snap.normalize")
 local output = require("snap.output")
-local snapshot = require("snap.snapshot")
 local util = require("snap.util")
 
 local M = {}
@@ -13,7 +10,6 @@ local function usage()
     "  nvim -l snap.lua compare [options]",
     "",
     "options:",
-    "  --case PATH        Capture snapshot from case directory",
     "  --actual PATH      Snapshot JSON path ('-' for stdin)",
     "  --expected PATH    Expected JSON path",
     "  --update           Overwrite expected with actual",
@@ -27,7 +23,6 @@ local function parse_args(args)
   local opts = {
     actual = nil,
     expected = nil,
-    case = nil,
     update = false,
     pretty = false,
     diff = false,
@@ -35,18 +30,7 @@ local function parse_args(args)
   local i = 1
   while i <= #args do
     local arg = args[i]
-    if arg == "--case" then
-      local value = args[i + 1]
-      if value == nil then
-        opts.invalid = opts.invalid or {}
-        table.insert(opts.invalid, "--case requires a value")
-      else
-        opts.case = value
-        i = i + 1
-      end
-    elseif vim.startswith(arg, "--case=") then
-      opts.case = string.sub(arg, 8)
-    elseif arg == "--actual" then
+    if arg == "--actual" then
       local value = args[i + 1]
       if value == nil then
         opts.invalid = opts.invalid or {}
@@ -135,6 +119,17 @@ local function encode_json(value, pretty)
   return vim.json.encode(value)
 end
 
+local function maybe_diff(expected_text, actual_text)
+  if not vim.diff then
+    return nil
+  end
+  local ok, diff = pcall(vim.diff, expected_text, actual_text, { result_type = "unified", ctxlen = 3 })
+  if not ok then
+    return nil
+  end
+  return diff
+end
+
 function M.run(args_list)
   local opts = parse_args(args_list)
   if opts.help then
@@ -156,67 +151,34 @@ function M.run(args_list)
     vim.cmd("cq")
     return
   end
+  if not opts.actual or opts.actual == "" then
+    util.err_write("--actual is required")
+    util.err_write(usage())
+    vim.cmd("cq")
+    return
+  end
   if not opts.expected or opts.expected == "" then
     util.err_write("--expected is required")
     util.err_write(usage())
     vim.cmd("cq")
     return
   end
-  if opts.case and opts.actual then
-    util.err_write("--case and --actual cannot be combined")
-    util.err_write(usage())
+
+  local actual_text, actual_err = read_input(opts.actual)
+  if not actual_text then
+    util.err_write(actual_err or "failed to read actual")
     vim.cmd("cq")
     return
   end
-  if not opts.case and not opts.actual then
-    util.err_write("either --case or --actual is required")
-    util.err_write(usage())
+  local actual_snapshot, actual_decode_err = decode_json(actual_text)
+  if not actual_snapshot then
+    util.err_write(actual_decode_err or "failed to parse actual")
     vim.cmd("cq")
     return
   end
 
-  local actual_snapshot
-  if opts.case then
-    local base = args.parse({})
-    base.case = opts.case
-    base._flags.case = true
-    local loaded, err = case.load(base)
-    if not loaded then
-      util.err_write(err or "failed to load case")
-      vim.cmd("cq")
-      return
-    end
-    local result, snap_err = snapshot.collect(loaded)
-    if not result then
-      util.err_write(snap_err or "snapshot failed")
-      vim.cmd("cq")
-      return
-    end
-    actual_snapshot = result
-  else
-    local text, err = read_input(opts.actual)
-    if not text then
-      util.err_write(err or "failed to read actual")
-      vim.cmd("cq")
-      return
-    end
-    local decoded, decode_err = decode_json(text)
-    if not decoded then
-      util.err_write(decode_err or "failed to parse actual")
-      vim.cmd("cq")
-      return
-    end
-    actual_snapshot = decoded
-  end
-
+  local expected_text, expected_err = read_input(opts.expected)
   local expected_snapshot = nil
-  local expected_text = nil
-  local expected_text_err = nil
-  if not opts.update then
-    expected_text, expected_text_err = read_input(opts.expected)
-  else
-    expected_text, expected_text_err = read_input(opts.expected)
-  end
   if expected_text then
     local decoded, decode_err = decode_json(expected_text)
     if not decoded then
@@ -226,7 +188,7 @@ function M.run(args_list)
     end
     expected_snapshot = decoded
   elseif not opts.update then
-    util.err_write(expected_text_err or "failed to read expected")
+    util.err_write(expected_err or "failed to read expected")
     vim.cmd("cq")
     return
   end
@@ -251,10 +213,10 @@ function M.run(args_list)
     return
   end
 
-  if opts.diff then
+  if opts.diff and normalized_expected then
     local expected_out = encode_json(normalized_expected, true)
     local actual_out = encode_json(normalized_actual, true)
-    local diff = vim.textdiff(expected_out, actual_out, { result_type = "unified", ctxlen = 3 })
+    local diff = maybe_diff(expected_out, actual_out)
     if diff then
       io.write(diff)
     end

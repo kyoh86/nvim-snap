@@ -5,15 +5,20 @@ NeovimのUI描画スナップショットを取得するためのPoCです。
 ## コンセプト
 
 - NeovimのUI描画をスナップショット化してJSON/ANSI/HTMLで出力する
-- caseというディレクトリの単位でスナップショット取得までのシナリオ、設定、出力を集約する
-- 低レイヤー（スナップショット生成、比較・正規化）と高レイヤーのコマンドを分離する
+- スナップショット生成/比較/正規化は低レイヤーのコマンドとして扱う
+- case単位の管理は高レイヤーで扱う（今後の検討対象）
 
 ## 使い方
 
-snapcase-exampleというcaseを同梱しているので、そのまま呼び出して実際の動作を確認できます。
+`snapcase-example/scenario.lua` を同梱しているので、そのまま呼び出して実際の動作を確認できます。
 
 ```sh
-nvim --headless -u NONE -i NONE -l snap.lua capture --case snapcase-example
+nvim --headless -u NONE -i NONE -l snap.lua capture \
+  --scenario snapcase-example/scenario.lua \
+  --out-dir snapcase-example/.out \
+  --data-home snapcase-example/.nvim-data \
+  --config-home snapcase-example/.nvim-config \
+  --json --ansi --html
 ```
 
 生成物は `snapcase-example/.out/` に出力されます。
@@ -26,20 +31,20 @@ nvim --headless -u NONE -i NONE -l snap.lua capture --case snapcase-example
 
 ## 典型ワークフロー
 
-1. ケースを実行してスナップショットを生成  
-   `nvim --headless -u NONE -i NONE -l snap.lua capture --case snapcase-example`
+1. スナップショットを生成  
+   `nvim --headless -u NONE -i NONE -l snap.lua capture --scenario snapcase-example/scenario.lua --out-dir snapcase-example/.out --data-home snapcase-example/.nvim-data --config-home snapcase-example/.nvim-config --json`
 2. 期待値を作成  
-   `nvim --headless -u NONE -i NONE -l snap.lua compare --case snapcase-example --expected snapcase-example/.expected/snapshot.json --update --pretty`
+   `nvim --headless -u NONE -i NONE -l snap.lua compare --actual snapcase-example/.out/snapshot.json --expected snapcase-example/.expected/snapshot.json --update --pretty`
 3. 比較（CI向け）  
-   `nvim --headless -u NONE -i NONE -l snap.lua compare --case snapcase-example --expected snapcase-example/.expected/snapshot.json --diff`
+   `nvim --headless -u NONE -i NONE -l snap.lua compare --actual snapcase-example/.out/snapshot.json --expected snapcase-example/.expected/snapshot.json --diff`
 
-## ケース構成
+## サンプル構成
 
-- `snapcase-example/snapcase.json` ケース定義
+- `snapcase-example/snapcase.json` 高レイヤー用のケース定義（予定）
 - `snapcase-example/snapcase.schema.json` JSON Schema
 - `snapcase-example/scenario.lua` 操作シナリオ
 
 ## 注意点
 
 - シナリオの中でプラグインが必要な場合は、 `vim.pack.add()` を使うのがおすすめです。
-- `vim.pack.add()` を使う場合は `--case` で `data_home` / `config_home` をcaseディレクトリ内に設定してください。
+- `vim.pack.add()` を使う場合は `--data-home` / `--config-home` を明示的に設定してください。
