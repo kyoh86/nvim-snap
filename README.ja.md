@@ -81,19 +81,6 @@ nvim-snap new --root tests/cases --id basic-regression --kind regression
 nvim-snap new --dir tests/cases/sample --kind golden --name "Sample Golden"
 ```
 
-#### 雛形の進め方
-
-- リグレッション（`scenario.lua`）:
-  - `scenario.lua` に操作手順を書く
-  - `nvim-snap run` で `actual/` を生成
-  - `nvim-snap update-expected` で `expected/` を更新
-  - `nvim-snap compare` で差分確認
-- ゴールデン（`golden.lua`/`target.lua`）:
-  - `golden.lua` に期待表示を作る手順を書く
-  - `target.lua` に実装側の表示を作る手順を書く
-  - `nvim-snap run` で `actual/` を生成
-  - `nvim-snap update-expected` で `expected/` を更新（`golden.lua` を実行）
-  - `nvim-snap compare` で差分確認
 
 ### run
 
@@ -131,17 +118,6 @@ CI向けワークフロー雛形を作成します。
 ```sh
 nvim-snap ci init --path .github/workflows/nvim-snap.yml
 ```
-
-## 典型ワークフロー
-
-1. スナップショットを生成  
-   `nvim-snap run --root snapcase-example --format json`
-2. 比較（CI向け）  
-   `nvim-snap compare --root snapcase-example --format text`
-3. 人間向けdiff（HTML）  
-   `nvim-snap compare --root snapcase-example --format html`
-4. 期待値を更新  
-   `nvim-snap update-expected --root snapcase-example`
 
 ## 実用時の流れ
 

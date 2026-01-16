@@ -81,19 +81,6 @@ nvim-snap new --root tests/cases --id basic-regression --kind regression
 nvim-snap new --dir tests/cases/sample --kind golden --name "Sample Golden"
 ```
 
-#### What to do next
-
-- Regression (`scenario.lua`):
-  - Write the steps in `scenario.lua`
-  - Run `nvim-snap run` to generate `actual/`
-  - Run `nvim-snap update-expected` to update `expected/`
-  - Use `nvim-snap compare` to confirm diffs
-- Golden (`golden.lua`/`target.lua`):
-  - Write the expected UI steps in `golden.lua`
-  - Write the implementation steps in `target.lua`
-  - Run `nvim-snap run` to generate `actual/`
-  - Run `nvim-snap update-expected` to update `expected/` (runs `golden.lua`)
-  - Use `nvim-snap compare` to confirm diffs
 
 ### run
 
@@ -131,17 +118,6 @@ Scaffold a CI workflow.
 ```sh
 nvim-snap ci init --path .github/workflows/nvim-snap.yml
 ```
-
-## Typical Workflow
-
-1. Generate snapshots
-   `nvim-snap run --root snapcase-example --format json`
-2. Compare (CI)
-   `nvim-snap compare --root snapcase-example --format text`
-3. Human-friendly diff (HTML)
-   `nvim-snap compare --root snapcase-example --format html`
-4. Update expected
-   `nvim-snap update-expected --root snapcase-example`
 
 ## Practical Flow
 
