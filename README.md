@@ -15,6 +15,7 @@ Test cases manage scenarios and expected snapshots, and can be executed in batch
 
 - `list` list test cases
 - `new` scaffold a test case
+- `ci init` scaffold a CI workflow
 - `run` run test cases (generate snapshots)
 - `compare` compare test cases
 - `update-expected` update expected snapshots
