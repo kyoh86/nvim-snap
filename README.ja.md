@@ -143,6 +143,20 @@ nvim-snap ci init --path .github/workflows/nvim-snap.yml
 4. 期待値を更新  
    `nvim-snap update-expected --root snapcase-example`
 
+## 実用時の流れ
+
+1. ケースを作る  
+   `nvim-snap new --root tests/cases --id my-case --kind regression`
+2. シナリオを書く  
+   - リグレッションは `scenario.lua`  
+   - ゴールデンは `golden.lua` / `target.lua`
+3. actualを生成  
+   `nvim-snap run --root tests/cases`
+4. expectedを更新  
+   `nvim-snap update-expected --root tests/cases`
+5. 差分を確認  
+   `nvim-snap compare --root tests/cases --format html`
+
 ## サンプル構成
 
 - `snapcase-example/case.json` 高レイヤー用のケース定義

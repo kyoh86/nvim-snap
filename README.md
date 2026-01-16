@@ -143,6 +143,20 @@ nvim-snap ci init --path .github/workflows/nvim-snap.yml
 4. Update expected
    `nvim-snap update-expected --root snapcase-example`
 
+## Practical Flow
+
+1. Create a case
+   `nvim-snap new --root tests/cases --id my-case --kind regression`
+2. Write scenarios
+   - Regression: `scenario.lua`
+   - Golden: `golden.lua` / `target.lua`
+3. Generate actual
+   `nvim-snap run --root tests/cases`
+4. Update expected
+   `nvim-snap update-expected --root tests/cases`
+5. Review diffs
+   `nvim-snap compare --root tests/cases --format html`
+
 ## Sample Layout
 
 - `snapcase-example/case.json` case definition for high-level usage
