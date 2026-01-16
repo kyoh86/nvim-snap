@@ -81,6 +81,20 @@ nvim-snap new --root tests/cases --id basic-regression --kind regression
 nvim-snap new --dir tests/cases/sample --kind golden --name "Sample Golden"
 ```
 
+#### 雛形の進め方
+
+- リグレッション（`scenario.lua`）:
+  - `scenario.lua` に操作手順を書く
+  - `nvim-snap run` で `actual/` を生成
+  - `nvim-snap update-expected` で `expected/` を更新
+  - `nvim-snap compare` で差分確認
+- ゴールデン（`golden.lua`/`target.lua`）:
+  - `golden.lua` に期待表示を作る手順を書く
+  - `target.lua` に実装側の表示を作る手順を書く
+  - `nvim-snap run` で `actual/` を生成
+  - `nvim-snap update-expected` で `expected/` を更新（`golden.lua` を実行）
+  - `nvim-snap compare` で差分確認
+
 ### run
 
 テストケースを実行して `actual/` にスナップショットを生成します。
