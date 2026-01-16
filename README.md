@@ -133,6 +133,11 @@ nvim-snap ci init --path .github/workflows/nvim-snap.yml
 5. Review diffs
    `nvim-snap compare --root tests/cases --format html`
 
+## Test Types
+
+- Regression: verify the same scenario matches the stored expected snapshot
+- Golden: compare the expected (golden) output with the implementation result (target)
+
 ## Sample Layout
 
 - `snapcase-example/case.json` case definition for high-level usage

@@ -133,6 +133,11 @@ nvim-snap ci init --path .github/workflows/nvim-snap.yml
 5. 差分を確認  
    `nvim-snap compare --root tests/cases --format html`
 
+## テストの種類
+
+- リグレッション: 同一シナリオの結果が過去の期待値と一致するか確認する
+- ゴールデン: 期待表示（golden）と実装結果（target）の一致を確認する
+
 ## サンプル構成
 
 - `snapcase-example/case.json` 高レイヤー用のケース定義
