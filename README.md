@@ -139,16 +139,30 @@ nvim-snap init --path .github/workflows/nvim-snap.yml
 
 ## Practical Flow
 
-1. Create a case
+### Regression flow
+
+1. Create a regression case
    `nvim-snap new --name my-case --kind regression`
-2. Write scenarios
-   - Regression: `scenario.lua`
-   - Golden: `golden.lua` / `target.lua`
-3. Generate actual
+2. Write the scenario
+   `scenario.lua`
+3. Run actual
    `nvim-snap run`
-4. Update expected
-   - Regression: `nvim-snap accept`
-   - Golden: `nvim-snap golden`
+4. Review diffs
+   `nvim-snap compare --format html`
+5. Decide
+   - Fix the scenario/plugin and re-run
+   - Or accept the new output: `nvim-snap accept`
+
+### Golden flow
+
+1. Create a golden case
+   `nvim-snap new --name my-case --kind golden`
+2. Write scenarios
+   `golden.lua` / `target.lua`
+3. Generate expected
+   `nvim-snap golden`
+4. Run actual
+   `nvim-snap run`
 5. Review diffs
    `nvim-snap compare --format html`
 

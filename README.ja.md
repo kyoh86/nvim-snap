@@ -139,16 +139,30 @@ nvim-snap init --path .github/workflows/nvim-snap.yml
 
 ## 実用時の流れ
 
-1. ケースを作る  
+### リグレッションの流れ
+
+1. リグレッションケースを作る  
    `nvim-snap new --name my-case --kind regression`
 2. シナリオを書く  
-   - リグレッションは `scenario.lua`  
-   - ゴールデンは `golden.lua` / `target.lua`
+   `scenario.lua`
 3. actualを生成  
    `nvim-snap run`
-4. expectedを更新  
-   - リグレッション: `nvim-snap accept`  
-   - ゴールデン: `nvim-snap golden`
+4. 差分を確認  
+   `nvim-snap compare --format html`
+5. 判断  
+   - バグ修正して再実行  
+   - 仕様変更なら受け入れ: `nvim-snap accept`
+
+### ゴールデンの流れ
+
+1. ゴールデンケースを作る  
+   `nvim-snap new --name my-case --kind golden`
+2. シナリオを書く  
+   `golden.lua` / `target.lua`
+3. expectedを生成  
+   `nvim-snap golden`
+4. actualを生成  
+   `nvim-snap run`
 5. 差分を確認  
    `nvim-snap compare --format html`
 
