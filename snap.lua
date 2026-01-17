@@ -27,15 +27,16 @@ local compare = require("snap.command_compare")
 local init = require("snap.command_init")
 local list = require("snap.command_list")
 local new_case = require("snap.command_new")
+local accept = require("snap.command_accept")
+local golden = require("snap.command_golden")
 local run = require("snap.command_run")
 local suite_compare = require("snap.command_suite_compare")
-local update_expected = require("snap.command_update_expected")
 local util = require("snap.util")
 
 local function usage()
   return table.concat({
     "usage:",
-    "  nvim -l snap.lua [command] [options]",
+    "  nvim-snap [command] [options]",
     "",
     "commands:",
     "  list             List test cases (high-level)",
@@ -43,10 +44,11 @@ local function usage()
     "  init             Scaffold CI workflow",
     "  run              Run test cases (high-level)",
     "  compare          Compare test cases (high-level)",
-    "  update-expected  Update expected snapshots (high-level)",
+    "  accept           Accept regression snapshots (high-level)",
+    "  golden           Generate golden snapshots (high-level)",
     "  core             Low-level commands (capture/normalize/compare)",
     "",
-    "run 'nvim -l snap.lua core capture --help' for low-level options",
+    "run 'nvim-snap core capture --help' for low-level options",
   }, "\n")
 end
 
@@ -75,14 +77,17 @@ function M.main(args_list)
   if command == "compare" then
     return suite_compare.run(args)
   end
-  if command == "update-expected" then
-    return update_expected.run(args)
+  if command == "accept" then
+    return accept.run(args)
+  end
+  if command == "golden" then
+    return golden.run(args)
   end
   if command == "core" then
     local core_cmd = args[1]
     if core_cmd == nil or vim.startswith(core_cmd, "-") then
       util.err_write("core command is required")
-      util.err_write("usage: nvim -l snap.lua core [capture|normalize|compare] [options]")
+      util.err_write("usage: nvim-snap core [capture|normalize|compare] [options]")
       vim.cmd("cq")
       return
     end
@@ -97,7 +102,7 @@ function M.main(args_list)
       return compare.run(args)
     end
     util.err_write("unknown core command: " .. core_cmd)
-    util.err_write("usage: nvim -l snap.lua core [capture|normalize|compare] [options]")
+    util.err_write("usage: nvim-snap core [capture|normalize|compare] [options]")
     vim.cmd("cq")
     return
   end

@@ -64,7 +64,8 @@ mise use 'github:kyoh86/nvim-snap[asset_pattern=nvim-snap]'
 - `init` CI向けワークフロー雛形の作成
 - `run` テストケース実行（スナップショット生成）
 - `compare` テストケース比較
-- `update-expected` expected更新
+- `accept` リグレッションのexpected更新
+- `golden` ゴールデンexpected生成
 
 ### list
 
@@ -108,14 +109,24 @@ nvim-snap compare --format html --diff-always
 nvim-snap compare --format png --diff-always
 ```
 
-### update-expected
+### accept
 
-期待値を更新します。リグレッションは `actual` を採用し、ゴールデンは `golden.lua` を実行します。
+リグレッションのexpectedをactualから更新します。
 
 ```sh
-nvim-snap update-expected
-nvim-snap update-expected --dry-run
-nvim-snap update-expected --no-confirm
+nvim-snap accept
+nvim-snap accept --dry-run
+nvim-snap accept --no-confirm
+```
+
+### golden
+
+`golden.lua` を実行してexpectedを生成します。
+
+```sh
+nvim-snap golden
+nvim-snap golden --dry-run
+nvim-snap golden --no-confirm
 ```
 
 ### init
@@ -136,7 +147,8 @@ nvim-snap init --path .github/workflows/nvim-snap.yml
 3. actualを生成  
    `nvim-snap run`
 4. expectedを更新  
-   `nvim-snap update-expected`
+   - リグレッション: `nvim-snap accept`  
+   - ゴールデン: `nvim-snap golden`
 5. 差分を確認  
    `nvim-snap compare --format html`
 

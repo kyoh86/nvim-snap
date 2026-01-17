@@ -147,11 +147,16 @@ CLIでは `snap.lua core <command>` で呼び出す。
       }
       ```
 - 終了コード: 成功=0、差分あり=1、エラーあり=2
-- `update-expected`: expectedを更新する
+- `accept`: リグレッションのexpectedを更新する
   - 入力: テストケース定義（`--root` で探索、既定は `snapcase`）、タグ/ケース名による絞り込み
-  - 出力: `expected/`配下の更新
-  - リグレッションはactualをexpectedとして採用
-  - ゴールデンテストはゴールデンシナリオを実行してexpectedを生成
+  - 出力: `expected/`配下の更新（actualをexpectedとして採用）
+  - 絞り込み: `--tag` / `--case`
+  - `--dry-run` で更新内容を表示のみ
+  - 規定は対話確認
+  - `--no-confirm`（または `--yes`）で対話を省略して実行
+- `golden`: ゴールデンのexpectedを生成する
+  - 入力: テストケース定義（`--root` で探索、既定は `snapcase`）、タグ/ケース名による絞り込み
+  - 出力: `expected/`配下の更新（`golden.lua` を実行して生成）
   - 絞り込み: `--tag` / `--case`
   - `--dry-run` で更新内容を表示のみ
   - 規定は対話確認

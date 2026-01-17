@@ -8,7 +8,7 @@ local M = {}
 local function usage()
   return table.concat({
     "usage:",
-    "  nvim-snap update-expected [options]",
+    "  nvim-snap golden [options]",
     "",
     "options:",
     "  --root PATH       Root directory to search (default: snapcase)",
@@ -102,16 +102,8 @@ local function read_input(path)
 end
 
 local function build_action(c)
-  if c.kind == "regression" then
-    if vim.fn.filereadable(c.actual_path) ~= 1 then
-      return nil, "actual not found: " .. c.actual_path
-    end
-    return {
-      case = c,
-      kind = "copy",
-      src = c.actual_path,
-      dst = c.expected_path,
-    }
+  if c.kind ~= "golden" then
+    return nil, "case kind must be golden"
   end
   if vim.fn.filereadable(c.golden_scenario_path) ~= 1 then
     return nil, "golden scenario not found: " .. c.golden_scenario_path
@@ -153,7 +145,7 @@ local function print_actions(actions)
 end
 
 local function confirm_actions(actions)
-  local message = string.format("Update expected snapshots for %d case(s)?", #actions)
+  local message = string.format("Generate golden snapshots for %d case(s)?", #actions)
   local choice = vim.fn.confirm(message, "&Yes\n&No", 2)
   return choice == 1
 end
@@ -253,10 +245,10 @@ function M.run(args_list)
   for _, action in ipairs(actions) do
     local ok, err = perform_action(action)
     if not ok then
-      util.err_write(action.case.name .. ": " .. (err or "failed to update expected"))
+      util.err_write(action.case.name .. ": " .. (err or "failed to generate expected"))
       failed = true
     else
-      print(action.case.name .. "\tupdated")
+      print(action.case.name .. "\tgenerated")
     end
   end
 

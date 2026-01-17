@@ -64,7 +64,8 @@ Case names come from the directory name, and `snapcase.json` holds the case meta
 - `init` scaffold a CI workflow
 - `run` run test cases (generate snapshots)
 - `compare` compare test cases
-- `update-expected` update expected snapshots
+- `accept` accept regression snapshots
+- `golden` generate golden snapshots
 
 ### list
 
@@ -108,14 +109,24 @@ nvim-snap compare --format html --diff-always
 nvim-snap compare --format png --diff-always
 ```
 
-### update-expected
+### accept
 
-Update expected snapshots. Regression accepts `actual`, golden runs `golden.lua`.
+Accept regression snapshots from `actual/`.
 
 ```sh
-nvim-snap update-expected
-nvim-snap update-expected --dry-run
-nvim-snap update-expected --no-confirm
+nvim-snap accept
+nvim-snap accept --dry-run
+nvim-snap accept --no-confirm
+```
+
+### golden
+
+Generate golden snapshots by running `golden.lua`.
+
+```sh
+nvim-snap golden
+nvim-snap golden --dry-run
+nvim-snap golden --no-confirm
 ```
 
 ### init
@@ -136,7 +147,8 @@ nvim-snap init --path .github/workflows/nvim-snap.yml
 3. Generate actual
    `nvim-snap run`
 4. Update expected
-   `nvim-snap update-expected`
+   - Regression: `nvim-snap accept`
+   - Golden: `nvim-snap golden`
 5. Review diffs
    `nvim-snap compare --format html`
 
