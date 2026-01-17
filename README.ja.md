@@ -59,7 +59,7 @@ mise use 'github:kyoh86/nvim-snap[asset_pattern=nvim-snap]'
 
 - `list` テストケース一覧
 - `new` テストケース雛形の作成
-- `ci init` CI向けワークフロー雛形の作成
+- `init` CI向けワークフロー雛形の作成
 - `run` テストケース実行（スナップショット生成）
 - `compare` テストケース比較
 - `update-expected` expected更新
@@ -116,12 +116,12 @@ nvim-snap update-expected --dry-run
 nvim-snap update-expected --no-confirm
 ```
 
-### ci init
+### init
 
 CI向けワークフロー雛形を作成します。
 
 ```sh
-nvim-snap ci init --path .github/workflows/nvim-snap.yml
+nvim-snap init --path .github/workflows/nvim-snap.yml
 ```
 
 ## 実用時の流れ

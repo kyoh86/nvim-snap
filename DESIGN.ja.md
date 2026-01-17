@@ -91,7 +91,7 @@ CLIでは `snap.lua core <command>` で呼び出す。
   - 入力: `--root`（既定は `snapcase`）、`--name`（省略時は自動生成）、`--title`、`--kind`、`--tag`
   - 出力: ケースディレクトリ配下の`case.json`とシナリオ雛形、`expected/actual/diff`の作成
   - `--force` で既存ファイルを上書きできる
-- `ci init`: GitHub Actions向けのワークフロー雛形を作成する
+- `init`: GitHub Actions向けのワークフロー雛形を作成する
   - 入力: `--path`（既定は `.github/workflows/nvim-snap.yml`）、`--root`（既定は `snapcase`）、`--format`
   - 出力: ワークフローYAML
   - `--force` で既存ファイルを上書きできる

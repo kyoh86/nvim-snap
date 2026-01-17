@@ -59,7 +59,7 @@ The examples below assume cases are under `snapcase/<case-name>/case.json`.
 
 - `list` list test cases
 - `new` scaffold a test case
-- `ci init` scaffold a CI workflow
+- `init` scaffold a CI workflow
 - `run` run test cases (generate snapshots)
 - `compare` compare test cases
 - `update-expected` update expected snapshots
@@ -116,12 +116,12 @@ nvim-snap update-expected --dry-run
 nvim-snap update-expected --no-confirm
 ```
 
-### ci init
+### init
 
 Scaffold a CI workflow.
 
 ```sh
-nvim-snap ci init --path .github/workflows/nvim-snap.yml
+nvim-snap init --path .github/workflows/nvim-snap.yml
 ```
 
 ## Practical Flow

@@ -5,7 +5,7 @@ local M = {}
 local function usage()
   return table.concat({
     "usage:",
-    "  nvim -l snap.lua ci init [options]",
+    "  nvim -l snap.lua init [options]",
     "",
     "options:",
     "  --path PATH      Output workflow path (default: .github/workflows/nvim-snap.yml)",
@@ -139,24 +139,7 @@ end
 
 ---@param args_list string[]
 function M.run(args_list)
-  local args = vim.deepcopy(args_list or {})
-  local sub = args[1]
-  if sub == nil or vim.startswith(sub, "-") then
-    util.err_write("ci command is required")
-    util.err_write(usage())
-    vim.cmd("cq")
-    return
-  end
-  table.remove(args, 1)
-
-  if sub ~= "init" then
-    util.err_write("unknown ci command: " .. sub)
-    util.err_write(usage())
-    vim.cmd("cq")
-    return
-  end
-
-  local opts = parse_args(args)
+  local opts = parse_args(args_list or {})
   if opts.help then
     print(usage())
     return

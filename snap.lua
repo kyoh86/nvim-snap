@@ -24,7 +24,7 @@ add_package_path()
 local capture = require("snap.command_capture")
 local normalize = require("snap.command_normalize")
 local compare = require("snap.command_compare")
-local ci = require("snap.command_ci")
+local init = require("snap.command_init")
 local list = require("snap.command_list")
 local new_case = require("snap.command_new")
 local run = require("snap.command_run")
@@ -40,7 +40,7 @@ local function usage()
     "commands:",
     "  list             List test cases (high-level)",
     "  new              Create a new test case (high-level)",
-    "  ci               CI helpers (init)",
+    "  init             Scaffold CI workflow",
     "  run              Run test cases (high-level)",
     "  compare          Compare test cases (high-level)",
     "  update-expected  Update expected snapshots (high-level)",
@@ -66,8 +66,8 @@ function M.main(args_list)
   if command == "new" then
     return new_case.run(args)
   end
-  if command == "ci" then
-    return ci.run(args)
+  if command == "init" then
+    return init.run(args)
   end
   if command == "run" then
     return run.run(args)
