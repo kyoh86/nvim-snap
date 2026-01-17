@@ -89,6 +89,10 @@ local function run_wkhtmltoimage(cmd, html_path, out_path, width)
   return true
 end
 
+---@param html string
+---@param out_path string
+---@return boolean|nil
+---@return string|nil
 function M.write_png_from_html(html, out_path)
   local tool = find_tool()
   if not tool then

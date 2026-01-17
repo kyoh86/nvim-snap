@@ -134,6 +134,8 @@ local function seed_random()
   math.random()
 end
 
+---@param length number
+---@return string
 local function random_id(length)
   local chars = "abcdefghijklmnopqrstuvwxyz0123456789"
   local out = {}
@@ -144,6 +146,10 @@ local function random_id(length)
   return table.concat(out)
 end
 
+---@param root string
+---@param attempts integer|nil
+---@return string|nil
+---@return string|nil
 local function generate_case_id(root, attempts)
   local count = attempts or 50
   for _ = 1, count do
@@ -177,6 +183,10 @@ local function write_file(path, contents, force)
   return true
 end
 
+---@param path string
+---@param opts table
+---@return boolean|nil
+---@return string|nil
 local function write_case_json(path, opts)
   local payload = {
     version = 1,
@@ -193,6 +203,11 @@ local function write_case_json(path, opts)
   return write_file(path, encoded, opts.force)
 end
 
+---@param path string
+---@param id string
+---@param force boolean
+---@return boolean|nil
+---@return string|nil
 local function write_regression_scenario(path, id, force)
   local contents = table.concat({
     "vim.cmd(\"enew\")",
@@ -205,6 +220,12 @@ local function write_regression_scenario(path, id, force)
   return write_file(path, contents, force)
 end
 
+---@param path string
+---@param id string
+---@param label string
+---@param force boolean
+---@return boolean|nil
+---@return string|nil
 local function write_golden_scenario(path, id, label, force)
   local contents = table.concat({
     "vim.cmd(\"enew\")",
@@ -217,6 +238,7 @@ local function write_golden_scenario(path, id, label, force)
   return write_file(path, contents, force)
 end
 
+---@param args_list string[]
 function M.run(args_list)
   local opts = parse_args(args_list)
   if opts.help then

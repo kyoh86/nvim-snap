@@ -85,6 +85,8 @@ local function parse_args(args)
   return opts
 end
 
+---@param opts table
+---@return string
 local function workflow_yaml(opts)
   return table.concat({
     "name: " .. opts.name,
@@ -135,6 +137,7 @@ local function write_file(path, contents, force)
   return true
 end
 
+---@param args_list string[]
 function M.run(args_list)
   local args = vim.deepcopy(args_list or {})
   local sub = args[1]
