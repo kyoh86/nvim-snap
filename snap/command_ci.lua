@@ -9,7 +9,7 @@ local function usage()
     "",
     "options:",
     "  --path PATH      Output workflow path (default: .github/workflows/nvim-snap.yml)",
-    "  --root PATH      Root directory for cases (default: .)",
+    "  --root PATH      Root directory for cases (default: snapcase)",
     "  --format FMT     Compare formats (default: html)",
     "  --name NAME      Workflow name (default: nvim-snap)",
     "  --force          Overwrite existing workflow file",
@@ -20,7 +20,7 @@ end
 local function parse_args(args)
   local opts = {
     path = ".github/workflows/nvim-snap.yml",
-    root = ".",
+    root = "snapcase",
     format = "html",
     name = "nvim-snap",
     force = false,

@@ -9,7 +9,7 @@ local function usage()
     "  nvim -l snap.lua list [options]",
     "",
     "options:",
-    "  --root PATH    Root directory to search (default: .)",
+    "  --root PATH    Root directory to search (default: snapcase)",
     "  --tag TAG      Filter by tag (repeatable, comma-separated)",
     "  --case ID      Filter by case id (repeatable, comma-separated)",
     "  --json         Output JSON",
@@ -30,7 +30,7 @@ end
 
 local function parse_args(args)
   local opts = {
-    root = ".",
+    root = "snapcase",
     tags = {},
     cases = {},
     json = false,

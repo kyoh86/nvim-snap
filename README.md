@@ -12,6 +12,7 @@ Test cases manage scenarios and expected snapshots, and can be executed in batch
 ![diff overlay example](docs/diff-overlay.png)
 
 This repository includes `snapcase-example`, so you can run the cases as-is to confirm behavior.
+By default, cases live under `snapcase/`.
 
 ## Installation
 
@@ -54,7 +55,7 @@ mise use 'github:kyoh86/nvim-snap[asset_pattern=nvim-snap]'
 
 ## Commands
 
-The examples below assume cases are under `tests/cases/<case-id>/case.json`.
+The examples below assume cases are under `snapcase/<case-id>/case.json`.
 
 - `list` list test cases
 - `new` scaffold a test case
@@ -68,7 +69,7 @@ The examples below assume cases are under `tests/cases/<case-id>/case.json`.
 List test cases.
 
 ```sh
-nvim-snap list --root .
+nvim-snap list
 nvim-snap list --tag ui --tag regression
 nvim-snap list --case basic-regression
 nvim-snap list --json
@@ -79,8 +80,8 @@ nvim-snap list --json
 Create a case scaffold.
 
 ```sh
-nvim-snap new --root tests/cases --id basic-regression --kind regression
-nvim-snap new --dir tests/cases/sample --kind golden --name "Sample Golden"
+nvim-snap new --id basic-regression --kind regression
+nvim-snap new --dir snapcase/sample --kind golden --name "Sample Golden"
 ```
 
 
@@ -89,7 +90,7 @@ nvim-snap new --dir tests/cases/sample --kind golden --name "Sample Golden"
 Run cases and write snapshots under `actual/`.
 
 ```sh
-nvim-snap run --root tests/cases --format json,html
+nvim-snap run --format json,html
 nvim-snap run --tag ui
 ```
 
@@ -98,9 +99,9 @@ nvim-snap run --tag ui
 Compare `expected/` and `actual/`, writing diffs under `diff/` when needed.
 
 ```sh
-nvim-snap compare --root tests/cases --format text
-nvim-snap compare --root tests/cases --format html --diff-always
-nvim-snap compare --root tests/cases --format png --diff-always
+nvim-snap compare --format text
+nvim-snap compare --format html --diff-always
+nvim-snap compare --format png --diff-always
 ```
 
 ### update-expected
@@ -108,9 +109,9 @@ nvim-snap compare --root tests/cases --format png --diff-always
 Update expected snapshots. Regression accepts `actual`, golden runs `golden.lua`.
 
 ```sh
-nvim-snap update-expected --root tests/cases
-nvim-snap update-expected --root tests/cases --dry-run
-nvim-snap update-expected --root tests/cases --no-confirm
+nvim-snap update-expected
+nvim-snap update-expected --dry-run
+nvim-snap update-expected --no-confirm
 ```
 
 ### ci init
@@ -124,16 +125,16 @@ nvim-snap ci init --path .github/workflows/nvim-snap.yml
 ## Practical Flow
 
 1. Create a case
-   `nvim-snap new --root tests/cases --id my-case --kind regression`
+   `nvim-snap new --id my-case --kind regression`
 2. Write scenarios
    - Regression: `scenario.lua`
    - Golden: `golden.lua` / `target.lua`
 3. Generate actual
-   `nvim-snap run --root tests/cases`
+   `nvim-snap run`
 4. Update expected
-   `nvim-snap update-expected --root tests/cases`
+   `nvim-snap update-expected`
 5. Review diffs
-   `nvim-snap compare --root tests/cases --format html`
+   `nvim-snap compare --format html`
 
 ## Test Types
 

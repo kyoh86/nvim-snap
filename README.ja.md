@@ -12,6 +12,7 @@ nvim-snapは、NeovimのUIスナップショットに基づくテストを実行
 ![diff overlayの例](docs/diff-overlay.png)
 
 このリポジトリ内に `snapcase-example` を同梱しているので、そのままケースを実行して動作を確認できます。
+通常は `snapcase/` 配下にケースを作成します。
 
 ## インストール
 
@@ -54,7 +55,7 @@ mise use 'github:kyoh86/nvim-snap[asset_pattern=nvim-snap]'
 
 ## コマンド
 
-以下の説明は、テストケースが `tests/cases/<case-id>/case.json` のように配置されている前提です。
+以下の説明は、テストケースが `snapcase/<case-id>/case.json` のように配置されている前提です。
 
 - `list` テストケース一覧
 - `new` テストケース雛形の作成
@@ -68,7 +69,7 @@ mise use 'github:kyoh86/nvim-snap[asset_pattern=nvim-snap]'
 テストケースを一覧表示します。
 
 ```sh
-nvim-snap list --root .
+nvim-snap list
 nvim-snap list --tag ui --tag regression
 nvim-snap list --case basic-regression
 nvim-snap list --json
@@ -79,8 +80,8 @@ nvim-snap list --json
 テストケースの雛形を作成します。
 
 ```sh
-nvim-snap new --root tests/cases --id basic-regression --kind regression
-nvim-snap new --dir tests/cases/sample --kind golden --name "Sample Golden"
+nvim-snap new --id basic-regression --kind regression
+nvim-snap new --dir snapcase/sample --kind golden --name "Sample Golden"
 ```
 
 
@@ -89,7 +90,7 @@ nvim-snap new --dir tests/cases/sample --kind golden --name "Sample Golden"
 テストケースを実行して `actual/` にスナップショットを生成します。
 
 ```sh
-nvim-snap run --root tests/cases --format json,html
+nvim-snap run --format json,html
 nvim-snap run --tag ui
 ```
 
@@ -98,9 +99,9 @@ nvim-snap run --tag ui
 `expected/` と `actual/` を比較し、差分がある場合は `diff/` に出力します。
 
 ```sh
-nvim-snap compare --root tests/cases --format text
-nvim-snap compare --root tests/cases --format html --diff-always
-nvim-snap compare --root tests/cases --format png --diff-always
+nvim-snap compare --format text
+nvim-snap compare --format html --diff-always
+nvim-snap compare --format png --diff-always
 ```
 
 ### update-expected
@@ -108,9 +109,9 @@ nvim-snap compare --root tests/cases --format png --diff-always
 期待値を更新します。リグレッションは `actual` を採用し、ゴールデンは `golden.lua` を実行します。
 
 ```sh
-nvim-snap update-expected --root tests/cases
-nvim-snap update-expected --root tests/cases --dry-run
-nvim-snap update-expected --root tests/cases --no-confirm
+nvim-snap update-expected
+nvim-snap update-expected --dry-run
+nvim-snap update-expected --no-confirm
 ```
 
 ### ci init
@@ -124,16 +125,16 @@ nvim-snap ci init --path .github/workflows/nvim-snap.yml
 ## 実用時の流れ
 
 1. ケースを作る  
-   `nvim-snap new --root tests/cases --id my-case --kind regression`
+   `nvim-snap new --id my-case --kind regression`
 2. シナリオを書く  
    - リグレッションは `scenario.lua`  
    - ゴールデンは `golden.lua` / `target.lua`
 3. actualを生成  
-   `nvim-snap run --root tests/cases`
+   `nvim-snap run`
 4. expectedを更新  
-   `nvim-snap update-expected --root tests/cases`
+   `nvim-snap update-expected`
 5. 差分を確認  
-   `nvim-snap compare --root tests/cases --format html`
+   `nvim-snap compare --format html`
 
 ## テストの種類
 

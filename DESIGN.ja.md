@@ -60,7 +60,7 @@ CLIでは `snap.lua core <command>` で呼び出す。
 ### 高レイヤーのコマンド
 
 - `list`: テストケースの一覧を表示する
-  - 入力: テストケース定義（`--root` で探索、既定は `.`）
+  - 入力: テストケース定義（`--root` で探索、既定は `snapcase`）
   - 出力: 一覧（id/name/kind/tags/path）
   - 形式: 既定はテキスト、`--json` でJSON出力
   - 絞り込み: `--tag` / `--case`
@@ -88,22 +88,22 @@ CLIでは `snap.lua core <command>` で呼び出す。
       ```
 - 終了コード: 成功=0、失敗=1
 - `new`: テストケースの雛形を作成する
-  - 入力: `--root`（既定は `.`）、`--id`（必須）、`--kind`、`--name`、`--tag`
+  - 入力: `--root`（既定は `snapcase`）、`--id`（省略時は自動生成）、`--kind`、`--name`、`--tag`
   - 出力: ケースディレクトリ配下の`case.json`とシナリオ雛形、`expected/actual/diff`の作成
   - `--dir` で作成先を直接指定できる
   - `--force` で既存ファイルを上書きできる
 - `ci init`: GitHub Actions向けのワークフロー雛形を作成する
-  - 入力: `--path`（既定は `.github/workflows/nvim-snap.yml`）、`--root`、`--format`
+  - 入力: `--path`（既定は `.github/workflows/nvim-snap.yml`）、`--root`（既定は `snapcase`）、`--format`
   - 出力: ワークフローYAML
   - `--force` で既存ファイルを上書きできる
 - `run`: テストケースを実行してactualを生成する
-  - 入力: テストケース定義（`--root` で探索、既定は `.`）、タグ/ケースIDによる絞り込み
+  - 入力: テストケース定義（`--root` で探索、既定は `snapcase`）、タグ/ケースIDによる絞り込み
   - 出力: 各ケースの`actual/`配下にスナップショット
   - 絞り込み: `--tag` / `--case`
   - 出力形式: `--format=json,ansi,html`（既定は `json`）
 - 終了コード: 成功=0、失敗=1
 - `compare`: expectedとactualを比較し、結果をサマリ出力する
-  - 入力: テストケース定義（`--root` で探索、既定は `.`）、タグ/ケースIDによる絞り込み
+  - 入力: テストケース定義（`--root` で探索、既定は `snapcase`）、タグ/ケースIDによる絞り込み
   - 出力: 標準出力のサマリ、ケースごとの`diff/`配下にHTML差分（必要時）
   - 絞り込み: `--tag` / `--case`
   - 出力形式: `--format=text,ansi,html`（既定は `text`）
@@ -149,7 +149,7 @@ CLIでは `snap.lua core <command>` で呼び出す。
       ```
 - 終了コード: 成功=0、差分あり=1、エラーあり=2
 - `update-expected`: expectedを更新する
-  - 入力: テストケース定義（`--root` で探索、既定は `.`）、タグ/ケースIDによる絞り込み
+  - 入力: テストケース定義（`--root` で探索、既定は `snapcase`）、タグ/ケースIDによる絞り込み
   - 出力: `expected/`配下の更新
   - リグレッションはactualをexpectedとして採用
   - ゴールデンテストはゴールデンシナリオを実行してexpectedを生成

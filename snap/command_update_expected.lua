@@ -11,7 +11,7 @@ local function usage()
     "  nvim -l snap.lua update-expected [options]",
     "",
     "options:",
-    "  --root PATH       Root directory to search (default: .)",
+    "  --root PATH       Root directory to search (default: snapcase)",
     "  --tag TAG         Filter by tag (repeatable, comma-separated)",
     "  --case ID         Filter by case id (repeatable, comma-separated)",
     "  --dry-run         Show updates without writing",
@@ -34,7 +34,7 @@ end
 
 local function parse_args(args)
   local opts = {
-    root = ".",
+    root = "snapcase",
     tags = {},
     cases = {},
     dry_run = false,

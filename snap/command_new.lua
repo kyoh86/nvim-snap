@@ -8,9 +8,9 @@ local function usage()
     "  nvim -l snap.lua new [options]",
     "",
     "options:",
-    "  --root PATH       Root directory to create case (default: .)",
+    "  --root PATH       Root directory to create case (default: snapcase)",
     "  --dir PATH        Case directory (overrides --root/--id)",
-    "  --id ID           Case id (required unless --dir is used)",
+    "  --id ID           Case id (optional, random if omitted)",
     "  --name NAME       Case display name",
     "  --kind KIND       regression|golden (default: regression)",
     "  --tag TAG         Tag (repeatable, comma-separated)",
@@ -32,7 +32,7 @@ end
 
 local function parse_args(args)
   local opts = {
-    root = ".",
+    root = "snapcase",
     id = nil,
     dir = nil,
     name = nil,
@@ -120,6 +120,40 @@ local function parse_args(args)
     i = i + 1
   end
   return opts
+end
+
+local function seed_random()
+  local seed = os.time()
+  if vim.loop and vim.loop.hrtime then
+    local suffix = tostring(vim.loop.hrtime()):sub(-9)
+    seed = tonumber(suffix) or seed
+  end
+  math.randomseed(seed)
+  math.random()
+  math.random()
+  math.random()
+end
+
+local function random_id(length)
+  local chars = "abcdefghijklmnopqrstuvwxyz0123456789"
+  local out = {}
+  for i = 1, length do
+    local idx = math.random(#chars)
+    out[i] = chars:sub(idx, idx)
+  end
+  return table.concat(out)
+end
+
+local function generate_case_id(root, attempts)
+  local count = attempts or 50
+  for _ = 1, count do
+    local id = random_id(8)
+    local dir = vim.fs.joinpath(root, id)
+    if vim.fn.isdirectory(dir) ~= 1 then
+      return id
+    end
+  end
+  return nil, "failed to generate unique case id"
 end
 
 local function file_exists(path)
@@ -211,7 +245,9 @@ function M.run(args_list)
     return
   end
 
+  seed_random()
   local root = vim.fs.normalize(vim.fn.fnamemodify(opts.root, ":p"))
+  vim.fn.mkdir(root, "p")
   local case_dir
   if opts.dir and opts.dir ~= "" then
     case_dir = vim.fs.normalize(vim.fn.fnamemodify(opts.dir, ":p"))
@@ -220,10 +256,13 @@ function M.run(args_list)
     end
   else
     if not opts.id or opts.id == "" then
-      util.err_write("--id is required")
-      util.err_write(usage())
-      vim.cmd("cq")
-      return
+      local generated, err = generate_case_id(root)
+      if not generated then
+        util.err_write(err or "failed to generate case id")
+        vim.cmd("cq")
+        return
+      end
+      opts.id = generated
     end
     case_dir = vim.fs.normalize(vim.fs.joinpath(root, opts.id))
   end
