@@ -2,13 +2,12 @@
 
 This README describes the minimal structure and how to run the sample cases.
 
-This is the minimal setup for snapshot generation using `snap.lua`.
+This is the minimal setup for snapshot generation using `nvim-snap`.
 
 ## Usage
 
 ```sh
-nvim --headless -u NONE -i NONE -l snap.lua \
-  core capture --scenario snapcase-example/scenario.lua \
+nvim-snap core capture --scenario snapcase-example/scenario.lua \
   --out-dir snapcase-example/.out \
   --data-home snapcase-example/.nvim-data \
   --config-home snapcase-example/.nvim-config \

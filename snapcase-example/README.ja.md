@@ -2,13 +2,12 @@
 
 このREADMEはサンプルケースの最小構成と実行方法に限定した説明です。
 
-`snap.lua` を使ったスナップショット生成の最小構成です。
+`nvim-snap` を使ったスナップショット生成の最小構成です。
 
 ## 使い方
 
 ```sh
-nvim --headless -u NONE -i NONE -l snap.lua \
-  core capture --scenario snapcase-example/scenario.lua \
+nvim-snap core capture --scenario snapcase-example/scenario.lua \
   --out-dir snapcase-example/.out \
   --data-home snapcase-example/.nvim-data \
   --config-home snapcase-example/.nvim-config \
