@@ -1,9 +1,10 @@
 {
   "version": 1,
-  "name": "snapcase-example",
-  "title": "Snapcase Example",
+  "name": "diff-example",
+  "title": "Diff Example",
   "kind": "regression",
   "tags": [
+    "diff",
     "example"
   ]
 }

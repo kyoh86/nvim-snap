@@ -7,21 +7,18 @@
 ## 使い方
 
 ```sh
-nvim-snap core capture --scenario snapcase-example/scenario.lua \
-  --out-dir snapcase-example/.out \
-  --data-home snapcase-example/.nvim-data \
-  --config-home snapcase-example/.nvim-config \
+nvim-snap core capture --scenario snapcase-example/cases/diff-example/scenario.lua \
+  --out-dir snapcase-example/cases/diff-example/.out \
+  --data-home snapcase-example/cases/diff-example/.nvim-data \
+  --config-home snapcase-example/cases/diff-example/.nvim-config \
   --json --ansi --html
 ```
 
 ## 構成
 
-- `case.json` 高レイヤー用のケース定義
 - `case.schema.json` JSON Schema
-- `scenario.lua` 操作シナリオ
-- `scenario_baseline.lua` 行数と内容が基準のサンプル
-- `scenario_alt.lua` 行追加/行変更/行削除が入ったサンプル
 - `cases/` 複数ケースのサンプル（regression/golden混在）
+  - `diff-example/` 差分確認向けのリグレッションケース
 
 ## 補足
 
