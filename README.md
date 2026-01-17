@@ -84,6 +84,8 @@ nvim-snap new --id basic-regression --kind regression
 nvim-snap new --dir snapcase/sample --kind golden --name "Sample Golden"
 ```
 
+When `--id` is omitted, `nvim-snap` generates a random case id and creates the directory under `snapcase/`.
+
 
 ### run
 

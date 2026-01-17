@@ -84,6 +84,8 @@ nvim-snap new --id basic-regression --kind regression
 nvim-snap new --dir snapcase/sample --kind golden --name "Sample Golden"
 ```
 
+`--id` を省略するとランダムなケースIDを生成し、`snapcase/` 配下にディレクトリを作成します。
+
 
 ### run
 
