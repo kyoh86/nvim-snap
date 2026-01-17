@@ -9,7 +9,7 @@ local M = {}
 local function usage()
   return table.concat({
     "usage:",
-    "  nvim -l snap.lua run [options]",
+    "  nvim-snap run [options]",
     "",
     "options:",
     "  --root PATH       Root directory to search (default: snapcase)",
@@ -162,6 +162,14 @@ local function write_outputs(c, formats, snap)
   return true
 end
 
+local function print_result(name, result, message)
+  local parts = { name, result }
+  if message and message ~= "" then
+    table.insert(parts, message)
+  end
+  print(table.concat(parts, "\t"))
+end
+
 function M.run(args_list)
   local opts = parse_args(args_list)
   if opts.help then
@@ -192,13 +200,19 @@ function M.run(args_list)
   for _, c in ipairs(filtered) do
     local snap, err = collect_snapshot(c)
     if not snap then
-      util.err_write(c.name .. ": " .. (err or "capture failed"))
+      local message = err or "capture failed"
+      util.err_write(c.name .. ": " .. message)
+      print_result(c.name, "error", message)
       failed = true
     else
       local ok_write, write_err = write_outputs(c, opts.formats, snap)
       if not ok_write then
-        util.err_write(c.name .. ": " .. (write_err or "failed to write outputs"))
+        local message = write_err or "failed to write outputs"
+        util.err_write(c.name .. ": " .. message)
+        print_result(c.name, "error", message)
         failed = true
+      else
+        print_result(c.name, "ok")
       end
     end
   end
