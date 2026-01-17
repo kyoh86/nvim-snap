@@ -64,7 +64,7 @@ function M.run(args_list)
 
   if opts.json then
     local encoded = vim.json.encode(result)
-    local ok, write_err = output.write(vim.fs.joinpath(out_dir, "snapshot.json"), encoded)
+    local ok, write_err = output.write(util.joinpath(out_dir, "snapshot.json"), encoded)
     if not ok then
       util.err_write(write_err or "failed to write json output")
       vim.cmd("cq")
@@ -72,7 +72,7 @@ function M.run(args_list)
   end
   if opts.ansi then
     local ansi = render.render_ansi(result)
-    local ok_ansi, err_ansi = output.write(vim.fs.joinpath(out_dir, "snapshot.ansi"), ansi)
+    local ok_ansi, err_ansi = output.write(util.joinpath(out_dir, "snapshot.ansi"), ansi)
     if not ok_ansi then
       util.err_write(err_ansi or "failed to write ansi output")
       vim.cmd("cq")
@@ -80,7 +80,7 @@ function M.run(args_list)
   end
   if opts.html then
     local html = render.render_html(result)
-    local ok_html, err_html = output.write(vim.fs.joinpath(out_dir, "snapshot.html"), html)
+    local ok_html, err_html = output.write(util.joinpath(out_dir, "snapshot.html"), html)
     if not ok_html then
       util.err_write(err_html or "failed to write html output")
       vim.cmd("cq")

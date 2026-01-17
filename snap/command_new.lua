@@ -154,7 +154,7 @@ local function generate_case_name(root, attempts)
   local count = attempts or 50
   for _ = 1, count do
     local name = random_name(8)
-    local dir = vim.fs.joinpath(root, name)
+    local dir = util.joinpath(root, name)
     if vim.fn.isdirectory(dir) ~= 1 then
       return name
     end
@@ -312,7 +312,7 @@ function M.run(args_list)
     end
     opts.name = generated
   end
-  case_dir = vim.fs.normalize(vim.fs.joinpath(cases_root, opts.name))
+  case_dir = vim.fs.normalize(util.joinpath(cases_root, opts.name))
 
   if vim.fn.isdirectory(case_dir) == 1 and not opts.force then
     util.err_write("case directory already exists: " .. case_dir)
@@ -321,37 +321,37 @@ function M.run(args_list)
   end
   vim.fn.mkdir(case_dir, "p")
 
-  local ok, err = write_snapcase_json(vim.fs.joinpath(case_dir, "snapcase.json"), opts)
+  local ok, err = write_snapcase_json(util.joinpath(case_dir, "snapcase.json"), opts)
   if not ok then
     util.err_write(err or "failed to write snapcase.json")
     vim.cmd("cq")
     return
   end
-  local ok_gitignore, err_gitignore = write_case_gitignore(vim.fs.joinpath(case_dir, ".gitignore"), opts.force)
+  local ok_gitignore, err_gitignore = write_case_gitignore(util.joinpath(case_dir, ".gitignore"), opts.force)
   if not ok_gitignore then
     util.err_write(err_gitignore or "failed to write .gitignore")
     vim.cmd("cq")
     return
   end
-  vim.fn.mkdir(vim.fs.joinpath(case_dir, "expected"), "p")
-  vim.fn.mkdir(vim.fs.joinpath(case_dir, "actual"), "p")
-  vim.fn.mkdir(vim.fs.joinpath(case_dir, "diff"), "p")
+  vim.fn.mkdir(util.joinpath(case_dir, "expected"), "p")
+  vim.fn.mkdir(util.joinpath(case_dir, "actual"), "p")
+  vim.fn.mkdir(util.joinpath(case_dir, "diff"), "p")
 
   if opts.kind == "regression" then
-    local ok_s, err_s = write_regression_scenario(vim.fs.joinpath(case_dir, "scenario.lua"), opts.name, opts.force)
+    local ok_s, err_s = write_regression_scenario(util.joinpath(case_dir, "scenario.lua"), opts.name, opts.force)
     if not ok_s then
       util.err_write(err_s or "failed to write scenario.lua")
       vim.cmd("cq")
       return
     end
   else
-    local ok_g, err_g = write_golden_scenario(vim.fs.joinpath(case_dir, "golden.lua"), opts.name, "golden", opts.force)
+    local ok_g, err_g = write_golden_scenario(util.joinpath(case_dir, "golden.lua"), opts.name, "golden", opts.force)
     if not ok_g then
       util.err_write(err_g or "failed to write golden.lua")
       vim.cmd("cq")
       return
     end
-    local ok_t, err_t = write_golden_scenario(vim.fs.joinpath(case_dir, "target.lua"), opts.name, "target", opts.force)
+    local ok_t, err_t = write_golden_scenario(util.joinpath(case_dir, "target.lua"), opts.name, "target", opts.force)
     if not ok_t then
       util.err_write(err_t or "failed to write target.lua")
       vim.cmd("cq")

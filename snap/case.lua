@@ -27,7 +27,7 @@ function M.load(opts)
   if vim.fn.isdirectory(case_dir) ~= 1 then
     return nil, string.format("case dir not found: %s", case_dir)
   end
-  local config_path = vim.fs.joinpath(case_dir, "snapcase.json")
+  local config_path = util.joinpath(case_dir, "snapcase.json")
   local config = {}
   if vim.fn.filereadable(config_path) == 1 then
     local fd, err = io.open(config_path, "r")

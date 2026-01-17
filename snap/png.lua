@@ -1,3 +1,5 @@
+local util = require("snap.util")
+
 local M = {}
 
 local function parse_size()
@@ -43,7 +45,7 @@ end
 
 local function run_chromium(cmd, html_path, out_path, width, height, user_data_dir)
   local url = vim.uri_from_fname(html_path)
-  local profile_dir = vim.fs.joinpath(user_data_dir, "profile")
+  local profile_dir = util.joinpath(user_data_dir, "profile")
   vim.fn.mkdir(profile_dir, "p")
   local args = {
     "env",

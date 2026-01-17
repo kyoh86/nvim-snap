@@ -161,14 +161,14 @@ local function write_outputs(c, formats, snap)
   end
   if formats.ansi then
     local ansi = render.render_ansi(snap)
-    local ok_write, write_err = output.write(vim.fs.joinpath(c.actual_dir, "snapshot.ansi"), ansi)
+    local ok_write, write_err = output.write(util.joinpath(c.actual_dir, "snapshot.ansi"), ansi)
     if not ok_write then
       return nil, write_err or "failed to write snapshot.ansi"
     end
   end
   if formats.html then
     local html = render.render_html(snap)
-    local ok_write, write_err = output.write(vim.fs.joinpath(c.actual_dir, "snapshot.html"), html)
+    local ok_write, write_err = output.write(util.joinpath(c.actual_dir, "snapshot.html"), html)
     if not ok_write then
       return nil, write_err or "failed to write snapshot.html"
     end

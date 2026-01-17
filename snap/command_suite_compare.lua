@@ -563,7 +563,7 @@ local function write_diff_outputs(c, outputs)
   end
   local diff_paths = {}
   if outputs.text ~= nil then
-    local path = vim.fs.joinpath(c.diff_dir, "diff.txt")
+    local path = util.joinpath(c.diff_dir, "diff.txt")
     local ok_write, write_err = output.write(path, outputs.text)
     if not ok_write then
       return nil, write_err or "failed to write diff.txt"
@@ -571,7 +571,7 @@ local function write_diff_outputs(c, outputs)
     diff_paths.text = path
   end
   if outputs.ansi ~= nil then
-    local path = vim.fs.joinpath(c.diff_dir, "diff.ansi")
+    local path = util.joinpath(c.diff_dir, "diff.ansi")
     local ok_write, write_err = output.write(path, outputs.ansi)
     if not ok_write then
       return nil, write_err or "failed to write diff.ansi"
@@ -579,7 +579,7 @@ local function write_diff_outputs(c, outputs)
     diff_paths.ansi = path
   end
   if outputs.html ~= nil then
-    local path = vim.fs.joinpath(c.diff_dir, "diff.html")
+    local path = util.joinpath(c.diff_dir, "diff.html")
     local ok_write, write_err = output.write(path, outputs.html)
     if not ok_write then
       return nil, write_err or "failed to write diff.html"
@@ -587,7 +587,7 @@ local function write_diff_outputs(c, outputs)
     diff_paths.html = path
   end
   if outputs.png ~= nil then
-    local path = vim.fs.joinpath(c.diff_dir, "diff.png")
+    local path = util.joinpath(c.diff_dir, "diff.png")
     local ok_write, write_err = png.write_png_from_html(outputs.png, path)
     if not ok_write then
       return nil, write_err or "failed to write diff.png"
