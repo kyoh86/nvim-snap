@@ -39,6 +39,35 @@ local function basename(path)
   return vim.fs.basename(vim.fs.normalize(path))
 end
 
+local function expand_placeholders(value, vars)
+  return (value:gsub("%${([A-Z_]+)}", function(key)
+    return vars[key] or ""
+  end))
+end
+
+local function normalize_rtp(case_dir, root, rtp)
+  if type(rtp) == "string" then
+    rtp = { rtp }
+  end
+  if type(rtp) ~= "table" then
+    return {}
+  end
+  local out = {}
+  local vars = {
+    CASE = case_dir,
+    ROOT = root or case_dir,
+  }
+  for _, value in ipairs(rtp) do
+    if type(value) == "string" and value ~= "" then
+      local expanded = expand_placeholders(value, vars)
+      if expanded ~= "" then
+        table.insert(out, util.normalize_path(case_dir, expanded))
+      end
+    end
+  end
+  return out
+end
+
 local function normalize_tags(tags)
   if type(tags) ~= "table" then
     return {}
@@ -55,7 +84,7 @@ end
 ---@param case_path string
 ---@return SnapCase|nil
 ---@return string|nil
-function M.load_case(case_path)
+function M.load_case(case_path, root)
   local case_dir = vim.fs.normalize(vim.fn.fnamemodify(case_path, ":p:h"))
   local config, err = read_json(case_path)
   if not config then
@@ -78,6 +107,17 @@ function M.load_case(case_path)
     title = name
   end
   local tags = normalize_tags(config.tags)
+  local width = config.width
+  if type(width) ~= "number" or width <= 0 then
+    width = nil
+  end
+  local height = config.height
+  if type(height) ~= "number" or height <= 0 then
+    height = nil
+  end
+  local data_home = util.normalize_path(case_dir, config.data_home or ".nvim-data")
+  local config_home = util.normalize_path(case_dir, config.config_home or ".nvim-config")
+  local rtp = normalize_rtp(case_dir, root or case_dir, config.rtp)
 
   local expected_dir = util.normalize_path(case_dir, "expected")
   local actual_dir = util.normalize_path(case_dir, "actual")
@@ -102,6 +142,11 @@ function M.load_case(case_path)
     scenario_path = scenario,
     golden_scenario_path = golden,
     target_scenario_path = target,
+    width = width,
+    height = height,
+    data_home = data_home,
+    config_home = config_home,
+    rtp = rtp,
   }
 end
 
@@ -147,11 +192,11 @@ end
 ---@return SnapCase[]
 ---@return string[]
 function M.find_cases(root)
-  local paths = vim.fn.globpath(root, "**/snapcase.json", true, true)
+  local paths = vim.fn.globpath(root, "*/snapcase.json", true, true)
   local cases = {}
   local errors = {}
   for _, path in ipairs(paths) do
-    local c, err = M.load_case(path)
+    local c, err = M.load_case(path, root)
     if not c then
       table.insert(errors, string.format("%s: %s", path, err))
     else

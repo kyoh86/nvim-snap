@@ -12,7 +12,8 @@ Test cases manage scenarios and expected snapshots, and can be executed in batch
 ![diff overlay example](docs/diff-overlay.png)
 
 This repository includes `snapcase-example`, so you can run the cases as-is to confirm behavior.
-By default, cases live under `snapcase/`.
+By default, `--root` is the current directory and `--cases-dir` is `snapcase/`.
+Cases live under `<root>/<cases-dir>/<case-name>/snapcase.json`.
 
 ## Installation
 
@@ -55,9 +56,10 @@ mise use 'github:kyoh86/nvim-snap[asset_pattern=nvim-snap]'
 
 ## Commands
 
-The examples below assume cases are under `snapcase/<case-name>/snapcase.json`.
+The examples below assume cases are under `snapcase/<case-name>/snapcase.json` with the default options.
 Case names come from the directory name, and `snapcase.json` holds the case metadata and `core capture` settings.
 `snapcase.json` accepts `rtp` (string or list) to prepend runtimepath entries.
+Use `${CASE}` or `${ROOT}` placeholders to target the case directory or the `--root` path.
 
 - `list` list test cases
 - `new` scaffold a test case
@@ -87,7 +89,7 @@ nvim-snap new --name basic-regression --kind regression
 nvim-snap new --name sample --kind golden --title "Sample Golden"
 ```
 
-When `--name` is omitted, `nvim-snap` generates a random case name and creates the directory under `snapcase/`.
+When `--name` is omitted, `nvim-snap` generates a random case name under `<root>/<cases-dir>/`.
 
 
 ### run

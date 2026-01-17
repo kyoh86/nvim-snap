@@ -93,7 +93,7 @@
           }
         }
       ],
-      "description": "Runtimepath entries to prepend"
+      "description": "Runtimepath entries to prepend. ${CASE} and ${ROOT} placeholders are supported."
     }
   },
   "required": [

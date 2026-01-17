@@ -59,11 +59,15 @@ CLIでは `snap.lua core <command>` で呼び出す。
 
 ### 高レイヤーのコマンド
 
+ケース探索の起点は `--root`、その配下に `--cases-dir`（既定は `snapcase/`）を掘る。
+ケースは `<root>/<cases-dir>/<case-name>/snapcase.json` に配置する。
+`list/run/compare/accept/golden` は `--tag` / `--case` で絞り込みできる。
+
 - `list`: テストケースの一覧を表示する
-  - 入力: テストケース定義（`--root` で探索、既定は `snapcase`）
+  - 入力: `--root`（既定は `.`）、`--cases-dir`（既定は `snapcase`）
+  - 対象: `<root>/<cases-dir>/*/snapcase.json`
   - 出力: 一覧（name/title/kind/tags/path）
   - 形式: 既定はテキスト、`--json` でJSON出力
-  - 絞り込み: `--tag` / `--case`
   - JSON出力:
     - `root` ルートディレクトリ
     - `cases[]` ケース配列
@@ -86,25 +90,25 @@ CLIでは `snap.lua core <command>` で呼び出す。
         ]
       }
       ```
-- 終了コード: 成功=0、失敗=1
+  - 終了コード: 成功=0、失敗=1
 - `new`: テストケースの雛形を作成する
-  - 入力: `--root`（既定は `snapcase`）、`--name`（省略時は自動生成）、`--title`、`--kind`、`--tag`
+  - 入力: `--root`（既定は `.`）、`--cases-dir`（既定は `snapcase`）、`--name`（省略時は自動生成）、`--title`、`--kind`、`--tag`
   - 出力: ケースディレクトリ配下の`snapcase.json`とシナリオ雛形、`expected/actual/diff`の作成
   - `--force` で既存ファイルを上書きできる
 - `init`: GitHub Actions向けのワークフロー雛形を作成する
-  - 入力: `--path`（既定は `.github/workflows/nvim-snap.yml`）、`--root`（既定は `snapcase`）、`--format`
+  - 入力: `--path`（既定は `.github/workflows/nvim-snap.yml`）、`--root`（既定は `.`）、`--cases-dir`（既定は `snapcase`）、`--format`
   - 出力: ワークフローYAML
   - `--force` で既存ファイルを上書きできる
 - `run`: テストケースを実行してactualを生成する
-  - 入力: テストケース定義（`--root` で探索、既定は `snapcase`）、タグ/ケース名による絞り込み
+  - 入力: `--root`（既定は `.`）、`--cases-dir`（既定は `snapcase`）
+  - 対象: `<root>/<cases-dir>/*/snapcase.json`
   - 出力: 各ケースの`actual/`配下にスナップショット
-  - 絞り込み: `--tag` / `--case`
   - 出力形式: `--format=json,ansi,html`（既定は `json`）
-- 終了コード: 成功=0、失敗=1
+  - 終了コード: 成功=0、失敗=1
 - `compare`: expectedとactualを比較し、結果をサマリ出力する
-  - 入力: テストケース定義（`--root` で探索、既定は `snapcase`）、タグ/ケース名による絞り込み
+  - 入力: `--root`（既定は `.`）、`--cases-dir`（既定は `snapcase`）
+  - 対象: `<root>/<cases-dir>/*/snapcase.json`
   - 出力: 標準出力のサマリ、ケースごとの`diff/`配下にHTML差分（必要時）
-  - 絞り込み: `--tag` / `--case`
   - 出力形式: `--format=text,ansi,html`（既定は `text`）
   - HTML差分は不一致時のみ生成し、`--diff-always` で常時生成できる
   - サマリ項目: name/title/kind/tags/result/diff_paths/error_reason
@@ -146,22 +150,22 @@ CLIでは `snap.lua core <command>` で呼び出す。
         ]
       }
       ```
-- 終了コード: 成功=0、差分あり=1、エラーあり=2
+  - 終了コード: 成功=0、差分あり=1、エラーあり=2
 - `accept`: リグレッションのexpectedを更新する
-  - 入力: テストケース定義（`--root` で探索、既定は `snapcase`）、タグ/ケース名による絞り込み
+  - 入力: `--root`（既定は `.`）、`--cases-dir`（既定は `snapcase`）
+  - 対象: `<root>/<cases-dir>/*/snapcase.json`
   - 出力: `expected/`配下の更新（actualをexpectedとして採用）
-  - 絞り込み: `--tag` / `--case`
   - `--dry-run` で更新内容を表示のみ
   - 規定は対話確認
   - `--no-confirm`（または `--yes`）で対話を省略して実行
 - `golden`: ゴールデンのexpectedを生成する
-  - 入力: テストケース定義（`--root` で探索、既定は `snapcase`）、タグ/ケース名による絞り込み
+  - 入力: `--root`（既定は `.`）、`--cases-dir`（既定は `snapcase`）
+  - 対象: `<root>/<cases-dir>/*/snapcase.json`
   - 出力: `expected/`配下の更新（`golden.lua` を実行して生成）
-  - 絞り込み: `--tag` / `--case`
   - `--dry-run` で更新内容を表示のみ
   - 規定は対話確認
   - `--no-confirm`（または `--yes`）で対話を省略して実行
-- 終了コード: 成功=0、失敗=1
+  - 終了コード: 成功=0、失敗=1
 
 ### テストケース定義
 

@@ -9,7 +9,8 @@ local function usage()
     "",
     "options:",
     "  --path PATH      Output workflow path (default: .github/workflows/nvim-snap.yml)",
-    "  --root PATH      Root directory for cases (default: snapcase)",
+    "  --root PATH       Root directory for cases (default: .)",
+    "  --cases-dir PATH  Cases directory under root (default: snapcase)",
     "  --format FMT     Compare formats (default: html)",
     "  --name NAME      Workflow name (default: nvim-snap)",
     "  --force          Overwrite existing workflow file",
@@ -20,7 +21,8 @@ end
 local function parse_args(args)
   local opts = {
     path = ".github/workflows/nvim-snap.yml",
-    root = "snapcase",
+    root = ".",
+    cases_dir = "snapcase",
     format = "html",
     name = "nvim-snap",
     force = false,
@@ -50,6 +52,17 @@ local function parse_args(args)
       end
     elseif vim.startswith(arg, "--root=") then
       opts.root = string.sub(arg, 8)
+    elseif arg == "--cases-dir" then
+      local value = args[i + 1]
+      if value == nil then
+        opts.invalid = opts.invalid or {}
+        table.insert(opts.invalid, "--cases-dir requires a value")
+      else
+        opts.cases_dir = value
+        i = i + 1
+      end
+    elseif vim.startswith(arg, "--cases-dir=") then
+      opts.cases_dir = string.sub(arg, 13)
     elseif arg == "--format" then
       local value = args[i + 1]
       if value == nil then
@@ -104,11 +117,12 @@ local function workflow_yaml(opts)
     "        run: sudo apt-get update && sudo apt-get install -y neovim",
     "      - name: Run snapshots",
     "        run: |",
-    "          nvim --headless -u NONE -i NONE -l snap.lua run --root " .. opts.root .. " --format json",
+    "          nvim --headless -u NONE -i NONE -l snap.lua run --root " .. opts.root
+      .. " --cases-dir " .. opts.cases_dir .. " --format json",
     "      - name: Compare snapshots",
     "        run: |",
-    "          nvim --headless -u NONE -i NONE -l snap.lua compare --root " .. opts.root .. " --format "
-      .. opts.format .. " --diff-always",
+    "          nvim --headless -u NONE -i NONE -l snap.lua compare --root " .. opts.root
+      .. " --cases-dir " .. opts.cases_dir .. " --format " .. opts.format .. " --diff-always",
     "      - name: Upload diffs",
     "        if: always()",
     "        uses: actions/upload-artifact@v4",

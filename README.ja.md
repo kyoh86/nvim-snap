@@ -12,7 +12,8 @@ nvim-snapは、NeovimのUIスナップショットに基づくテストを実行
 ![diff overlayの例](docs/diff-overlay.png)
 
 このリポジトリ内に `snapcase-example` を同梱しているので、そのままケースを実行して動作を確認できます。
-通常は `snapcase/` 配下にケースを作成します。
+既定では `--root` はカレントディレクトリ、`--cases-dir` は `snapcase/` です。
+ケースは `<root>/<cases-dir>/<case-name>/snapcase.json` に置きます。
 
 ## インストール
 
@@ -55,9 +56,10 @@ mise use 'github:kyoh86/nvim-snap[asset_pattern=nvim-snap]'
 
 ## コマンド
 
-以下の説明は、テストケースが `snapcase/<case-name>/snapcase.json` のように配置されている前提です。
+以下の説明は、既定のオプションで `snapcase/<case-name>/snapcase.json` のように配置されている想定です。
 ケース名はディレクトリ名で決まり、`snapcase.json` でケース情報と `core capture` の設定をまとめて管理します。
 `snapcase.json` の `rtp` は文字列または配列で、runtimepathに追加するパスを指定します。
+`${CASE}`（ケースディレクトリ）と `${ROOT}`（`--root` のパス）のプレースホルダが使えます。
 
 - `list` テストケース一覧
 - `new` テストケース雛形の作成
@@ -87,7 +89,7 @@ nvim-snap new --name basic-regression --kind regression
 nvim-snap new --name sample --kind golden --title "Sample Golden"
 ```
 
-`--name` を省略するとランダムなケース名を生成し、`snapcase/` 配下にディレクトリを作成します。
+`--name` を省略するとランダムなケース名を生成し、`<root>/<cases-dir>/` 配下にディレクトリを作成します。
 
 
 ### run

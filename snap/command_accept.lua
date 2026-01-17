@@ -10,7 +10,8 @@ local function usage()
     "  nvim-snap accept [options]",
     "",
     "options:",
-    "  --root PATH       Root directory to search (default: snapcase)",
+    "  --root PATH       Root directory to search (default: .)",
+    "  --cases-dir PATH  Cases directory under root (default: snapcase)",
     "  --tag TAG         Filter by tag (repeatable, comma-separated)",
     "  --case NAME       Filter by case name (repeatable, comma-separated)",
     "  --dry-run         Show updates without writing",
@@ -33,7 +34,8 @@ end
 
 local function parse_args(args)
   local opts = {
-    root = "snapcase",
+    root = ".",
+    cases_dir = "snapcase",
     tags = {},
     cases = {},
     dry_run = false,
@@ -53,6 +55,17 @@ local function parse_args(args)
       end
     elseif vim.startswith(arg, "--root=") then
       opts.root = string.sub(arg, 8)
+    elseif arg == "--cases-dir" then
+      local value = args[i + 1]
+      if value == nil then
+        opts.invalid = opts.invalid or {}
+        table.insert(opts.invalid, "--cases-dir requires a value")
+      else
+        opts.cases_dir = value
+        i = i + 1
+      end
+    elseif vim.startswith(arg, "--cases-dir=") then
+      opts.cases_dir = string.sub(arg, 13)
     elseif arg == "--tag" then
       local value = args[i + 1]
       if value == nil then
@@ -182,7 +195,8 @@ function M.run(args_list)
   end
 
   local root = vim.fs.normalize(vim.fn.fnamemodify(opts.root, ":p"))
-  local cases, errors = case_def.find_cases(root)
+  local cases_root = util.normalize_path(root, opts.cases_dir or "snapcase")
+  local cases, errors = case_def.find_cases(cases_root)
   local filtered = case_def.filter_cases(cases, { tags = opts.tags, ids = opts.cases })
   local actions = {}
   local failed = #errors > 0
