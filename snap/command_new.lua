@@ -187,6 +187,27 @@ local function write_case_gitignore(path, force)
 end
 
 ---@param path string
+---@param force boolean
+---@return boolean|nil
+---@return string|nil
+local function write_snapcase_json(path, force)
+  local payload = {
+    scenario = "scenario.lua",
+    out_dir = ".out",
+    data_home = ".nvim-data",
+    config_home = ".nvim-config",
+    outputs = {
+      json = "snapshot.json",
+      ansi = "snapshot.ansi",
+      html = "snapshot.html",
+    },
+    rtp = {},
+  }
+  local encoded = vim.json.encode(payload, { indent = "  " })
+  return write_file(path, encoded, force)
+end
+
+---@param path string
 ---@param opts table
 ---@return boolean|nil
 ---@return string|nil
@@ -301,6 +322,12 @@ function M.run(args_list)
   local ok_gitignore, err_gitignore = write_case_gitignore(vim.fs.joinpath(case_dir, ".gitignore"), opts.force)
   if not ok_gitignore then
     util.err_write(err_gitignore or "failed to write .gitignore")
+    vim.cmd("cq")
+    return
+  end
+  local ok_snapcase, err_snapcase = write_snapcase_json(vim.fs.joinpath(case_dir, "snapcase.json"), opts.force)
+  if not ok_snapcase then
+    util.err_write(err_snapcase or "failed to write snapcase.json")
     vim.cmd("cq")
     return
   end

@@ -2,6 +2,22 @@ local util = require("snap.util")
 
 local M = {}
 
+local function normalize_rtp(case_dir, rtp)
+  if type(rtp) == "string" then
+    rtp = { rtp }
+  end
+  if type(rtp) ~= "table" then
+    return {}
+  end
+  local out = {}
+  for _, value in ipairs(rtp) do
+    if type(value) == "string" and value ~= "" then
+      table.insert(out, util.normalize_path(case_dir, value))
+    end
+  end
+  return out
+end
+
 function M.load(opts)
   local case_path = opts.case
   if type(case_path) ~= "string" or case_path == "" then
@@ -76,6 +92,7 @@ function M.load(opts)
   opts.html_out = resolve_output("html")
   opts.data_home = util.normalize_path(case_dir, config.data_home or ".nvim-data")
   opts.config_home = util.normalize_path(case_dir, config.config_home or ".nvim-config")
+  opts.rtp = normalize_rtp(case_dir, config.rtp)
   opts.scripts = { scenario_path }
 
   return opts

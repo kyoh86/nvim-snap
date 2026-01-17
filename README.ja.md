@@ -56,6 +56,7 @@ mise use 'github:kyoh86/nvim-snap[asset_pattern=nvim-snap]'
 ## コマンド
 
 以下の説明は、テストケースが `snapcase/<case-name>/case.json` のように配置されている前提です。
+各ケースディレクトリに `snapcase.json` を置くことで、`core capture` の設定（出力先、data/config home、runtimepath）を指定できます。
 
 - `list` テストケース一覧
 - `new` テストケース雛形の作成

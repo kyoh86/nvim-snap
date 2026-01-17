@@ -109,6 +109,19 @@ function M.collect(opts)
     return nil, util.rpc_error_to_string(attach_err)
   end
 
+  if type(opts.rtp) == "table" and #opts.rtp > 0 then
+    local _, rtp_err = client:request("nvim_exec_lua", {
+      "local paths = ...\n"
+        .. "for i = #paths, 1, -1 do\n"
+        .. "  vim.opt.rtp:prepend(paths[i])\n"
+        .. "end\n",
+      { opts.rtp },
+    })
+    if rtp_err then
+      return nil, string.format("failed to set runtimepath: %s", util.rpc_error_to_string(rtp_err))
+    end
+  end
+
   for _, path in ipairs(opts.scripts) do
     local _, script_err = client:request("nvim_exec_lua", {
       "local p = ...; dofile(p)",
