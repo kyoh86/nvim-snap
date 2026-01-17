@@ -3,6 +3,18 @@ local util = require("snap.util")
 
 local M = {}
 
+local function format_path(path)
+  local cwd = vim.fn.getcwd()
+  local rel = vim.fn.fnamemodify(path, ":.")
+  if rel == "" or rel:sub(1, 2) == ".." then
+    return vim.fs.normalize(path)
+  end
+  if cwd == path then
+    return "."
+  end
+  return rel
+end
+
 local function usage()
   return table.concat({
     "usage:",
@@ -85,9 +97,10 @@ local function parse_args(args)
 end
 
 local function print_text(cases)
+  print(table.concat({ "name", "title", "kind", "tags", "path" }, "\t"))
   for _, c in ipairs(cases) do
     local tags = table.concat(c.tags, ",")
-    print(table.concat({ c.name, c.title, c.kind, tags, c.path }, "\t"))
+    print(table.concat({ c.name, c.title, c.kind, tags, format_path(c.path) }, "\t"))
   end
 end
 
@@ -102,7 +115,7 @@ local function print_json(root, cases)
       title = c.title,
       kind = c.kind,
       tags = c.tags,
-      path = c.path,
+      path = vim.fs.normalize(c.path),
     })
   end
   print(vim.json.encode(out, { indent = "  " }))
