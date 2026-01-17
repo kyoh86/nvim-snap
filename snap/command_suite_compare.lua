@@ -219,7 +219,7 @@ local function grid_text_matrix(snapshot)
   return rows, cols, matrix
 end
 
-local function lines_from_matrix(rows, cols, matrix)
+local function lines_from_matrix(rows, matrix)
   local lines = {}
   for r = 1, rows do
     local row = matrix[r] or {}
@@ -237,6 +237,10 @@ local function align_lines(expected_lines, actual_lines)
     linematch = true,
     indent_heuristic = true,
   })
+  if type(diffs) ~= "table" then
+    diffs = {}
+  end
+  ---@cast diffs integer[][]
   local pairs = {}
   local e = 1
   local a = 1
@@ -305,8 +309,8 @@ end
 local function build_aligned_maps(expected_snapshot, actual_snapshot)
   local erows, ecols, ematrix = grid_text_matrix(expected_snapshot)
   local arows, acols, amatrix = grid_text_matrix(actual_snapshot)
-  local expected_lines = lines_from_matrix(erows, ecols, ematrix)
-  local actual_lines = lines_from_matrix(arows, acols, amatrix)
+  local expected_lines = lines_from_matrix(erows, ematrix)
+  local actual_lines = lines_from_matrix(arows, amatrix)
   local pairs = align_lines(expected_lines, actual_lines)
   local cols = math.max(ecols, acols)
   local expected_rows = {}
