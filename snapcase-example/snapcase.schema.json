@@ -42,6 +42,16 @@
       "minimum": 1,
       "description": "UI lines"
     },
+    "wait": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "Wait for redraw flush (ms)"
+    },
+    "rpc_timeout": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "RPC timeout (ms)"
+    },
     "out_dir": {
       "type": "string",
       "description": "Output directory (default: .out)"

@@ -17,6 +17,13 @@ local M = {}
 ---@field scenario_path string
 ---@field golden_scenario_path string
 ---@field target_scenario_path string
+---@field width integer|nil
+---@field height integer|nil
+---@field wait integer|nil
+---@field rpc_timeout integer|nil
+---@field data_home string
+---@field config_home string
+---@field rtp string[]
 
 local function read_json(path)
   local fd, err = io.open(path, "r")
@@ -126,6 +133,14 @@ function M.load_case(case_path, root)
   if type(height) ~= "number" or height <= 0 then
     height = nil
   end
+  local wait = config.wait
+  if type(wait) ~= "number" or wait <= 0 then
+    wait = nil
+  end
+  local rpc_timeout = config.rpc_timeout
+  if type(rpc_timeout) ~= "number" or rpc_timeout <= 0 then
+    rpc_timeout = nil
+  end
   local data_home = util.normalize_path(case_dir, config.data_home or ".nvim-data")
   local config_home = util.normalize_path(case_dir, config.config_home or ".nvim-config")
   local rtp = normalize_rtp(case_dir, root or case_dir, config.rtp)
@@ -155,6 +170,8 @@ function M.load_case(case_path, root)
     target_scenario_path = target,
     width = width,
     height = height,
+    wait = wait,
+    rpc_timeout = rpc_timeout,
     data_home = data_home,
     config_home = config_home,
     rtp = rtp,
