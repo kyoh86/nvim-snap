@@ -5,7 +5,7 @@ local M = {}
 local function usage()
   return table.concat({
     "usage:",
-    "  nvim -l snap.lua init [options]",
+    "  nvim-snap init [options]",
     "",
     "options:",
     "  --path PATH      Output workflow path (default: .github/workflows/nvim-snap.yml)",

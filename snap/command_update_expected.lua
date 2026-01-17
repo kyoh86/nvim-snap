@@ -8,7 +8,7 @@ local M = {}
 local function usage()
   return table.concat({
     "usage:",
-    "  nvim -l snap.lua update-expected [options]",
+    "  nvim-snap update-expected [options]",
     "",
     "options:",
     "  --root PATH       Root directory to search (default: snapcase)",

@@ -5,7 +5,7 @@ local M = {}
 local function usage()
   return table.concat({
     "usage:",
-    "  nvim -l snap.lua new [options]",
+    "  nvim-snap new [options]",
     "",
     "options:",
     "  --root PATH       Root directory to create case (default: snapcase)",

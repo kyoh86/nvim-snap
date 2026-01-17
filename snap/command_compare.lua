@@ -9,7 +9,7 @@ local M = {}
 local function usage()
   return table.concat({
     "usage:",
-    "  nvim -l snap.lua core compare [options]",
+    "  nvim-snap core compare [options]",
     "",
     "options:",
     "  --actual PATH      Snapshot JSON path ('-' for stdin)",

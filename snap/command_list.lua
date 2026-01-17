@@ -18,7 +18,7 @@ end
 local function usage()
   return table.concat({
     "usage:",
-    "  nvim -l snap.lua list [options]",
+    "  nvim-snap list [options]",
     "",
     "options:",
     "  --root PATH    Root directory to search (default: snapcase)",

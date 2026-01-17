@@ -10,7 +10,7 @@ local M = {}
 local function usage()
   return table.concat({
     "usage:",
-    "  nvim -l snap.lua compare [options]",
+    "  nvim-snap compare [options]",
     "",
     "options:",
     "  --root PATH       Root directory to search (default: snapcase)",
