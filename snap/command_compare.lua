@@ -320,7 +320,7 @@ end
 local function align_lines(expected_lines, actual_lines)
   local expected_text = table.concat(expected_lines, "\n")
   local actual_text = table.concat(actual_lines, "\n")
-  local diffs = vim.text.diff(expected_text, actual_text, {
+  local diffs = util.text_diff(expected_text, actual_text, {
     result_type = "indices",
     algorithm = "patience",
     linematch = true,
@@ -473,7 +473,7 @@ end
 local function render_html_diff(expected, actual, default_view)
   local expected_render_text = render.render_text(expected)
   local actual_render_text = render.render_text(actual)
-  local unified = vim.text.diff(expected_render_text, actual_render_text, { result_type = "unified", ctxlen = 3 })
+  local unified = util.text_diff(expected_render_text, actual_render_text, { result_type = "unified", ctxlen = 3 })
   local diff_map = build_diff_map(expected, actual)
   local expected_plain = render.render_html_cells(expected, diff_map.expected, "removed")
   local actual_plain = render.render_html_cells(actual, diff_map.actual, "added")
@@ -607,7 +607,7 @@ function M.run(args_list)
     else
       local expected_out = render_for_diff(normalized_expected, opts.diff_format)
       local actual_out = render_for_diff(normalized_actual, opts.diff_format)
-      local diff = vim.text.diff(expected_out, actual_out, { result_type = "unified", ctxlen = 3 })
+      local diff = util.text_diff(expected_out, actual_out, { result_type = "unified", ctxlen = 3 })
       if diff then
         local ok, write_err = output.write(opts.diff_out, diff)
         if not ok then

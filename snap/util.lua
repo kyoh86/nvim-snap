@@ -36,6 +36,28 @@ function M.joinpath(...)
   return table.concat(filtered, "/")
 end
 
+function M.text_diff(expected, actual, opts)
+  if vim.text and vim.text.diff then
+    return vim.text.diff(expected, actual, opts)
+  end
+  if not vim.diff then
+    return nil
+  end
+  local ok, result = pcall(vim.diff, expected, actual, opts)
+  if ok then
+    return result
+  end
+  local fallback = {
+    result_type = opts and opts.result_type or nil,
+    ctxlen = opts and opts.ctxlen or nil,
+  }
+  local ok2, result2 = pcall(vim.diff, expected, actual, fallback)
+  if ok2 then
+    return result2
+  end
+  return nil
+end
+
 function M.normalize_path(base, path)
   if not path then
     return nil

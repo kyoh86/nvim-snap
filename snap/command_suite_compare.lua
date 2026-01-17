@@ -244,7 +244,7 @@ end
 local function align_lines(expected_lines, actual_lines)
   local expected_text = table.concat(expected_lines, "\n")
   local actual_text = table.concat(actual_lines, "\n")
-  local diffs = vim.text.diff(expected_text, actual_text, {
+  local diffs = util.text_diff(expected_text, actual_text, {
     result_type = "indices",
     algorithm = "patience",
     linematch = true,
@@ -502,7 +502,7 @@ end
 local function render_html_diff(expected, actual, default_view)
   local expected_render_text = render.render_text(expected)
   local actual_render_text = render.render_text(actual)
-  local unified = vim.text.diff(expected_render_text, actual_render_text, { result_type = "unified", ctxlen = 3 })
+  local unified = util.text_diff(expected_render_text, actual_render_text, { result_type = "unified", ctxlen = 3 })
   local diff_map = build_diff_map(expected, actual)
   local expected_plain = render.render_html_cells(expected, diff_map.expected, "removed")
   local actual_plain = render.render_html_cells(actual, diff_map.actual, "added")
@@ -534,14 +534,14 @@ end
 local function diff_files(expected, actual, formats)
   local results = {}
   if formats.text then
-    local diff = vim.text.diff(render.render_text(expected), render.render_text(actual), {
+    local diff = util.text_diff(render.render_text(expected), render.render_text(actual), {
       result_type = "unified",
       ctxlen = 3,
     })
     results.text = diff or ""
   end
   if formats.ansi then
-    local diff = vim.text.diff(render.render_ansi(expected), render.render_ansi(actual), {
+    local diff = util.text_diff(render.render_ansi(expected), render.render_ansi(actual), {
       result_type = "unified",
       ctxlen = 3,
     })
