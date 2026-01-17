@@ -45,6 +45,13 @@ local function expand_placeholders(value, vars)
   end))
 end
 
+local function is_absolute(path)
+  if path:sub(1, 1) == "/" then
+    return true
+  end
+  return path:match("^%a:[/\\]") ~= nil
+end
+
 local function normalize_rtp(case_dir, root, rtp)
   if type(rtp) == "string" then
     rtp = { rtp }
@@ -61,7 +68,11 @@ local function normalize_rtp(case_dir, root, rtp)
     if type(value) == "string" and value ~= "" then
       local expanded = expand_placeholders(value, vars)
       if expanded ~= "" then
-        table.insert(out, util.normalize_path(case_dir, expanded))
+        if is_absolute(expanded) then
+          table.insert(out, vim.fs.normalize(expanded))
+        else
+          table.insert(out, util.normalize_path(case_dir, expanded))
+        end
       end
     end
   end
@@ -189,10 +200,12 @@ function M.filter_cases(cases, filter)
 end
 
 ---@param root string
+---@param cases_dir string|nil
 ---@return SnapCase[]
 ---@return string[]
-function M.find_cases(root)
-  local paths = vim.fn.globpath(root, "*/snapcase.json", true, true)
+function M.find_cases(root, cases_dir)
+  local cases_root = util.normalize_path(root, cases_dir or "snapcase")
+  local paths = vim.fn.globpath(cases_root, "*/snapcase.json", true, true)
   local cases = {}
   local errors = {}
   for _, path in ipairs(paths) do

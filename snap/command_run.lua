@@ -207,8 +207,7 @@ function M.run(args_list)
   end
 
   local root = vim.fs.normalize(vim.fn.fnamemodify(opts.root, ":p"))
-  local cases_root = util.normalize_path(root, opts.cases_dir or "snapcase")
-  local cases, errors = case_def.find_cases(cases_root)
+  local cases, errors = case_def.find_cases(root, opts.cases_dir)
   local filtered = case_def.filter_cases(cases, { tags = opts.tags, ids = opts.cases })
   local failed = #errors > 0
 
