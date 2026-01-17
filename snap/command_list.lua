@@ -97,10 +97,43 @@ local function parse_args(args)
 end
 
 local function print_text(cases)
-  print(table.concat({ "name", "title", "kind", "tags", "path" }, "\t"))
+  local rows = {
+    { "name", "title", "kind", "tags", "path" },
+  }
   for _, c in ipairs(cases) do
-    local tags = table.concat(c.tags, ",")
-    print(table.concat({ c.name, c.title, c.kind, tags, format_path(c.path) }, "\t"))
+    table.insert(rows, {
+      c.name,
+      c.title,
+      c.kind,
+      table.concat(c.tags, ","),
+      format_path(c.path),
+    })
+  end
+  local widths = { 0, 0, 0, 0, 0 }
+  for _, row in ipairs(rows) do
+    for idx = 1, #widths do
+      local width = vim.fn.strdisplaywidth(row[idx] or "")
+      if width > widths[idx] then
+        widths[idx] = width
+      end
+    end
+  end
+  local function pad(value, width)
+    local text = value or ""
+    local pad_len = width - vim.fn.strdisplaywidth(text)
+    if pad_len < 0 then
+      pad_len = 0
+    end
+    return text .. string.rep(" ", pad_len)
+  end
+  for _, row in ipairs(rows) do
+    print(table.concat({
+      pad(row[1], widths[1]),
+      pad(row[2], widths[2]),
+      pad(row[3], widths[3]),
+      pad(row[4], widths[4]),
+      pad(row[5], widths[5]),
+    }, "  "))
   end
 end
 
