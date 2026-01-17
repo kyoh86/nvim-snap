@@ -169,38 +169,6 @@ local function render_for_diff(snapshot, format)
   return render.render_text(snapshot)
 end
 
-local function render_html_diff(expected, actual, default_view)
-  local expected_render_text = render.render_text(expected)
-  local actual_render_text = render.render_text(actual)
-  local unified = vim.text.diff(expected_render_text, actual_render_text, { result_type = "unified", ctxlen = 3 })
-  local diff_map = build_diff_map(expected, actual)
-  local expected_plain = render.render_html_cells(expected, diff_map.expected, "removed")
-  local actual_plain = render.render_html_cells(actual, diff_map.actual, "added")
-  local aligned = build_aligned_maps(expected, actual)
-  local expected_aligned = render.render_html_aligned(
-    expected,
-    aligned.expected_rows,
-    aligned.expected_line_kinds,
-    aligned.expected_cells,
-    "removed"
-  )
-  local actual_aligned = render.render_html_aligned(
-    actual,
-    aligned.actual_rows,
-    aligned.actual_line_kinds,
-    aligned.actual_cells,
-    "added"
-  )
-  return wrap_html_diff(
-    highlight_unified(unified or ""),
-    expected_plain,
-    actual_plain,
-    expected_aligned,
-    actual_aligned,
-    default_view
-  )
-end
-
 local function wrap_html_diff(unified_diff, expected_plain, actual_plain, expected_aligned, actual_aligned, default_view)
   if default_view ~= "side" and default_view ~= "overlay" then
     default_view = "unified"
@@ -340,7 +308,7 @@ local function grid_text_matrix(snapshot)
   return rows, cols, matrix
 end
 
-local function lines_from_matrix(rows, cols, matrix)
+local function lines_from_matrix(rows, matrix)
   local lines = {}
   for r = 1, rows do
     local row = matrix[r] or {}
@@ -358,6 +326,10 @@ local function align_lines(expected_lines, actual_lines)
     linematch = true,
     indent_heuristic = true,
   })
+  if type(diffs) ~= "table" then
+    diffs = {}
+  end
+  ---@cast diffs integer[][]
   local pairs = {}
   local e = 1
   local a = 1
@@ -426,8 +398,8 @@ end
 local function build_aligned_maps(expected_snapshot, actual_snapshot)
   local erows, ecols, ematrix = grid_text_matrix(expected_snapshot)
   local arows, acols, amatrix = grid_text_matrix(actual_snapshot)
-  local expected_lines = lines_from_matrix(erows, ecols, ematrix)
-  local actual_lines = lines_from_matrix(arows, acols, amatrix)
+  local expected_lines = lines_from_matrix(erows, ematrix)
+  local actual_lines = lines_from_matrix(arows, amatrix)
   local pairs = align_lines(expected_lines, actual_lines)
   local cols = math.max(ecols, acols)
   local expected_rows = {}
@@ -496,6 +468,38 @@ local function build_diff_map(expected_snapshot, actual_snapshot)
     end
   end
   return { expected = expected, actual = actual }
+end
+
+local function render_html_diff(expected, actual, default_view)
+  local expected_render_text = render.render_text(expected)
+  local actual_render_text = render.render_text(actual)
+  local unified = vim.text.diff(expected_render_text, actual_render_text, { result_type = "unified", ctxlen = 3 })
+  local diff_map = build_diff_map(expected, actual)
+  local expected_plain = render.render_html_cells(expected, diff_map.expected, "removed")
+  local actual_plain = render.render_html_cells(actual, diff_map.actual, "added")
+  local aligned = build_aligned_maps(expected, actual)
+  local expected_aligned = render.render_html_aligned(
+    expected,
+    aligned.expected_rows,
+    aligned.expected_line_kinds,
+    aligned.expected_cells,
+    "removed"
+  )
+  local actual_aligned = render.render_html_aligned(
+    actual,
+    aligned.actual_rows,
+    aligned.actual_line_kinds,
+    aligned.actual_cells,
+    "added"
+  )
+  return wrap_html_diff(
+    highlight_unified(unified or ""),
+    expected_plain,
+    actual_plain,
+    expected_aligned,
+    actual_aligned,
+    default_view
+  )
 end
 
 function M.run(args_list)
