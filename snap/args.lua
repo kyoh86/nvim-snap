@@ -3,7 +3,7 @@ local M = {}
 function M.usage()
   return table.concat({
     "usage:",
-    "  nvim -l snap.lua core capture [options]",
+    "  nvim-snap core capture [options]",
     "",
     "options:",
     "  --scenario PATH    Lua scenario file to run (repeatable)",
