@@ -197,7 +197,6 @@ end
 local function write_snapcase_json(path, opts)
   local payload = {
     version = 1,
-    name = opts.name,
     kind = opts.kind,
     scenario = "scenario.lua",
     out_dir = ".out",

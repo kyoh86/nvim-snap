@@ -56,7 +56,7 @@ mise use 'github:kyoh86/nvim-snap[asset_pattern=nvim-snap]'
 ## Commands
 
 The examples below assume cases are under `snapcase/<case-name>/snapcase.json`.
-Each case directory includes `snapcase.json` for case metadata and `core capture` settings.
+Case names come from the directory name, and `snapcase.json` holds the case metadata and `core capture` settings.
 `snapcase.json` accepts `rtp` (string or list) to prepend runtimepath entries.
 
 - `list` list test cases

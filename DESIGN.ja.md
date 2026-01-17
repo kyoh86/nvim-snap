@@ -176,16 +176,15 @@ CLIでは `snap.lua core <command>` で呼び出す。
 #### ケース定義（`snapcase.json`）
 
 - `version` 定義のバージョン
-- `name` ケース名（ディレクトリ名）
 - `title` 表示名（任意、既定はケース名）
 - `kind` `regression` または `golden`
 - `tags` タグ配列（任意）
+  - ケース名はディレクトリ名で決まり、`snapcase.json` には書かない
 
 例:
 ```json
 {
   "version": 1,
-  "name": "basic-regression",
   "title": "Basic Regression",
   "kind": "regression",
   "tags": [

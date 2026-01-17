@@ -1,18 +1,13 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
   "$id": "snapcase.schema.json",
-  "title": "nvim-snap capture settings",
+  "title": "nvim-snap case definition",
   "type": "object",
   "properties": {
     "version": {
       "type": "integer",
       "minimum": 1,
       "description": "snapcase.jsonのバージョン"
-    },
-    "name": {
-      "type": "string",
-      "minLength": 1,
-      "description": "ケース名（ディレクトリ名）"
     },
     "title": {
       "type": "string",
@@ -103,7 +98,6 @@
   },
   "required": [
     "version",
-    "name",
     "kind"
   ],
   "additionalProperties": false

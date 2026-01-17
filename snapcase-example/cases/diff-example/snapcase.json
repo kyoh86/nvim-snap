@@ -1,6 +1,5 @@
 {
   "version": 1,
-  "name": "diff-example",
   "title": "Diff Example",
   "kind": "regression",
   "tags": [

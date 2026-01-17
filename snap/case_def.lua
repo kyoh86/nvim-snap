@@ -65,12 +65,9 @@ function M.load_case(case_path)
   if type(version) ~= "number" or version < 1 or math.floor(version) ~= version then
     return nil, "case version is required"
   end
-  local name = config.name
+  local name = basename(case_dir)
   if type(name) ~= "string" or name == "" then
-    name = basename(case_dir)
-  end
-  if type(name) ~= "string" or name == "" then
-    return nil, "case name is required"
+    return nil, "case dir name is required"
   end
   local kind = config.kind
   if kind ~= "regression" and kind ~= "golden" then
