@@ -81,7 +81,7 @@ nvim-snap list --json
 
 ```sh
 nvim-snap new --name basic-regression --kind regression
-nvim-snap new --dir snapcase/sample --kind golden --title "Sample Golden"
+nvim-snap new --name sample --kind golden --title "Sample Golden"
 ```
 
 `--name` を省略するとランダムなケース名を生成し、`snapcase/` 配下にディレクトリを作成します。

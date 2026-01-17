@@ -81,7 +81,7 @@ Create a case scaffold.
 
 ```sh
 nvim-snap new --name basic-regression --kind regression
-nvim-snap new --dir snapcase/sample --kind golden --title "Sample Golden"
+nvim-snap new --name sample --kind golden --title "Sample Golden"
 ```
 
 When `--name` is omitted, `nvim-snap` generates a random case name and creates the directory under `snapcase/`.

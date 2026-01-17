@@ -9,7 +9,6 @@ local function usage()
     "",
     "options:",
     "  --root PATH       Root directory to create case (default: snapcase)",
-    "  --dir PATH        Case directory (overrides --root/--name)",
     "  --name NAME       Case name (optional, random if omitted)",
     "  --title TITLE     Case display title",
     "  --kind KIND       regression|golden (default: regression)",
@@ -34,7 +33,6 @@ local function parse_args(args)
   local opts = {
     root = "snapcase",
     name = nil,
-    dir = nil,
     title = nil,
     kind = "regression",
     tags = {},
@@ -54,17 +52,6 @@ local function parse_args(args)
       end
     elseif vim.startswith(arg, "--root=") then
       opts.root = string.sub(arg, 8)
-    elseif arg == "--dir" then
-      local value = args[i + 1]
-      if value == nil then
-        opts.invalid = opts.invalid or {}
-        table.insert(opts.invalid, "--dir requires a value")
-      else
-        opts.dir = value
-        i = i + 1
-      end
-    elseif vim.startswith(arg, "--dir=") then
-      opts.dir = string.sub(arg, 7)
     elseif arg == "--name" then
       local value = args[i + 1]
       if value == nil then
@@ -287,21 +274,16 @@ function M.run(args_list)
   local root = vim.fs.normalize(vim.fn.fnamemodify(opts.root, ":p"))
   vim.fn.mkdir(root, "p")
   local case_dir
-  if opts.dir and opts.dir ~= "" then
-    case_dir = vim.fs.normalize(vim.fn.fnamemodify(opts.dir, ":p"))
-    opts.name = vim.fs.basename(case_dir)
-  else
-    if not opts.name or opts.name == "" then
-      local generated, err = generate_case_name(root)
-      if not generated then
-        util.err_write(err or "failed to generate case name")
-        vim.cmd("cq")
-        return
-      end
-      opts.name = generated
+  if not opts.name or opts.name == "" then
+    local generated, err = generate_case_name(root)
+    if not generated then
+      util.err_write(err or "failed to generate case name")
+      vim.cmd("cq")
+      return
     end
-    case_dir = vim.fs.normalize(vim.fs.joinpath(root, opts.name))
+    opts.name = generated
   end
+  case_dir = vim.fs.normalize(vim.fs.joinpath(root, opts.name))
 
   if vim.fn.isdirectory(case_dir) == 1 and not opts.force then
     util.err_write("case directory already exists: " .. case_dir)
