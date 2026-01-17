@@ -115,13 +115,17 @@ local function workflow_yaml(opts)
     "      - uses: actions/checkout@v4",
     "      - name: Install Neovim",
     "        run: sudo apt-get update && sudo apt-get install -y neovim",
+    "      - name: Install nvim-snap",
+    "        run: |",
+    "          curl -sSL https://github.com/kyoh86/nvim-snap/releases/latest/download/nvim-snap -o nvim-snap",
+    "          chmod +x nvim-snap",
     "      - name: Run snapshots",
     "        run: |",
-    "          nvim --headless -u NONE -i NONE -l snap.lua run --root " .. opts.root
+    "          ./nvim-snap run --root " .. opts.root
       .. " --cases-dir " .. opts.cases_dir .. " --format json",
     "      - name: Compare snapshots",
     "        run: |",
-    "          nvim --headless -u NONE -i NONE -l snap.lua compare --root " .. opts.root
+    "          ./nvim-snap compare --root " .. opts.root
       .. " --cases-dir " .. opts.cases_dir .. " --format " .. opts.format .. " --diff-always",
     "      - name: Upload diffs",
     "        if: always()",
