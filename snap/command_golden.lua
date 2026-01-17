@@ -145,9 +145,15 @@ local function print_actions(actions)
 end
 
 local function confirm_actions(actions)
-  local message = string.format("Generate golden snapshots for %d case(s)?", #actions)
-  local choice = vim.fn.confirm(message, "&Yes\n&No", 2)
-  return choice == 1
+  local message = string.format("Generate golden snapshots for %d case(s)? [y/N]: ", #actions)
+  io.stderr:write(message)
+  io.stderr:flush()
+  local answer = io.read("*l")
+  if not answer then
+    return false
+  end
+  answer = vim.trim(answer):lower()
+  return answer == "y" or answer == "yes"
 end
 
 local function perform_action(action)
