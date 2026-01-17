@@ -16,7 +16,18 @@ function M.start_embedded_nvim(opts)
     env[#env + 1] = "XDG_CONFIG_HOME=" .. opts.config_home
   end
   if opts.log_file then
+    local log_dir = vim.fn.fnamemodify(opts.log_file, ":h")
+    if log_dir and log_dir ~= "." then
+      vim.fn.mkdir(log_dir, "p")
+    end
+    local fd = io.open(opts.log_file, "a")
+    if fd then
+      fd:close()
+    end
     env[#env + 1] = "NVIM_LOG_FILE=" .. opts.log_file
+  end
+  if opts.log_level then
+    env[#env + 1] = "NVIM_LOG_LEVEL=" .. opts.log_level
   end
 
   local stdin = uv.new_pipe(false)

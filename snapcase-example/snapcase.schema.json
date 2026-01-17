@@ -56,6 +56,10 @@
       "type": "string",
       "description": "Neovim log file path (NVIM_LOG_FILE)"
     },
+    "log_level": {
+      "type": "string",
+      "description": "Neovim log level (NVIM_LOG_LEVEL)"
+    },
     "out_dir": {
       "type": "string",
       "description": "Output directory (default: .out)"
