@@ -184,6 +184,22 @@ local function write_file(path, contents, force)
 end
 
 ---@param path string
+---@param force boolean
+---@return boolean|nil
+---@return string|nil
+local function write_case_gitignore(path, force)
+  local contents = table.concat({
+    ".nvim-data/",
+    ".nvim-config/",
+    ".out/",
+    "actual/",
+    "diff/",
+    "",
+  }, "\n")
+  return write_file(path, contents, force)
+end
+
+---@param path string
 ---@param opts table
 ---@return boolean|nil
 ---@return string|nil
@@ -297,6 +313,12 @@ function M.run(args_list)
   local ok, err = write_case_json(vim.fs.joinpath(case_dir, "case.json"), opts)
   if not ok then
     util.err_write(err or "failed to write case.json")
+    vim.cmd("cq")
+    return
+  end
+  local ok_gitignore, err_gitignore = write_case_gitignore(vim.fs.joinpath(case_dir, ".gitignore"), opts.force)
+  if not ok_gitignore then
+    util.err_write(err_gitignore or "failed to write .gitignore")
     vim.cmd("cq")
     return
   end
