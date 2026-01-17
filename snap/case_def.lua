@@ -2,6 +2,22 @@ local util = require("snap.util")
 
 local M = {}
 
+---@class SnapCase
+---@field name string
+---@field title string
+---@field kind "regression"|"golden"
+---@field tags string[]
+---@field dir string
+---@field path string
+---@field expected_dir string
+---@field actual_dir string
+---@field diff_dir string
+---@field expected_path string
+---@field actual_path string
+---@field scenario_path string
+---@field golden_scenario_path string
+---@field target_scenario_path string
+
 local function read_json(path)
   local fd, err = io.open(path, "r")
   if not fd then
@@ -36,6 +52,9 @@ local function normalize_tags(tags)
   return out
 end
 
+---@param case_path string
+---@return SnapCase|nil
+---@return string|nil
 function M.load_case(case_path)
   local case_dir = vim.fs.normalize(vim.fn.fnamemodify(case_path, ":p:h"))
   local config, err = read_json(case_path)
@@ -127,6 +146,9 @@ function M.filter_cases(cases, filter)
   return out
 end
 
+---@param root string
+---@return SnapCase[]
+---@return string[]
 function M.find_cases(root)
   local paths = vim.fn.globpath(root, "**/case.json", true, true)
   local cases = {}
