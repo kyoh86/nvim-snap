@@ -190,8 +190,15 @@ end
 ---@param force boolean
 ---@return boolean|nil
 ---@return string|nil
-local function write_snapcase_json(path, force)
+---@param path string
+---@param opts table
+---@return boolean|nil
+---@return string|nil
+local function write_snapcase_json(path, opts)
   local payload = {
+    version = 1,
+    name = opts.name,
+    kind = opts.kind,
     scenario = "scenario.lua",
     out_dir = ".out",
     data_home = ".nvim-data",
@@ -201,21 +208,9 @@ local function write_snapcase_json(path, force)
       ansi = "snapshot.ansi",
       html = "snapshot.html",
     },
-    rtp = {},
-  }
-  local encoded = vim.json.encode(payload, { indent = "  " })
-  return write_file(path, encoded, force)
-end
-
----@param path string
----@param opts table
----@return boolean|nil
----@return string|nil
-local function write_case_json(path, opts)
-  local payload = {
-    version = 1,
-    name = opts.name,
-    kind = opts.kind,
+    rtp = {
+      ".",
+    },
   }
   if opts.title and opts.title ~= "" then
     payload.title = opts.title
@@ -313,9 +308,9 @@ function M.run(args_list)
   end
   vim.fn.mkdir(case_dir, "p")
 
-  local ok, err = write_case_json(vim.fs.joinpath(case_dir, "case.json"), opts)
+  local ok, err = write_snapcase_json(vim.fs.joinpath(case_dir, "snapcase.json"), opts)
   if not ok then
-    util.err_write(err or "failed to write case.json")
+    util.err_write(err or "failed to write snapcase.json")
     vim.cmd("cq")
     return
   end
@@ -325,13 +320,6 @@ function M.run(args_list)
     vim.cmd("cq")
     return
   end
-  local ok_snapcase, err_snapcase = write_snapcase_json(vim.fs.joinpath(case_dir, "snapcase.json"), opts.force)
-  if not ok_snapcase then
-    util.err_write(err_snapcase or "failed to write snapcase.json")
-    vim.cmd("cq")
-    return
-  end
-
   vim.fn.mkdir(vim.fs.joinpath(case_dir, "expected"), "p")
   vim.fn.mkdir(vim.fs.joinpath(case_dir, "actual"), "p")
   vim.fn.mkdir(vim.fs.joinpath(case_dir, "diff"), "p")

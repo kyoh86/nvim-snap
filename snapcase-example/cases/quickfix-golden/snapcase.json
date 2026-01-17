@@ -1,0 +1,23 @@
+{
+  "version": 1,
+  "name": "quickfix-golden",
+  "title": "Quickfix Golden",
+  "kind": "golden",
+  "tags": [
+    "quickfix",
+    "golden",
+    "example"
+  ],
+  "scenario": "target.lua",
+  "out_dir": ".out",
+  "data_home": ".nvim-data",
+  "config_home": ".nvim-config",
+  "outputs": {
+    "json": "snapshot.json",
+    "ansi": "snapshot.ansi",
+    "html": "snapshot.html"
+  },
+  "rtp": [
+    "."
+  ]
+}

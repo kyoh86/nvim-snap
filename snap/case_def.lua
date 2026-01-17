@@ -27,10 +27,10 @@ local function read_json(path)
   fd:close()
   local ok, decoded = pcall(vim.json.decode, text)
   if not ok then
-    return nil, "failed to parse case.json: " .. tostring(decoded)
+    return nil, "failed to parse snapcase.json: " .. tostring(decoded)
   end
   if type(decoded) ~= "table" then
-    return nil, "invalid case.json: expected object"
+    return nil, "invalid snapcase.json: expected object"
   end
   return decoded
 end
@@ -150,7 +150,7 @@ end
 ---@return SnapCase[]
 ---@return string[]
 function M.find_cases(root)
-  local paths = vim.fn.globpath(root, "**/case.json", true, true)
+  local paths = vim.fn.globpath(root, "**/snapcase.json", true, true)
   local cases = {}
   local errors = {}
   for _, path in ipairs(paths) do

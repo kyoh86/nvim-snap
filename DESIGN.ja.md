@@ -89,7 +89,7 @@ CLIでは `snap.lua core <command>` で呼び出す。
 - 終了コード: 成功=0、失敗=1
 - `new`: テストケースの雛形を作成する
   - 入力: `--root`（既定は `snapcase`）、`--name`（省略時は自動生成）、`--title`、`--kind`、`--tag`
-  - 出力: ケースディレクトリ配下の`case.json`とシナリオ雛形、`expected/actual/diff`の作成
+  - 出力: ケースディレクトリ配下の`snapcase.json`とシナリオ雛形、`expected/actual/diff`の作成
   - `--force` で既存ファイルを上書きできる
 - `init`: GitHub Actions向けのワークフロー雛形を作成する
   - 入力: `--path`（既定は `.github/workflows/nvim-snap.yml`）、`--root`（既定は `snapcase`）、`--format`
@@ -165,7 +165,7 @@ CLIでは `snap.lua core <command>` で呼び出す。
 
 #### ケースディレクトリ構成
 
-- `case.json` ケース定義ファイル（後述）
+- `snapcase.json` ケース定義ファイル（後述）
 - `expected/` 期待値（`snapshot.json` など）
 - `actual/` 実行結果（`snapshot.json` など）
 - `diff/` 比較結果（HTMLなど、任意）
@@ -173,7 +173,7 @@ CLIでは `snap.lua core <command>` で呼び出す。
 - `golden.lua` ゴールデンテスト用のゴールデンシナリオ
 - `target.lua` ゴールデンテスト用の実装結果シナリオ
 
-#### ケース定義（`case.json`）
+#### ケース定義（`snapcase.json`）
 
 - `version` 定義のバージョン
 - `name` ケース名（ディレクトリ名）
@@ -197,4 +197,4 @@ CLIでは `snap.lua core <command>` で呼び出す。
 
 #### スキーマ
 
-`case.json` 用のJSON Schemaを用意する。
+`snapcase.json` 用のJSON Schemaを用意する。

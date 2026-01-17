@@ -16,10 +16,10 @@ nvim-snap core capture --scenario snapcase-example/cases/diff-example/scenario.l
 
 ## Layout
 
-- `case.schema.json` JSON Schema
+- `snapcase.schema.json` JSON Schema for case definition and capture settings
 - `cases/` sample cases (regression/golden mixed)
   - `diff-example/` regression case with diff-oriented scenarios
 
 ## Notes
 
-`case.json` is for high-level case management, so `core capture` does not read it.
+`snapcase.json` is used by both the high-level commands and `core capture`.

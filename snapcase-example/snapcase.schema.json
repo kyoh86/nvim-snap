@@ -1,0 +1,110 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "snapcase.schema.json",
+  "title": "nvim-snap capture settings",
+  "type": "object",
+  "properties": {
+    "version": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "snapcase.jsonのバージョン"
+    },
+    "name": {
+      "type": "string",
+      "minLength": 1,
+      "description": "ケース名（ディレクトリ名）"
+    },
+    "title": {
+      "type": "string",
+      "description": "表示名（省略時はケース名）"
+    },
+    "kind": {
+      "type": "string",
+      "enum": [
+        "regression",
+        "golden"
+      ],
+      "description": "テスト種別"
+    },
+    "tags": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "タグの配列"
+    },
+    "scenario": {
+      "type": "string",
+      "description": "Scenario script path (default: scenario.lua)"
+    },
+    "width": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "UI columns"
+    },
+    "height": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "UI lines"
+    },
+    "out_dir": {
+      "type": "string",
+      "description": "Output directory (default: .out)"
+    },
+    "outputs": {
+      "type": "object",
+      "properties": {
+        "json": {
+          "type": [
+            "string",
+            "boolean"
+          ],
+          "description": "snapshot.json path, false or \"none\" to disable"
+        },
+        "ansi": {
+          "type": [
+            "string",
+            "boolean"
+          ],
+          "description": "snapshot.ansi path, false or \"none\" to disable"
+        },
+        "html": {
+          "type": [
+            "string",
+            "boolean"
+          ],
+          "description": "snapshot.html path, false or \"none\" to disable"
+        }
+      },
+      "additionalProperties": false
+    },
+    "data_home": {
+      "type": "string",
+      "description": "XDG data home (default: .nvim-data)"
+    },
+    "config_home": {
+      "type": "string",
+      "description": "XDG config home (default: .nvim-config)"
+    },
+    "rtp": {
+      "oneOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      ],
+      "description": "Runtimepath entries to prepend"
+    }
+  },
+  "required": [
+    "version",
+    "name",
+    "kind"
+  ],
+  "additionalProperties": false
+}
