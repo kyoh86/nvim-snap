@@ -23,6 +23,7 @@ local M = {}
 ---@field rpc_timeout integer|nil
 ---@field data_home string
 ---@field config_home string
+---@field log_file string|nil
 ---@field rtp string[]
 
 local function read_json(path)
@@ -141,6 +142,10 @@ function M.load_case(case_path, root)
   if type(rpc_timeout) ~= "number" or rpc_timeout <= 0 then
     rpc_timeout = nil
   end
+  local log_file = config.log_file
+  if type(log_file) ~= "string" or log_file == "" then
+    log_file = nil
+  end
   local data_home = util.normalize_path(case_dir, config.data_home or ".nvim-data")
   local config_home = util.normalize_path(case_dir, config.config_home or ".nvim-config")
   local rtp = normalize_rtp(case_dir, root or case_dir, config.rtp)
@@ -174,6 +179,7 @@ function M.load_case(case_path, root)
     rpc_timeout = rpc_timeout,
     data_home = data_home,
     config_home = config_home,
+    log_file = log_file and util.normalize_path(case_dir, log_file) or nil,
     rtp = rtp,
   }
 end

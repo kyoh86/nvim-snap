@@ -15,6 +15,9 @@ function M.start_embedded_nvim(opts)
   if opts.config_home then
     env[#env + 1] = "XDG_CONFIG_HOME=" .. opts.config_home
   end
+  if opts.log_file then
+    env[#env + 1] = "NVIM_LOG_FILE=" .. opts.log_file
+  end
 
   local stdin = uv.new_pipe(false)
   local stdout = uv.new_pipe(false)
@@ -113,6 +116,21 @@ function M.new_rpc_client(proc, opts)
     return true
   end
 
+  local function stderr_summary()
+    if #client.stderr_chunks == 0 then
+      return nil
+    end
+    local text = table.concat(client.stderr_chunks)
+    if #text > 2000 then
+      text = "...(truncated)...\n" .. text:sub(-2000)
+    end
+    text = text:gsub("%s+$", "")
+    if text == "" then
+      return nil
+    end
+    return text
+  end
+
   function client:request(method, params)
     self.msgid = self.msgid + 1
     local id = self.msgid
@@ -124,9 +142,17 @@ function M.new_rpc_client(proc, opts)
       return self.responses[id] ~= nil or self.proc.state.exited
     end, 5)
     if not done then
+      local stderr = stderr_summary()
+      if stderr then
+        return nil, "rpc timeout\nstderr:\n" .. stderr
+      end
       return nil, "rpc timeout"
     end
     if self.proc.state.exited then
+      local stderr = stderr_summary()
+      if stderr then
+        return nil, "nvim exited\nstderr:\n" .. stderr
+      end
       return nil, "nvim exited"
     end
     local resp = self.responses[id]

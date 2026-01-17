@@ -141,6 +141,7 @@ local function collect_snapshot(c)
     nvim = "nvim",
     data_home = c.data_home or util.normalize_path(c.dir, ".nvim-data"),
     config_home = c.config_home or util.normalize_path(c.dir, ".nvim-config"),
+    log_file = c.log_file,
     multigrid = false,
     rtp = c.rtp,
   }
