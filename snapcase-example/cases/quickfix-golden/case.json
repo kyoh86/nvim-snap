@@ -1,7 +1,7 @@
 {
   "version": 1,
-  "id": "quickfix-golden",
-  "name": "Quickfix Golden",
+  "name": "quickfix-golden",
+  "title": "Quickfix Golden",
   "kind": "golden",
   "tags": [
     "quickfix",

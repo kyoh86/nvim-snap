@@ -1,7 +1,7 @@
 {
   "version": 1,
-  "id": "floating-golden",
-  "name": "Floating Window Golden",
+  "name": "floating-golden",
+  "title": "Floating Window Golden",
   "kind": "golden",
   "tags": [
     "float",

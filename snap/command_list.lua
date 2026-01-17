@@ -11,7 +11,7 @@ local function usage()
     "options:",
     "  --root PATH    Root directory to search (default: snapcase)",
     "  --tag TAG      Filter by tag (repeatable, comma-separated)",
-    "  --case ID      Filter by case id (repeatable, comma-separated)",
+    "  --case NAME    Filter by case name (repeatable, comma-separated)",
     "  --json         Output JSON",
     "  -h, --help     Show this help",
   }, "\n")
@@ -87,7 +87,7 @@ end
 local function print_text(cases)
   for _, c in ipairs(cases) do
     local tags = table.concat(c.tags, ",")
-    print(table.concat({ c.id, c.name, c.kind, tags, c.path }, "\t"))
+    print(table.concat({ c.name, c.title, c.kind, tags, c.path }, "\t"))
   end
 end
 
@@ -98,8 +98,8 @@ local function print_json(root, cases)
   }
   for _, c in ipairs(cases) do
     table.insert(out.cases, {
-      id = c.id,
       name = c.name,
+      title = c.title,
       kind = c.kind,
       tags = c.tags,
       path = c.path,

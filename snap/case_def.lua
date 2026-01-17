@@ -46,17 +46,20 @@ function M.load_case(case_path)
   if type(version) ~= "number" or version < 1 or math.floor(version) ~= version then
     return nil, "case version is required"
   end
-  local id = config.id
-  if type(id) ~= "string" or id == "" then
-    return nil, "case id is required"
+  local name = config.name
+  if type(name) ~= "string" or name == "" then
+    name = basename(case_dir)
+  end
+  if type(name) ~= "string" or name == "" then
+    return nil, "case name is required"
   end
   local kind = config.kind
   if kind ~= "regression" and kind ~= "golden" then
     return nil, "case kind must be regression or golden"
   end
-  local name = config.name
-  if type(name) ~= "string" or name == "" then
-    name = basename(case_dir)
+  local title = config.title
+  if type(title) ~= "string" or title == "" then
+    title = name
   end
   local tags = normalize_tags(config.tags)
 
@@ -69,8 +72,8 @@ function M.load_case(case_path)
   local target = util.normalize_path(case_dir, "target.lua")
 
   return {
-    id = id,
     name = name,
+    title = title,
     kind = kind,
     tags = tags,
     dir = case_dir,
@@ -102,12 +105,12 @@ local function matches_tag(case_tags, filter_tags)
   return false
 end
 
-local function matches_case_id(id, filter_ids)
-  if #filter_ids == 0 then
+local function matches_case_name(name, filter_names)
+  if #filter_names == 0 then
     return true
   end
-  for _, value in ipairs(filter_ids) do
-    if value == id then
+  for _, value in ipairs(filter_names) do
+    if value == name then
       return true
     end
   end
@@ -117,7 +120,7 @@ end
 function M.filter_cases(cases, filter)
   local out = {}
   for _, c in ipairs(cases) do
-    if matches_tag(c.tags, filter.tags or {}) and matches_case_id(c.id, filter.ids or {}) then
+    if matches_tag(c.tags, filter.tags or {}) and matches_case_name(c.name, filter.ids or {}) then
       table.insert(out, c)
     end
   end
@@ -137,7 +140,7 @@ function M.find_cases(root)
     end
   end
   table.sort(cases, function(a, b)
-    return a.id < b.id
+    return a.name < b.name
   end)
   return cases, errors
 end

@@ -1,7 +1,7 @@
 {
   "version": 1,
-  "id": "snapcase-example",
-  "name": "Snapcase Example",
+  "name": "snapcase-example",
+  "title": "Snapcase Example",
   "kind": "regression",
   "tags": [
     "example"

@@ -15,7 +15,7 @@ local function usage()
     "options:",
     "  --root PATH       Root directory to search (default: snapcase)",
     "  --tag TAG         Filter by tag (repeatable, comma-separated)",
-    "  --case ID         Filter by case id (repeatable, comma-separated)",
+    "  --case NAME       Filter by case name (repeatable, comma-separated)",
     "  --format FMT      Diff formats: text,ansi,html,png (default: text)",
     "  --diff-always     Always generate diffs",
     "  --json            Output JSON summary",
@@ -597,8 +597,8 @@ local function print_text(results)
       diff_paths = table.concat(items, ",")
     end
     print(table.concat({
-      r.id,
       r.name,
+      r.title,
       r.kind,
       tags,
       r.result,
@@ -654,8 +654,8 @@ function M.run(args_list)
   for _, c in ipairs(filtered) do
     summary.total = summary.total + 1
     local entry = {
-      id = c.id,
       name = c.name,
+      title = c.title,
       kind = c.kind,
       tags = c.tags,
       result = "error",
@@ -668,7 +668,7 @@ function M.run(args_list)
       summary.error = summary.error + 1
       has_error = true
       table.insert(results, entry)
-      util.err_write(c.id .. ": " .. entry.error_reason)
+      util.err_write(c.name .. ": " .. entry.error_reason)
       goto continue
     end
     local actual_text, actual_err = read_input(c.actual_path)
@@ -677,7 +677,7 @@ function M.run(args_list)
       summary.error = summary.error + 1
       has_error = true
       table.insert(results, entry)
-      util.err_write(c.id .. ": " .. entry.error_reason)
+      util.err_write(c.name .. ": " .. entry.error_reason)
       goto continue
     end
     local expected_snapshot, expected_decode_err = decode_json(expected_text)
@@ -686,7 +686,7 @@ function M.run(args_list)
       summary.error = summary.error + 1
       has_error = true
       table.insert(results, entry)
-      util.err_write(c.id .. ": " .. entry.error_reason)
+      util.err_write(c.name .. ": " .. entry.error_reason)
       goto continue
     end
     local actual_snapshot, actual_decode_err = decode_json(actual_text)
@@ -695,7 +695,7 @@ function M.run(args_list)
       summary.error = summary.error + 1
       has_error = true
       table.insert(results, entry)
-      util.err_write(c.id .. ": " .. entry.error_reason)
+      util.err_write(c.name .. ": " .. entry.error_reason)
       goto continue
     end
 
@@ -719,7 +719,7 @@ function M.run(args_list)
         entry.error_reason = write_err or "failed to write diff"
         summary.error = summary.error + 1
         has_error = true
-        util.err_write(c.id .. ": " .. entry.error_reason)
+        util.err_write(c.name .. ": " .. entry.error_reason)
       else
         entry.diff_paths = diff_paths
       end

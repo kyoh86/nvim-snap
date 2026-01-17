@@ -14,7 +14,7 @@ local function usage()
     "options:",
     "  --root PATH       Root directory to search (default: snapcase)",
     "  --tag TAG         Filter by tag (repeatable, comma-separated)",
-    "  --case ID         Filter by case id (repeatable, comma-separated)",
+    "  --case NAME       Filter by case name (repeatable, comma-separated)",
     "  --format FMT      Output formats: json,ansi,html (default: json)",
     "  -h, --help        Show this help",
   }, "\n")
@@ -192,12 +192,12 @@ function M.run(args_list)
   for _, c in ipairs(filtered) do
     local snap, err = collect_snapshot(c)
     if not snap then
-      util.err_write(c.id .. ": " .. (err or "capture failed"))
+      util.err_write(c.name .. ": " .. (err or "capture failed"))
       failed = true
     else
       local ok_write, write_err = write_outputs(c, opts.formats, snap)
       if not ok_write then
-        util.err_write(c.id .. ": " .. (write_err or "failed to write outputs"))
+        util.err_write(c.name .. ": " .. (write_err or "failed to write outputs"))
         failed = true
       end
     end

@@ -13,7 +13,7 @@ local function usage()
     "options:",
     "  --root PATH       Root directory to search (default: snapcase)",
     "  --tag TAG         Filter by tag (repeatable, comma-separated)",
-    "  --case ID         Filter by case id (repeatable, comma-separated)",
+    "  --case NAME       Filter by case name (repeatable, comma-separated)",
     "  --dry-run         Show updates without writing",
     "  --no-confirm      Skip confirmation prompt",
     "  --yes             Alias of --no-confirm",
@@ -148,7 +148,7 @@ end
 
 local function print_actions(actions)
   for _, action in ipairs(actions) do
-    print(action.case.id .. "\t" .. describe_action(action))
+    print(action.case.name .. "\t" .. describe_action(action))
   end
 end
 
@@ -222,7 +222,7 @@ function M.run(args_list)
   for _, c in ipairs(filtered) do
     local action, err = build_action(c)
     if not action then
-      util.err_write(c.id .. ": " .. (err or "failed to build action"))
+      util.err_write(c.name .. ": " .. (err or "failed to build action"))
       failed = true
     else
       table.insert(actions, action)
@@ -253,10 +253,10 @@ function M.run(args_list)
   for _, action in ipairs(actions) do
     local ok, err = perform_action(action)
     if not ok then
-      util.err_write(action.case.id .. ": " .. (err or "failed to update expected"))
+      util.err_write(action.case.name .. ": " .. (err or "failed to update expected"))
       failed = true
     else
-      print(action.case.id .. "\tupdated")
+      print(action.case.name .. "\tupdated")
     end
   end
 

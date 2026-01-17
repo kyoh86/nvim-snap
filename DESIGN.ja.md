@@ -61,34 +61,34 @@ CLIでは `snap.lua core <command>` で呼び出す。
 
 - `list`: テストケースの一覧を表示する
   - 入力: テストケース定義（`--root` で探索、既定は `snapcase`）
-  - 出力: 一覧（id/name/kind/tags/path）
+  - 出力: 一覧（name/title/kind/tags/path）
   - 形式: 既定はテキスト、`--json` でJSON出力
   - 絞り込み: `--tag` / `--case`
   - JSON出力:
     - `root` ルートディレクトリ
     - `cases[]` ケース配列
-      - `id` / `name` / `kind` / `tags` / `path`
+      - `name` / `title` / `kind` / `tags` / `path`
     - 例:
       ```json
       {
         "root": ".",
         "cases": [
           {
-            "id": "case-id",
-            "name": "Case Name",
+            "name": "case-name",
+            "title": "Case Title",
             "kind": "regression",
             "tags": [
               "ui",
               "regression"
             ],
-            "path": "tests/cases/case-id"
+            "path": "tests/cases/case-name"
           }
         ]
       }
       ```
 - 終了コード: 成功=0、失敗=1
 - `new`: テストケースの雛形を作成する
-  - 入力: `--root`（既定は `snapcase`）、`--id`（省略時は自動生成）、`--kind`、`--name`、`--tag`
+  - 入力: `--root`（既定は `snapcase`）、`--name`（省略時は自動生成）、`--title`、`--kind`、`--tag`
   - 出力: ケースディレクトリ配下の`case.json`とシナリオ雛形、`expected/actual/diff`の作成
   - `--dir` で作成先を直接指定できる
   - `--force` で既存ファイルを上書きできる
@@ -97,25 +97,25 @@ CLIでは `snap.lua core <command>` で呼び出す。
   - 出力: ワークフローYAML
   - `--force` で既存ファイルを上書きできる
 - `run`: テストケースを実行してactualを生成する
-  - 入力: テストケース定義（`--root` で探索、既定は `snapcase`）、タグ/ケースIDによる絞り込み
+  - 入力: テストケース定義（`--root` で探索、既定は `snapcase`）、タグ/ケース名による絞り込み
   - 出力: 各ケースの`actual/`配下にスナップショット
   - 絞り込み: `--tag` / `--case`
   - 出力形式: `--format=json,ansi,html`（既定は `json`）
 - 終了コード: 成功=0、失敗=1
 - `compare`: expectedとactualを比較し、結果をサマリ出力する
-  - 入力: テストケース定義（`--root` で探索、既定は `snapcase`）、タグ/ケースIDによる絞り込み
+  - 入力: テストケース定義（`--root` で探索、既定は `snapcase`）、タグ/ケース名による絞り込み
   - 出力: 標準出力のサマリ、ケースごとの`diff/`配下にHTML差分（必要時）
   - 絞り込み: `--tag` / `--case`
   - 出力形式: `--format=text,ansi,html`（既定は `text`）
   - HTML差分は不一致時のみ生成し、`--diff-always` で常時生成できる
-  - サマリ項目: id/name/kind/tags/result/diff_paths/error_reason
+  - サマリ項目: name/title/kind/tags/result/diff_paths/error_reason
   - resultは `no_diff` / `diff` / `error`
   - JSON出力:
     - `root` ルートディレクトリ
     - `summary` 集計
       - `total` / `no_diff` / `diff` / `error`
     - `cases[]` ケース配列
-      - `id` / `name` / `kind` / `tags` / `result` / `diff_paths` / `error_reason`
+      - `name` / `title` / `kind` / `tags` / `result` / `diff_paths` / `error_reason`
       - `diff_paths` は出力形式ごとのパス
     - 例:
       ```json
@@ -129,8 +129,8 @@ CLIでは `snap.lua core <command>` で呼び出す。
         },
         "cases": [
           {
-            "id": "case-id",
-            "name": "Case Name",
+            "name": "case-name",
+            "title": "Case Title",
             "kind": "golden",
             "tags": [
               "ui",
@@ -138,9 +138,9 @@ CLIでは `snap.lua core <command>` で呼び出す。
             ],
             "result": "diff",
             "diff_paths": {
-              "text": "tests/cases/case-id/diff/diff.txt",
-              "ansi": "tests/cases/case-id/diff/diff.ansi",
-              "html": "tests/cases/case-id/diff/diff.html"
+              "text": "tests/cases/case-name/diff/diff.txt",
+              "ansi": "tests/cases/case-name/diff/diff.ansi",
+              "html": "tests/cases/case-name/diff/diff.html"
             },
             "error_reason": null
           }
@@ -149,7 +149,7 @@ CLIでは `snap.lua core <command>` で呼び出す。
       ```
 - 終了コード: 成功=0、差分あり=1、エラーあり=2
 - `update-expected`: expectedを更新する
-  - 入力: テストケース定義（`--root` で探索、既定は `snapcase`）、タグ/ケースIDによる絞り込み
+  - 入力: テストケース定義（`--root` で探索、既定は `snapcase`）、タグ/ケース名による絞り込み
   - 出力: `expected/`配下の更新
   - リグレッションはactualをexpectedとして採用
   - ゴールデンテストはゴールデンシナリオを実行してexpectedを生成
@@ -177,8 +177,8 @@ CLIでは `snap.lua core <command>` で呼び出す。
 #### ケース定義（`case.json`）
 
 - `version` 定義のバージョン
-- `id` 一意な識別子
-- `name` 表示名（任意、既定はディレクトリ名）
+- `name` ケース名（ディレクトリ名）
+- `title` 表示名（任意、既定はケース名）
 - `kind` `regression` または `golden`
 - `tags` タグ配列（任意）
 
@@ -186,8 +186,8 @@ CLIでは `snap.lua core <command>` で呼び出す。
 ```json
 {
   "version": 1,
-  "id": "basic-regression",
-  "name": "Basic Regression",
+  "name": "basic-regression",
+  "title": "Basic Regression",
   "kind": "regression",
   "tags": [
     "ui",

@@ -55,7 +55,7 @@ mise use 'github:kyoh86/nvim-snap[asset_pattern=nvim-snap]'
 
 ## コマンド
 
-以下の説明は、テストケースが `snapcase/<case-id>/case.json` のように配置されている前提です。
+以下の説明は、テストケースが `snapcase/<case-name>/case.json` のように配置されている前提です。
 
 - `list` テストケース一覧
 - `new` テストケース雛形の作成
@@ -80,11 +80,11 @@ nvim-snap list --json
 テストケースの雛形を作成します。
 
 ```sh
-nvim-snap new --id basic-regression --kind regression
-nvim-snap new --dir snapcase/sample --kind golden --name "Sample Golden"
+nvim-snap new --name basic-regression --kind regression
+nvim-snap new --dir snapcase/sample --kind golden --title "Sample Golden"
 ```
 
-`--id` を省略するとランダムなケースIDを生成し、`snapcase/` 配下にディレクトリを作成します。
+`--name` を省略するとランダムなケース名を生成し、`snapcase/` 配下にディレクトリを作成します。
 
 
 ### run
@@ -127,7 +127,7 @@ nvim-snap ci init --path .github/workflows/nvim-snap.yml
 ## 実用時の流れ
 
 1. ケースを作る  
-   `nvim-snap new --id my-case --kind regression`
+   `nvim-snap new --name my-case --kind regression`
 2. シナリオを書く  
    - リグレッションは `scenario.lua`  
    - ゴールデンは `golden.lua` / `target.lua`

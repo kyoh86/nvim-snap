@@ -1,7 +1,7 @@
 {
   "version": 1,
-  "id": "layout-splits",
-  "name": "Layout Splits",
+  "name": "layout-splits",
+  "title": "Layout Splits",
   "kind": "regression",
   "tags": [
     "layout",

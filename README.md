@@ -55,7 +55,7 @@ mise use 'github:kyoh86/nvim-snap[asset_pattern=nvim-snap]'
 
 ## Commands
 
-The examples below assume cases are under `snapcase/<case-id>/case.json`.
+The examples below assume cases are under `snapcase/<case-name>/case.json`.
 
 - `list` list test cases
 - `new` scaffold a test case
@@ -80,11 +80,11 @@ nvim-snap list --json
 Create a case scaffold.
 
 ```sh
-nvim-snap new --id basic-regression --kind regression
-nvim-snap new --dir snapcase/sample --kind golden --name "Sample Golden"
+nvim-snap new --name basic-regression --kind regression
+nvim-snap new --dir snapcase/sample --kind golden --title "Sample Golden"
 ```
 
-When `--id` is omitted, `nvim-snap` generates a random case id and creates the directory under `snapcase/`.
+When `--name` is omitted, `nvim-snap` generates a random case name and creates the directory under `snapcase/`.
 
 
 ### run
@@ -127,7 +127,7 @@ nvim-snap ci init --path .github/workflows/nvim-snap.yml
 ## Practical Flow
 
 1. Create a case
-   `nvim-snap new --id my-case --kind regression`
+   `nvim-snap new --name my-case --kind regression`
 2. Write scenarios
    - Regression: `scenario.lua`
    - Golden: `golden.lua` / `target.lua`

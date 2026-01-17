@@ -9,14 +9,14 @@
       "minimum": 1,
       "description": "case.jsonのバージョン"
     },
-    "id": {
-      "type": "string",
-      "minLength": 1,
-      "description": "ケースの識別子"
-    },
     "name": {
       "type": "string",
-      "description": "表示名（省略時はディレクトリ名）"
+      "minLength": 1,
+      "description": "ケース名（ディレクトリ名）"
+    },
+    "title": {
+      "type": "string",
+      "description": "表示名（省略時はケース名）"
     },
     "kind": {
       "type": "string",
@@ -36,7 +36,7 @@
   },
   "required": [
     "version",
-    "id",
+    "name",
     "kind"
   ],
   "additionalProperties": false
