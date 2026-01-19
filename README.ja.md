@@ -64,6 +64,13 @@ Go 製 PoC は `cmd/snap-poc` に置いてあります。埋め込み Neovim を
 go run ./cmd/snap-poc -scenario ./snapcase/example/scenario.lua -out snapshot.json
 ```
 
+`snap-compare` PoC は 2つのスナップショットJSONを比較します。
+`-format text` を指定すると、テキスト格子の unified diff を出力します。
+
+```sh
+go run ./cmd/snap-compare -expected expected.json -actual actual.json -format text -out diff.txt
+```
+
 ## コマンド
 
 以下の説明は、既定のオプションで `snapcase/<case-name>/snapcase.json` のように配置されている想定です。

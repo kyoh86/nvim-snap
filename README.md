@@ -64,6 +64,13 @@ It writes the snapshot JSON to stdout by default (use `-out` to save to a file).
 go run ./cmd/snap-poc -scenario ./snapcase/example/scenario.lua -out snapshot.json
 ```
 
+The `snap-compare` PoC compares two snapshot JSON files. When `-format text` is
+used, it writes a unified diff of the rendered text grid.
+
+```sh
+go run ./cmd/snap-compare -expected expected.json -actual actual.json -format text -out diff.txt
+```
+
 ## Commands
 
 The examples below assume cases are under `snapcase/<case-name>/snapcase.json` with the default options.

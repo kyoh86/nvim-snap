@@ -13,6 +13,7 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/kyoh86/nvim-snap/internal/snapshots"
 	"github.com/neovim/go-client/nvim"
 )
 
@@ -30,57 +31,17 @@ func (s *stringList) Set(value string) error {
 	return nil
 }
 
-type Cell struct {
-	Text string `json:"text"`
-	HlID int    `json:"hl_id"`
-}
-
-type Grid struct {
-	ID    int      `json:"id"`
-	Rows  int      `json:"rows"`
-	Cols  int      `json:"cols"`
-	Cells [][]Cell `json:"cells"`
-}
-
-type HLAttr struct {
-	ID        int                    `json:"id"`
-	RGBAttr   map[string]interface{} `json:"rgb_attr"`
-	CtermAttr map[string]interface{} `json:"cterm_attr"`
-	Info      map[string]interface{} `json:"info"`
-}
-
-type HLGroup struct {
-	Name string `json:"name"`
-	HlID int    `json:"hl_id"`
-}
-
-type DefaultColors struct {
-	RGBFg   *int `json:"rgb_fg,omitempty"`
-	RGBBg   *int `json:"rgb_bg,omitempty"`
-	RGBSp   *int `json:"rgb_sp,omitempty"`
-	CtermFg *int `json:"cterm_fg,omitempty"`
-	CtermBg *int `json:"cterm_bg,omitempty"`
-}
-
-type Snapshot struct {
-	Size          map[string]int `json:"size"`
-	DefaultColors DefaultColors  `json:"default_colors"`
-	HLAttrs       []HLAttr       `json:"hl_attrs"`
-	HLGroups      []HLGroup      `json:"hl_groups"`
-	Grids         []Grid         `json:"grids"`
-}
-
 type GridState struct {
 	Rows  int
 	Cols  int
-	Cells [][]Cell
+	Cells [][]snapshots.Cell
 }
 
 type State struct {
 	Grids         map[int]*GridState
-	HLAttrs       map[int]HLAttr
+	HLAttrs       map[int]snapshots.HLAttr
 	HLGroups      map[string]int
-	DefaultColors DefaultColors
+	DefaultColors snapshots.DefaultColors
 	GotFlush      int32
 }
 
@@ -101,10 +62,10 @@ func ensureFile(path string) error {
 	return f.Close()
 }
 
-func allocRow(cols int) []Cell {
-	row := make([]Cell, cols)
+func allocRow(cols int) []snapshots.Cell {
+	row := make([]snapshots.Cell, cols)
 	for i := 0; i < cols; i++ {
-		row[i] = Cell{Text: " ", HlID: 0}
+		row[i] = snapshots.Cell{Text: " ", HlID: 0}
 	}
 	return row
 }
@@ -113,7 +74,7 @@ func ensureGrid(grid *GridState, rows, cols int) {
 	grid.Rows = rows
 	grid.Cols = cols
 	if grid.Cells == nil {
-		grid.Cells = make([][]Cell, 0, rows)
+		grid.Cells = make([][]snapshots.Cell, 0, rows)
 	}
 	for r := 0; r < rows; r++ {
 		if r >= len(grid.Cells) || grid.Cells[r] == nil {
@@ -122,9 +83,9 @@ func ensureGrid(grid *GridState, rows, cols int) {
 		}
 		row := grid.Cells[r]
 		if len(row) < cols {
-			row = append(row, make([]Cell, cols-len(row))...)
+			row = append(row, make([]snapshots.Cell, cols-len(row))...)
 			for c := len(row) - (cols - len(row)); c < cols; c++ {
-				row[c] = Cell{Text: " ", HlID: 0}
+				row[c] = snapshots.Cell{Text: " ", HlID: 0}
 			}
 			grid.Cells[r] = row
 		} else if len(row) > cols {
@@ -148,13 +109,13 @@ func clearGrid(grid *GridState) {
 			continue
 		}
 		for c := 0; c < grid.Cols; c++ {
-			row[c] = Cell{Text: " ", HlID: 0}
+			row[c] = snapshots.Cell{Text: " ", HlID: 0}
 		}
 	}
 }
 
-func copyCell(cell Cell) Cell {
-	return Cell{Text: cell.Text, HlID: cell.HlID}
+func copyCell(cell snapshots.Cell) snapshots.Cell {
+	return snapshots.Cell{Text: cell.Text, HlID: cell.HlID}
 }
 
 func scrollGrid(grid *GridState, top, bot, left, right, rows int) {
@@ -176,7 +137,7 @@ func scrollGrid(grid *GridState, top, bot, left, right, rows int) {
 		for r := botR - rows + 1; r <= botR; r++ {
 			row := grid.Cells[r-1]
 			for c := leftC; c <= rightC; c++ {
-				row[c-1] = Cell{Text: " ", HlID: 0}
+				row[c-1] = snapshots.Cell{Text: " ", HlID: 0}
 			}
 		}
 		return
@@ -192,7 +153,7 @@ func scrollGrid(grid *GridState, top, bot, left, right, rows int) {
 	for r := topR; r <= topR+offset-1; r++ {
 		row := grid.Cells[r-1]
 		for c := leftC; c <= rightC; c++ {
-			row[c-1] = Cell{Text: " ", HlID: 0}
+			row[c-1] = snapshots.Cell{Text: " ", HlID: 0}
 		}
 	}
 }
@@ -322,7 +283,7 @@ func handleEvent(state *State, name string, args []interface{}, flushCh chan<- s
 			}
 			for i := 0; i < repeat; i++ {
 				if col >= 0 && col < grid.Cols {
-					rowCells[col] = Cell{Text: text, HlID: currentHL}
+					rowCells[col] = snapshots.Cell{Text: text, HlID: currentHL}
 				}
 				col++
 			}
@@ -372,7 +333,7 @@ func handleEvent(state *State, name string, args []interface{}, flushCh chan<- s
 		if !ok {
 			return
 		}
-		state.HLAttrs[id] = HLAttr{
+		state.HLAttrs[id] = snapshots.HLAttr{
 			ID:        id,
 			RGBAttr:   toMapStringInterface(args[1]),
 			CtermAttr: toMapStringInterface(args[2]),
@@ -401,8 +362,8 @@ func handleEvent(state *State, name string, args []interface{}, flushCh chan<- s
 	}
 }
 
-func snapshotFromState(state *State, width, height int) Snapshot {
-	grids := make([]Grid, 0, len(state.Grids))
+func snapshotFromState(state *State, width, height int) snapshots.Snapshot {
+	grids := make([]snapshots.Grid, 0, len(state.Grids))
 	ids := make([]int, 0, len(state.Grids))
 	for id := range state.Grids {
 		ids = append(ids, id)
@@ -413,20 +374,20 @@ func snapshotFromState(state *State, width, height int) Snapshot {
 		if g == nil {
 			continue
 		}
-		cells := make([][]Cell, len(g.Cells))
+		cells := make([][]snapshots.Cell, len(g.Cells))
 		for i, row := range g.Cells {
 			if row == nil {
 				cells[i] = nil
 				continue
 			}
-			rowCopy := make([]Cell, len(row))
+			rowCopy := make([]snapshots.Cell, len(row))
 			copy(rowCopy, row)
 			cells[i] = rowCopy
 		}
-		grids = append(grids, Grid{ID: id, Rows: g.Rows, Cols: g.Cols, Cells: cells})
+		grids = append(grids, snapshots.Grid{ID: id, Rows: g.Rows, Cols: g.Cols, Cells: cells})
 	}
 
-	hlAttrs := make([]HLAttr, 0, len(state.HLAttrs))
+	hlAttrs := make([]snapshots.HLAttr, 0, len(state.HLAttrs))
 	attrIDs := make([]int, 0, len(state.HLAttrs))
 	for id := range state.HLAttrs {
 		attrIDs = append(attrIDs, id)
@@ -436,17 +397,17 @@ func snapshotFromState(state *State, width, height int) Snapshot {
 		hlAttrs = append(hlAttrs, state.HLAttrs[id])
 	}
 
-	hlGroups := make([]HLGroup, 0, len(state.HLGroups))
+	hlGroups := make([]snapshots.HLGroup, 0, len(state.HLGroups))
 	groupNames := make([]string, 0, len(state.HLGroups))
 	for name := range state.HLGroups {
 		groupNames = append(groupNames, name)
 	}
 	sort.Strings(groupNames)
 	for _, name := range groupNames {
-		hlGroups = append(hlGroups, HLGroup{Name: name, HlID: state.HLGroups[name]})
+		hlGroups = append(hlGroups, snapshots.HLGroup{Name: name, HlID: state.HLGroups[name]})
 	}
 
-	return Snapshot{
+	return snapshots.Snapshot{
 		Size: map[string]int{
 			"columns": width,
 			"lines":   height,
@@ -560,7 +521,7 @@ func main() {
 
 	state := &State{
 		Grids:    map[int]*GridState{},
-		HLAttrs:  map[int]HLAttr{},
+		HLAttrs:  map[int]snapshots.HLAttr{},
 		HLGroups: map[string]int{},
 	}
 	flushCh := make(chan struct{}, 1)
