@@ -1,3 +1,4 @@
+// Package htmldiff renders HTML diffs between snapshots.
 package htmldiff
 
 import (
@@ -85,19 +86,19 @@ func alignLines(expectedLines, actualLines []string) ([]alignedPair, []string, [
 		aCount := op.J2 - op.J1
 		switch op.Tag {
 		case 'e':
-			for i := 0; i < eCount; i++ {
+			for i := range eCount {
 				pairs = append(pairs, alignedPair{expected: op.I1 + i, actual: op.J1 + i})
 				expectedLineKinds = append(expectedLineKinds, "")
 				actualLineKinds = append(actualLineKinds, "")
 			}
 		case 'd':
-			for i := 0; i < eCount; i++ {
+			for i := range eCount {
 				pairs = append(pairs, alignedPair{expected: op.I1 + i, actual: -1, kind: "removed"})
 				expectedLineKinds = append(expectedLineKinds, "removed")
 				actualLineKinds = append(actualLineKinds, "")
 			}
 		case 'i':
-			for i := 0; i < aCount; i++ {
+			for i := range aCount {
 				pairs = append(pairs, alignedPair{expected: -1, actual: op.J1 + i, kind: "added"})
 				expectedLineKinds = append(expectedLineKinds, "")
 				actualLineKinds = append(actualLineKinds, "added")
@@ -107,7 +108,7 @@ func alignLines(expectedLines, actualLines []string) ([]alignedPair, []string, [
 			if aCount > max {
 				max = aCount
 			}
-			for i := 0; i < max; i++ {
+			for i := range max {
 				eIdx := -1
 				aIdx := -1
 				if op.I1+i < op.I2 {
@@ -171,7 +172,7 @@ func markColumns(target map[int]map[int]bool, row, start, length int) {
 		rowMap = map[int]bool{}
 		target[row] = rowMap
 	}
-	for i := 0; i < length; i++ {
+	for i := range length {
 		rowMap[start+i] = true
 	}
 }
@@ -245,13 +246,13 @@ func renderAligned(snapshot snapshots.Snapshot, pairs []alignedPair, lineKinds [
 	return rendered{bg: bg, fg: fg, html: out.String()}
 }
 
-func buildAttrMap(snapshot snapshots.Snapshot) (map[int]map[string]interface{}, *int, *int) {
-	attrMap := map[int]map[string]interface{}{}
+func buildAttrMap(snapshot snapshots.Snapshot) (map[int]map[string]any, *int, *int) {
+	attrMap := map[int]map[string]any{}
 	for _, attr := range snapshot.HLAttrs {
 		if attr.RGBAttr != nil {
 			attrMap[attr.ID] = attr.RGBAttr
 		} else {
-			attrMap[attr.ID] = map[string]interface{}{}
+			attrMap[attr.ID] = map[string]any{}
 		}
 	}
 	return attrMap, snapshot.DefaultColors.RGBFg, snapshot.DefaultColors.RGBBg
@@ -265,10 +266,10 @@ type style struct {
 	strike    bool
 }
 
-func styleFrom(attrMap map[int]map[string]interface{}, defaultFg, defaultBg *int, hlID int) style {
+func styleFrom(attrMap map[int]map[string]any, defaultFg, defaultBg *int, hlID int) style {
 	attr := attrMap[hlID]
 	if attr == nil {
-		attr = map[string]interface{}{}
+		attr = map[string]any{}
 	}
 	fg := toColor(attr["foreground"], defaultFg)
 	bg := toColor(attr["background"], defaultBg)
@@ -286,7 +287,7 @@ func styleFrom(attrMap map[int]map[string]interface{}, defaultFg, defaultBg *int
 	}
 }
 
-func toColor(value interface{}, fallback *int) *int {
+func toColor(value any, fallback *int) *int {
 	if value == nil {
 		return fallback
 	}
@@ -304,7 +305,7 @@ func toColor(value interface{}, fallback *int) *int {
 	}
 }
 
-func toBool(value interface{}) bool {
+func toBool(value any) bool {
 	if value == nil {
 		return false
 	}
@@ -441,6 +442,29 @@ func wrapHTML(unified string, expectedPlain, actualPlain, expectedAligned, actua
       gap: 16px;
       padding: 16px;
     }
+    .overlay-stack {
+      position: relative;
+      padding: 16px;
+    }
+    .overlay-stack .layer {
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      overflow: hidden;
+    }
+    .overlay-stack .layer.expected {
+      position: relative;
+      z-index: 1;
+    }
+    .overlay-stack .layer.actual {
+      position: absolute;
+      inset: 16px;
+      z-index: 2;
+      pointer-events: none;
+    }
+    .overlay-stack .layer.actual .title,
+    .overlay-stack .layer.actual .content {
+      background: transparent !important;
+    }
     .grid {
       border: 1px solid var(--border);
       border-radius: 8px;
@@ -503,12 +527,12 @@ func wrapHTML(unified string, expectedPlain, actualPlain, expectedAligned, actua
   </div>
 
   <div class="panel" data-view="overlay">
-    <div class="grid-wrap">
-      <div class="grid">
+    <div class="overlay-stack">
+      <div class="layer expected">
         <div class="title">expected</div>
         <div class="content" style="background:%s;color:%s">%s</div>
       </div>
-      <div class="grid">
+      <div class="layer actual">
         <div class="title">actual</div>
         <div class="content" style="background:%s;color:%s">%s</div>
       </div>
