@@ -19,3 +19,6 @@ vim.api.nvim_open_win(buf, false, {
   style = "minimal",
   border = "rounded",
 })
+
+vim.cmd.redraw()
+snap_done()
