@@ -8,6 +8,7 @@ import (
 	"reflect"
 	"strings"
 
+	"github.com/kyoh86/nvim-snap/internal/htmldiff"
 	"github.com/kyoh86/nvim-snap/internal/snapshots"
 	"github.com/pmezard/go-difflib/difflib"
 )
@@ -17,6 +18,7 @@ type diffFormat string
 const (
 	formatNone diffFormat = ""
 	formatText diffFormat = "text"
+	formatHTML diffFormat = "html"
 )
 
 func readSnapshot(path string) (snapshots.Snapshot, error) {
@@ -79,6 +81,16 @@ func main() {
 	if reflect.DeepEqual(normExpected, normActual) {
 		fmt.Println("no_diff")
 		return
+	}
+
+	if diffFormat(format) == formatHTML {
+		html := htmldiff.RenderHTML(normExpected, normActual, "overlay")
+		if err := writeOutput(outPath, []byte(html)); err != nil {
+			fmt.Fprintf(os.Stderr, "failed to write diff: %v\n", err)
+			os.Exit(1)
+		}
+		fmt.Println("diff")
+		os.Exit(1)
 	}
 
 	if diffFormat(format) == formatText {

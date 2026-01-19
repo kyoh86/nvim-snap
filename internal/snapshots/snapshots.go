@@ -63,7 +63,7 @@ func Normalize(s Snapshot) Snapshot {
 }
 
 func RenderText(s Snapshot) string {
-	grid := gridForRender(s)
+	grid := GridForRender(s)
 	if grid == nil {
 		return ""
 	}
@@ -87,7 +87,32 @@ func RenderText(s Snapshot) string {
 	return strings.Join(lines, "\n")
 }
 
-func gridForRender(s Snapshot) *Grid {
+func TextLines(s Snapshot) []string {
+	grid := GridForRender(s)
+	if grid == nil {
+		return []string{}
+	}
+	lines := make([]string, 0, grid.Rows)
+	for r := 0; r < grid.Rows; r++ {
+		row := grid.Cells[r]
+		if row == nil {
+			row = make([]Cell, grid.Cols)
+		}
+		var b strings.Builder
+		b.Grow(grid.Cols)
+		for c := 0; c < grid.Cols; c++ {
+			text := " "
+			if c < len(row) && row[c].Text != "" {
+				text = row[c].Text
+			}
+			b.WriteString(text)
+		}
+		lines = append(lines, b.String())
+	}
+	return lines
+}
+
+func GridForRender(s Snapshot) *Grid {
 	for i := range s.Grids {
 		if s.Grids[i].ID == 1 {
 			return &s.Grids[i]

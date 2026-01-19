@@ -65,10 +65,11 @@ go run ./cmd/snap-poc -scenario ./snapcase/example/scenario.lua -out snapshot.js
 ```
 
 `snap-compare` PoC は 2つのスナップショットJSONを比較します。
-`-format text` を指定すると、テキスト格子の unified diff を出力します。
+`-format text` で unified diff、`-format html` で side-by-side HTML diff を出力します。
 
 ```sh
 go run ./cmd/snap-compare -expected expected.json -actual actual.json -format text -out diff.txt
+go run ./cmd/snap-compare -expected expected.json -actual actual.json -format html -out diff.html
 ```
 
 ## コマンド
