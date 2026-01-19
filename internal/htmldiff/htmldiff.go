@@ -3,7 +3,6 @@ package htmldiff
 import (
 	"fmt"
 	"html"
-	"sort"
 	"strings"
 
 	"github.com/kyoh86/nvim-snap/internal/snapshots"
@@ -85,25 +84,25 @@ func alignLines(expectedLines, actualLines []string) ([]alignedPair, []string, [
 		eCount := op.I2 - op.I1
 		aCount := op.J2 - op.J1
 		switch op.Tag {
-		case "equal":
+		case 'e':
 			for i := 0; i < eCount; i++ {
 				pairs = append(pairs, alignedPair{expected: op.I1 + i, actual: op.J1 + i})
 				expectedLineKinds = append(expectedLineKinds, "")
 				actualLineKinds = append(actualLineKinds, "")
 			}
-		case "delete":
+		case 'd':
 			for i := 0; i < eCount; i++ {
 				pairs = append(pairs, alignedPair{expected: op.I1 + i, actual: -1, kind: "removed"})
 				expectedLineKinds = append(expectedLineKinds, "removed")
 				actualLineKinds = append(actualLineKinds, "")
 			}
-		case "insert":
+		case 'i':
 			for i := 0; i < aCount; i++ {
 				pairs = append(pairs, alignedPair{expected: -1, actual: op.J1 + i, kind: "added"})
 				expectedLineKinds = append(expectedLineKinds, "")
 				actualLineKinds = append(actualLineKinds, "added")
 			}
-		case "replace":
+		case 'r':
 			max := eCount
 			if aCount > max {
 				max = aCount
