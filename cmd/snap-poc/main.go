@@ -64,7 +64,7 @@ func ensureFile(path string) error {
 
 func allocRow(cols int) []snapshots.Cell {
 	row := make([]snapshots.Cell, cols)
-	for i := 0; i < cols; i++ {
+	for i := range cols {
 		row[i] = snapshots.Cell{Text: " ", HlID: 0}
 	}
 	return row
@@ -76,7 +76,7 @@ func ensureGrid(grid *GridState, rows, cols int) {
 	if grid.Cells == nil {
 		grid.Cells = make([][]snapshots.Cell, 0, rows)
 	}
-	for r := 0; r < rows; r++ {
+	for r := range rows {
 		if r >= len(grid.Cells) || grid.Cells[r] == nil {
 			grid.Cells = append(grid.Cells, allocRow(cols))
 			continue
@@ -101,14 +101,14 @@ func clearGrid(grid *GridState) {
 	if grid.Rows == 0 || grid.Cols == 0 {
 		return
 	}
-	for r := 0; r < grid.Rows; r++ {
+	for r := range grid.Rows {
 		row := grid.Cells[r]
 		if row == nil || len(row) != grid.Cols {
 			row = allocRow(grid.Cols)
 			grid.Cells[r] = row
 			continue
 		}
-		for c := 0; c < grid.Cols; c++ {
+		for c := range grid.Cols {
 			row[c] = snapshots.Cell{Text: " ", HlID: 0}
 		}
 	}
@@ -158,7 +158,7 @@ func scrollGrid(grid *GridState, top, bot, left, right, rows int) {
 	}
 }
 
-func toInt(value interface{}) (int, bool) {
+func toInt(value any) (int, bool) {
 	switch v := value.(type) {
 	case int:
 		return v, true
@@ -173,20 +173,20 @@ func toInt(value interface{}) (int, bool) {
 	}
 }
 
-func toString(value interface{}) (string, bool) {
+func toString(value any) (string, bool) {
 	v, ok := value.(string)
 	return v, ok
 }
 
-func toMapStringInterface(value interface{}) map[string]interface{} {
+func toMapStringInterface(value any) map[string]any {
 	if value == nil {
 		return nil
 	}
 	switch m := value.(type) {
-	case map[string]interface{}:
+	case map[string]any:
 		return m
-	case map[interface{}]interface{}:
-		out := make(map[string]interface{}, len(m))
+	case map[any]any:
+		out := make(map[string]any, len(m))
 		for k, v := range m {
 			ks, ok := k.(string)
 			if !ok {
@@ -200,7 +200,7 @@ func toMapStringInterface(value interface{}) map[string]interface{} {
 	}
 }
 
-func handleEvent(state *State, name string, args []interface{}, flushCh chan<- struct{}) {
+func handleEvent(state *State, name string, args []any, flushCh chan<- struct{}) {
 	switch name {
 	case "grid_resize":
 		if len(args) < 3 {
@@ -247,7 +247,7 @@ func handleEvent(state *State, name string, args []interface{}, flushCh chan<- s
 		gridID, ok1 := toInt(args[0])
 		row, ok2 := toInt(args[1])
 		colStart, ok3 := toInt(args[2])
-		cells, ok4 := args[3].([]interface{})
+		cells, ok4 := args[3].([]any)
 		if !ok1 || !ok2 || !ok3 || !ok4 {
 			return
 		}
@@ -262,7 +262,7 @@ func handleEvent(state *State, name string, args []interface{}, flushCh chan<- s
 		col := colStart
 		rowCells := grid.Cells[row]
 		for _, cellRaw := range cells {
-			cellItems, ok := cellRaw.([]interface{})
+			cellItems, ok := cellRaw.([]any)
 			if !ok || len(cellItems) == 0 {
 				continue
 			}
@@ -281,7 +281,7 @@ func handleEvent(state *State, name string, args []interface{}, flushCh chan<- s
 					repeat = rep
 				}
 			}
-			for i := 0; i < repeat; i++ {
+			for range repeat {
 				if col >= 0 && col < grid.Cols {
 					rowCells[col] = snapshots.Cell{Text: text, HlID: currentHL}
 				}
@@ -527,7 +527,7 @@ func main() {
 		HLGroups: map[string]int{},
 	}
 	flushCh := make(chan struct{}, 1)
-	if err := v.RegisterHandler("redraw", func(updates ...[]interface{}) {
+	if err := v.RegisterHandler("redraw", func(updates ...[]any) {
 		for _, update := range updates {
 			if len(update) == 0 {
 				continue
@@ -541,7 +541,7 @@ func main() {
 				continue
 			}
 			for i := 1; i < len(update); i++ {
-				args, ok := update[i].([]interface{})
+				args, ok := update[i].([]any)
 				if !ok {
 					continue
 				}
@@ -553,7 +553,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	uiOpts := map[string]interface{}{
+	uiOpts := map[string]any{
 		"ext_linegrid":  true,
 		"ext_hlstate":   true,
 		"ext_multigrid": false,

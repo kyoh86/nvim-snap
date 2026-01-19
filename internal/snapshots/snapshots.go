@@ -1,3 +1,4 @@
+// Package snapshots provides snapshot structures and helpers.
 package snapshots
 
 import (
@@ -18,10 +19,10 @@ type Grid struct {
 }
 
 type HLAttr struct {
-	ID        int                    `json:"id"`
-	RGBAttr   map[string]interface{} `json:"rgb_attr"`
-	CtermAttr map[string]interface{} `json:"cterm_attr"`
-	Info      map[string]interface{} `json:"info"`
+	ID        int            `json:"id"`
+	RGBAttr   map[string]any `json:"rgb_attr"`
+	CtermAttr map[string]any `json:"cterm_attr"`
+	Info      map[string]any `json:"info"`
 }
 
 type HLGroup struct {
