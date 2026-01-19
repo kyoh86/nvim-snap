@@ -445,6 +445,8 @@ func main() {
 		height     int
 		waitMS     int
 		postWaitMS int
+		waitDone   bool
+		doneWaitMS int
 		timeoutMS  int
 		dataHome   string
 		configHome string
@@ -461,6 +463,8 @@ func main() {
 	flag.IntVar(&height, "height", 24, "UI lines")
 	flag.IntVar(&waitMS, "wait", 200, "Wait for redraw flush (ms)")
 	flag.IntVar(&postWaitMS, "post-wait", 0, "Wait after scenario execution (ms)")
+	flag.BoolVar(&waitDone, "wait-done", false, "Wait for scenario completion notification")
+	flag.IntVar(&doneWaitMS, "done-timeout", 5000, "Wait timeout for scenario completion (ms)")
 	flag.IntVar(&timeoutMS, "rpc-timeout", 2000, "RPC timeout (ms)")
 	flag.StringVar(&dataHome, "data-home", "", "XDG data home")
 	flag.StringVar(&configHome, "config-home", "", "XDG config home")
@@ -527,6 +531,7 @@ func main() {
 		HLGroups: map[string]int{},
 	}
 	flushCh := make(chan struct{}, 1)
+	doneCh := make(chan struct{}, 1)
 	if err := v.RegisterHandler("redraw", func(updates ...[]any) {
 		for _, update := range updates {
 			if len(update) == 0 {
@@ -552,6 +557,15 @@ func main() {
 		fmt.Fprintf(os.Stderr, "failed to register redraw handler: %v\n", err)
 		os.Exit(1)
 	}
+	if err := v.RegisterHandler("snap_done", func(_ ...any) {
+		select {
+		case doneCh <- struct{}{}:
+		default:
+		}
+	}); err != nil {
+		fmt.Fprintf(os.Stderr, "failed to register done handler: %v\n", err)
+		os.Exit(1)
+	}
 
 	uiOpts := map[string]any{
 		"ext_linegrid":  true,
@@ -569,6 +583,16 @@ for i = #paths, 1, -1 do
   vim.opt.rtp:prepend(paths[i])
 end`, nil, []string(rtp)); err != nil {
 			fmt.Fprintf(os.Stderr, "failed to set rtp: %v\n", err)
+			os.Exit(1)
+		}
+	}
+	if waitDone {
+		channelID := v.ChannelID()
+		if err := v.ExecLua(`local chan = ...
+_G.snap_done = function()
+  vim.rpcnotify(chan, "snap_done")
+end`, nil, channelID); err != nil {
+			fmt.Fprintf(os.Stderr, "failed to set done helper: %v\n", err)
 			os.Exit(1)
 		}
 	}
@@ -599,6 +623,20 @@ end`, nil, []string(rtp)); err != nil {
 			fmt.Println("rpc timeout")
 		} else {
 			fmt.Printf("context error: %v\n", ctx.Err())
+		}
+	}
+	if waitDone {
+		select {
+		case <-doneCh:
+			fmt.Println("scenario completed")
+		case <-time.After(time.Duration(doneWaitMS) * time.Millisecond):
+			fmt.Println("scenario completion not received within timeout")
+		case <-ctx.Done():
+			if errors.Is(ctx.Err(), context.DeadlineExceeded) {
+				fmt.Println("rpc timeout while waiting done")
+			} else {
+				fmt.Printf("context error while waiting done: %v\n", ctx.Err())
+			}
 		}
 	}
 

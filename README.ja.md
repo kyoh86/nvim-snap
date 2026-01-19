@@ -60,6 +60,7 @@ Go 製 PoC は `cmd/snap-poc` に置いてあります。埋め込み Neovim を
 シナリオを実行して redraw flush を待って終了します。
 スナップショットJSONは既定で標準出力に書き出されます（ファイル保存は `-out`）。
 シナリオ実行後に `-post-wait` を指定すると、Neovim内で待機します（非同期UI更新向け）。
+シナリオが完了通知を出す場合は `-wait-done` と `-done-timeout` を使います。
 
 ```sh
 go run ./cmd/snap-poc -scenario ./snapcase/example/scenario.lua -out snapshot.json
