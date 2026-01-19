@@ -54,6 +54,15 @@ scripts/bundle.sh
 mise use 'github:kyoh86/nvim-snap[asset_pattern=nvim-snap]'
 ```
 
+### Go PoC（実験的）
+
+Go 製 PoC は `cmd/snap-poc` に置いてあります。埋め込み Neovim を起動し、
+シナリオを実行して redraw flush を待って終了します。
+
+```sh
+go run ./cmd/snap-poc -scenario ./snapcase/example/scenario.lua
+```
+
 ## コマンド
 
 以下の説明は、既定のオプションで `snapcase/<case-name>/snapcase.json` のように配置されている想定です。

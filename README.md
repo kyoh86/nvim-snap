@@ -54,6 +54,15 @@ It is also attached to releases, so you can download it directly from the releas
 mise use 'github:kyoh86/nvim-snap[asset_pattern=nvim-snap]'
 ```
 
+### Go PoC (experimental)
+
+The Go-based PoC lives under `cmd/snap-poc`. It starts an embedded Neovim,
+executes a scenario, waits for a redraw flush, and exits.
+
+```sh
+go run ./cmd/snap-poc -scenario ./snapcase/example/scenario.lua
+```
+
 ## Commands
 
 The examples below assume cases are under `snapcase/<case-name>/snapcase.json` with the default options.
