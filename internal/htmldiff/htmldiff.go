@@ -28,10 +28,10 @@ func RenderHTML(expected, actual snapshots.Snapshot, defaultView string) string 
 	actualLines := snapshots.TextLines(actual)
 	pairs, expectedLineKinds, actualLineKinds, expectedCells, actualCells := alignLines(expectedLines, actualLines)
 
-	expectedPlain := renderAligned(expected, pairs, nil, nil, "")
-	actualPlain := renderAligned(actual, pairs, nil, nil, "")
-	expectedAligned := renderAligned(expected, pairs, expectedLineKinds, expectedCells, "removed")
-	actualAligned := renderAligned(actual, pairs, actualLineKinds, actualCells, "added")
+	expectedPlain := renderAligned(expected, pairs, nil, nil, "", true)
+	actualPlain := renderAligned(actual, pairs, nil, nil, "", true)
+	expectedAligned := renderAligned(expected, pairs, expectedLineKinds, expectedCells, "removed", false)
+	actualAligned := renderAligned(actual, pairs, actualLineKinds, actualCells, "added", false)
 
 	unified := unifiedHTML(expectedLines, actualLines)
 
@@ -177,7 +177,7 @@ func markColumns(target map[int]map[int]bool, row, start, length int) {
 	}
 }
 
-func renderAligned(snapshot snapshots.Snapshot, pairs []alignedPair, lineKinds []string, cellDiff map[int]map[int]bool, diffKind string) rendered {
+func renderAligned(snapshot snapshots.Snapshot, pairs []alignedPair, lineKinds []string, cellDiff map[int]map[int]bool, diffKind string, withStyle bool) rendered {
 	grid := snapshots.GridForRender(snapshot)
 	if grid == nil {
 		return rendered{bg: "#000000", fg: "#ffffff", html: ""}
@@ -231,7 +231,7 @@ func renderAligned(snapshot snapshots.Snapshot, pairs []alignedPair, lineKinds [
 			out.WriteString("<span class=\"")
 			out.WriteString(cellClass)
 			out.WriteString("\"")
-			if css != "" {
+			if withStyle && css != "" {
 				out.WriteString(" style=\"")
 				out.WriteString(css)
 				out.WriteString("\"")
@@ -444,27 +444,28 @@ func wrapHTML(unified string, expectedPlain, actualPlain, expectedAligned, actua
     }
     .overlay-stack {
       position: relative;
-      padding: 16px;
+      min-height: 1px;
     }
-    .overlay-stack .layer {
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      overflow: hidden;
-    }
-    .overlay-stack .layer.expected {
+    .overlay-stack .layer.base {
       position: relative;
       z-index: 1;
     }
-    .overlay-stack .layer.actual {
+    .overlay-stack .layer.overlay {
       position: absolute;
-      inset: 16px;
+      inset: 0;
       z-index: 2;
       pointer-events: none;
+      color: transparent;
     }
-    .overlay-stack .layer.actual .title,
-    .overlay-stack .layer.actual .content {
+    .overlay-stack .layer.overlay .cell {
       background: transparent !important;
     }
+    .overlay-stack .layer.overlay .cell.diff.removed { background: var(--diff-del-soft) !important; }
+    .overlay-stack .layer.overlay .cell.diff.added { background: var(--diff-add-soft) !important; }
+    .overlay-stack .layer.overlay .cell.diff.changed { background: var(--diff-change-soft) !important; }
+    .overlay-stack .layer.overlay .line.diff.removed { background: var(--diff-del-soft) !important; }
+    .overlay-stack .layer.overlay .line.diff.added { background: var(--diff-add-soft) !important; }
+    .overlay-stack .layer.overlay .line.diff.changed { background: var(--diff-change-soft) !important; }
     .grid {
       border: 1px solid var(--border);
       border-radius: 8px;
@@ -527,14 +528,24 @@ func wrapHTML(unified string, expectedPlain, actualPlain, expectedAligned, actua
   </div>
 
   <div class="panel" data-view="overlay">
-    <div class="overlay-stack">
-      <div class="layer expected">
+    <div class="grid-wrap">
+      <div class="grid">
         <div class="title">expected</div>
-        <div class="content" style="background:%s;color:%s">%s</div>
+        <div class="content" style="background:%s;color:%s">
+          <div class="overlay-stack">
+            <div class="layer base">%s</div>
+            <div class="layer overlay">%s</div>
+          </div>
+        </div>
       </div>
-      <div class="layer actual">
+      <div class="grid">
         <div class="title">actual</div>
-        <div class="content" style="background:%s;color:%s">%s</div>
+        <div class="content" style="background:%s;color:%s">
+          <div class="overlay-stack">
+            <div class="layer base">%s</div>
+            <div class="layer overlay">%s</div>
+          </div>
+        </div>
       </div>
     </div>
   </div>
@@ -560,8 +571,8 @@ func wrapHTML(unified string, expectedPlain, actualPlain, expectedAligned, actua
 		unified,
 		expectedPlain.bg, expectedPlain.fg, expectedPlain.html,
 		actualPlain.bg, actualPlain.fg, actualPlain.html,
-		expectedAligned.bg, expectedAligned.fg, expectedAligned.html,
-		actualAligned.bg, actualAligned.fg, actualAligned.html,
+		expectedPlain.bg, expectedPlain.fg, expectedPlain.html, expectedAligned.html,
+		actualPlain.bg, actualPlain.fg, actualPlain.html, actualAligned.html,
 		defaultView,
 	)
 }
