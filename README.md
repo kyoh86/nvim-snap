@@ -59,6 +59,7 @@ mise use 'github:kyoh86/nvim-snap[asset_pattern=nvim-snap]'
 The Go-based PoC lives under `cmd/snap-poc`. It starts an embedded Neovim,
 executes a scenario, waits for a redraw flush, and exits.
 It writes the snapshot JSON to stdout by default (use `-out` to save to a file).
+Use `-post-wait` to wait inside Neovim after the scenario runs (for async UI updates).
 
 ```sh
 go run ./cmd/snap-poc -scenario ./snapcase/example/scenario.lua -out snapshot.json

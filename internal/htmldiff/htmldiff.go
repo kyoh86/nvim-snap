@@ -368,6 +368,9 @@ func wrapHTML(unified string, expectedPlain, actualPlain, expectedAligned, actua
       --diff-del: #fde2e1;
       --diff-del-strong: #d45757;
       --diff-change: #fff2cc;
+      --diff-add-soft: rgba(47, 162, 79, 0.18);
+      --diff-del-soft: rgba(212, 87, 87, 0.18);
+      --diff-change-soft: rgba(245, 201, 74, 0.2);
     }
     body {
       margin: 0;
@@ -467,9 +470,9 @@ func wrapHTML(unified string, expectedPlain, actualPlain, expectedAligned, actua
     .line.diff.removed { background: var(--diff-del); }
     .line.diff.added { background: var(--diff-add); }
     .line.diff.changed { background: var(--diff-change); }
-    .cell.diff.removed { background: color-mix(in srgb, var(--diff-del) 75%%, white); }
-    .cell.diff.added { background: color-mix(in srgb, var(--diff-add) 75%%, white); }
-    .cell.diff.changed { background: color-mix(in srgb, var(--diff-change) 75%%, white); }
+    .cell.diff.removed { background: var(--diff-del-soft); }
+    .cell.diff.added { background: var(--diff-add-soft); }
+    .cell.diff.changed { background: var(--diff-change-soft); }
     .hidden { display: none; }
   </style>
 </head>

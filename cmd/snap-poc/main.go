@@ -444,6 +444,7 @@ func main() {
 		width      int
 		height     int
 		waitMS     int
+		postWaitMS int
 		timeoutMS  int
 		dataHome   string
 		configHome string
@@ -459,6 +460,7 @@ func main() {
 	flag.IntVar(&width, "width", 80, "UI columns")
 	flag.IntVar(&height, "height", 24, "UI lines")
 	flag.IntVar(&waitMS, "wait", 200, "Wait for redraw flush (ms)")
+	flag.IntVar(&postWaitMS, "post-wait", 0, "Wait after scenario execution (ms)")
 	flag.IntVar(&timeoutMS, "rpc-timeout", 2000, "RPC timeout (ms)")
 	flag.StringVar(&dataHome, "data-home", "", "XDG data home")
 	flag.StringVar(&configHome, "config-home", "", "XDG config home")
@@ -574,6 +576,12 @@ end`, nil, []string(rtp)); err != nil {
 	if err := v.ExecLua(`local p = ...; dofile(p)`, nil, absScenario); err != nil {
 		fmt.Fprintf(os.Stderr, "failed to run scenario: %v\n", err)
 		os.Exit(1)
+	}
+	if postWaitMS > 0 {
+		if err := v.ExecLua(`vim.wait(...)`, nil, postWaitMS); err != nil {
+			fmt.Fprintf(os.Stderr, "failed to wait after scenario: %v\n", err)
+			os.Exit(1)
+		}
 	}
 
 	if err := v.Command("redraw"); err != nil {
