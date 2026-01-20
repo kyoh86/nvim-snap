@@ -551,8 +551,8 @@ func wrapHTML(unified string, expectedPlain, actualPlain, expectedAligned, actua
   </div>
 
   <script>
-    const panels = document.querySelectorAll('[data-view]');
-    const buttons = document.querySelectorAll('.controls button');
+    const panels = document.querySelectorAll('.panel[data-view]');
+    const buttons = document.querySelectorAll('.controls button[data-view]');
     function setView(view) {
       panels.forEach(panel => {
         panel.classList.toggle('hidden', panel.dataset.view !== view);
