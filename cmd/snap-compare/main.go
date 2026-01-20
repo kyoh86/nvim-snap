@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"github.com/kyoh86/nvim-snap/internal/htmldiff"
+	"github.com/kyoh86/nvim-snap/internal/pngutil"
 	"github.com/kyoh86/nvim-snap/internal/snapshots"
 	"github.com/pmezard/go-difflib/difflib"
 )
@@ -18,7 +19,9 @@ type diffFormat string
 const (
 	formatNone diffFormat = ""
 	formatText diffFormat = "text"
+	formatANSI diffFormat = "ansi"
 	formatHTML diffFormat = "html"
+	formatPNG  diffFormat = "png"
 )
 
 func readSnapshot(path string) (snapshots.Snapshot, error) {
@@ -54,7 +57,7 @@ func main() {
 
 	flag.StringVar(&expectedPath, "expected", "", "Expected snapshot JSON path")
 	flag.StringVar(&actualPath, "actual", "", "Actual snapshot JSON path")
-	flag.StringVar(&format, "format", string(formatNone), "Diff format (text)")
+	flag.StringVar(&format, "format", string(formatNone), "Diff format (text,ansi,html,png)")
 	flag.StringVar(&outPath, "out", "-", "Diff output path ('-' for stdout)")
 	flag.IntVar(&ctxLen, "context", 3, "Unified diff context lines")
 	flag.Parse()
@@ -83,22 +86,35 @@ func main() {
 		return
 	}
 
-	if diffFormat(format) == formatHTML {
-		html := htmldiff.RenderHTML(normExpected, normActual, "overlay")
+	switch diffFormat(format) {
+	case formatHTML:
+		html := htmldiff.RenderHTML(normExpected, normActual, "unified")
 		if err := writeOutput(outPath, []byte(html)); err != nil {
 			fmt.Fprintf(os.Stderr, "failed to write diff: %v\n", err)
 			os.Exit(1)
 		}
-		fmt.Println("diff")
-		os.Exit(1)
-	}
-
-	if diffFormat(format) == formatText {
-		textExpected := snapshots.RenderText(normExpected)
-		textActual := snapshots.RenderText(normActual)
+	case formatPNG:
+		if outPath == "-" {
+			fmt.Fprintln(os.Stderr, "png output requires a file path")
+			os.Exit(2)
+		}
+		html := htmldiff.RenderHTML(normExpected, normActual, "overlay")
+		if err := pngutil.WritePNGFromHTML(html, outPath); err != nil {
+			fmt.Fprintf(os.Stderr, "failed to write diff: %v\n", err)
+			os.Exit(1)
+		}
+	case formatANSI, formatText:
+		var expectedText, actualText string
+		if diffFormat(format) == formatANSI {
+			expectedText = snapshots.RenderANSI(normExpected)
+			actualText = snapshots.RenderANSI(normActual)
+		} else {
+			expectedText = snapshots.RenderText(normExpected)
+			actualText = snapshots.RenderText(normActual)
+		}
 		d := difflib.UnifiedDiff{
-			A:        difflib.SplitLines(textExpected),
-			B:        difflib.SplitLines(textActual),
+			A:        difflib.SplitLines(expectedText),
+			B:        difflib.SplitLines(actualText),
 			FromFile: "expected",
 			ToFile:   "actual",
 			Context:  ctxLen,
@@ -113,6 +129,11 @@ func main() {
 			fmt.Fprintf(os.Stderr, "failed to write diff: %v\n", err)
 			os.Exit(1)
 		}
+	case formatNone:
+		// no diff output
+	default:
+		fmt.Fprintf(os.Stderr, "unsupported format: %s\n", format)
+		os.Exit(2)
 	}
 
 	fmt.Println("diff")
