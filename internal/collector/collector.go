@@ -10,6 +10,7 @@ import (
 	"path/filepath"
 	"sort"
 	"strings"
+	"sync"
 	"sync/atomic"
 	"time"
 
@@ -164,7 +165,8 @@ func Collect(opts Options) (Result, error) {
 	}
 	flushCh := make(chan struct{}, 1)
 	doneCh := make(chan struct{}, 1)
-	logCh := make(chan []string, 1)
+	var logMu sync.Mutex
+	logEntries := []string{}
 	if err := v.RegisterHandler("redraw", func(updates ...[]any) {
 		for _, update := range updates {
 			if len(update) == 0 {
@@ -210,10 +212,9 @@ func Collect(opts Options) (Result, error) {
 		for _, item := range args {
 			parts = append(parts, fmt.Sprint(item))
 		}
-		select {
-		case logCh <- parts:
-		default:
-		}
+		logMu.Lock()
+		logEntries = append(logEntries, strings.Join(parts, " "))
+		logMu.Unlock()
 	}); err != nil {
 		log("register snap_log failed: %v", err)
 		if isSessionClosed(err) {
@@ -324,16 +325,6 @@ end`
 			return Result{}, ctx.Err()
 		}
 	}
-collectLogs:
-	for {
-		select {
-		case parts := <-logCh:
-			result.Logs = append(result.Logs, strings.Join(parts, " "))
-		default:
-			break collectLogs
-		}
-	}
-
 	resetFlush(state, flushCh)
 	waitMS := defaultInt(opts.WaitMS, 200)
 	retries := defaultInt(opts.FlushRetry, 3)
@@ -379,15 +370,9 @@ collectLogs:
 	}
 
 	snapshot := snapshotFromState(state, defaultInt(opts.Width, 80), defaultInt(opts.Height, 24))
-resultLogsFinal:
-	for {
-		select {
-		case parts := <-logCh:
-			result.Logs = append(result.Logs, strings.Join(parts, " "))
-		default:
-			break resultLogsFinal
-		}
-	}
+	logMu.Lock()
+	result.Logs = append(result.Logs, logEntries...)
+	logMu.Unlock()
 	result.Snapshot = snapshot
 	_ = v.Command("qa!")
 

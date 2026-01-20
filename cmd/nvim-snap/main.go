@@ -834,6 +834,24 @@ func printCompareText(results []map[string]any, diffHeader string, singleFormat 
 func printCompareDiff(results []map[string]any) {
 	for _, entry := range results {
 		result, _ := entry["result"].(string)
+		if result == "error" {
+			name, _ := entry["name"].(string)
+			title, _ := entry["title"].(string)
+			kind, _ := entry["kind"].(string)
+			tags := ""
+			if list, ok := entry["tags"].([]string); ok {
+				tags = strings.Join(list, ",")
+			}
+			errorReason := ""
+			if value, ok := entry["error_reason"]; ok && value != nil {
+				errorReason, _ = value.(string)
+			}
+			fmt.Fprintf(os.Stderr, "%s\t%s\t%s\t%s\n", name, title, kind, tags)
+			if errorReason != "" {
+				fmt.Fprintf(os.Stderr, "error: %s\n", errorReason)
+			}
+			continue
+		}
 		if result != "diff" {
 			continue
 		}
