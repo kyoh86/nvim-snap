@@ -490,7 +490,13 @@ func cmdCompare(args []string) {
 	} else if *output == "diff" {
 		printCompareDiff(results)
 	} else {
-		printCompareText(results)
+		diffHeader := "diff_paths"
+		if len(formats) == 1 {
+			for key := range formats {
+				diffHeader = "diff_path(" + key + ")"
+			}
+		}
+		printCompareText(results, diffHeader, len(formats) == 1)
 	}
 
 	if failed {
@@ -558,7 +564,8 @@ func writeDiffOutputs(c casefile.Case, expected, actual snapshots.Snapshot, form
 	return paths, nil
 }
 
-func printCompareText(results []map[string]any) {
+func printCompareText(results []map[string]any, diffHeader string, singleFormat bool) {
+	fmt.Printf("name\ttitle\tkind\ttags\tresult\t%s\terror_reason\n", diffHeader)
 	for _, entry := range results {
 		name, _ := entry["name"].(string)
 		title, _ := entry["title"].(string)
@@ -581,6 +588,10 @@ func printCompareText(results []map[string]any) {
 			sort.Strings(keys)
 			items := make([]string, 0, len(keys))
 			for _, key := range keys {
+				if singleFormat {
+					items = append(items, raw[key])
+					continue
+				}
 				items = append(items, key+"="+raw[key])
 			}
 			diffPaths = strings.Join(items, ",")
@@ -826,13 +837,24 @@ func workflowYAML(name, root, casesDir, diffFormat string) string {
 		"      - name: Compare snapshots",
 		"        run: |",
 		"          ./nvim-snap compare --root " + root + " --cases-dir " + casesDir + " --output diff --diff-format " + diffFormat + " --diff-always",
+		"      - name: Collect diffs",
+		"        if: always()",
+		"        run: |",
+		"          rm -rf .nvim-snap-diff",
+		"          mkdir -p .nvim-snap-diff",
+		"          find " + casesDir + " -path \"*/diff/*\" -type f -print0 | \\",
+		"            while IFS= read -r -d '' file; do \\",
+		"              case_name=$(basename \"$(dirname \"$(dirname \"$file\")\")\"); \\",
+		"              ext=${file##*.}; \\",
+		"              cp \"$file\" \".nvim-snap-diff/${case_name}.${ext}\"; \\",
+		"            done",
 		"      - name: Upload diffs",
 		"        if: always()",
 		"        uses: actions/upload-artifact@v4",
 		"        with:",
 		"          name: nvim-snap-diff",
 		"          path: |",
-		"            **/diff/*",
+		"            .nvim-snap-diff/*",
 		"",
 	}
 	return strings.Join(lines, "\n")
