@@ -53,6 +53,17 @@ type State struct {
 	GotFlush      int32
 }
 
+func resetFlush(state *State, flushCh chan struct{}) {
+	atomic.StoreInt32(&state.GotFlush, 0)
+	for {
+		select {
+		case <-flushCh:
+		default:
+			return
+		}
+	}
+}
+
 func Collect(opts Options) (Result, error) {
 	if opts.Scenario == "" {
 		return Result{}, errors.New("scenario is required")
@@ -182,25 +193,7 @@ end`, nil, channelID); err != nil {
 		}
 	}
 
-	if err := v.Command("redraw"); err != nil {
-		return Result{}, fmt.Errorf("failed to redraw: %w", err)
-	}
-
 	result := Result{}
-	waitMS := defaultInt(opts.WaitMS, 200)
-	select {
-	case <-flushCh:
-		result.GotFlush = true
-	case <-time.After(time.Duration(waitMS) * time.Millisecond):
-		result.GotFlush = false
-	case <-ctx.Done():
-		if errors.Is(ctx.Err(), context.DeadlineExceeded) {
-			return Result{}, errors.New("rpc timeout")
-		}
-		return Result{}, ctx.Err()
-	}
-	result.WaitedFlush = true
-
 	if opts.WaitDone {
 		doneWait := defaultInt(opts.DoneTimeoutMS, 5000)
 		select {
@@ -215,6 +208,24 @@ end`, nil, channelID); err != nil {
 			return Result{}, ctx.Err()
 		}
 	}
+
+	resetFlush(state, flushCh)
+	if err := v.Command("redraw"); err != nil {
+		return Result{}, fmt.Errorf("failed to redraw: %w", err)
+	}
+	waitMS := defaultInt(opts.WaitMS, 200)
+	select {
+	case <-flushCh:
+		result.GotFlush = true
+	case <-time.After(time.Duration(waitMS) * time.Millisecond):
+		result.GotFlush = false
+	case <-ctx.Done():
+		if errors.Is(ctx.Err(), context.DeadlineExceeded) {
+			return Result{}, errors.New("rpc timeout")
+		}
+		return Result{}, ctx.Err()
+	}
+	result.WaitedFlush = true
 
 	snapshot := snapshotFromState(state, defaultInt(opts.Width, 80), defaultInt(opts.Height, 24))
 	result.Snapshot = snapshot
