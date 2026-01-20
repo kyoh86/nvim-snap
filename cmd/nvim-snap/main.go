@@ -33,7 +33,7 @@ func (s *stringList) Set(value string) error {
 	if value == "" {
 		return nil
 	}
-	for _, item := range strings.Split(value, ",") {
+	for item := range strings.SplitSeq(value, ",") {
 		trimmed := strings.TrimSpace(item)
 		if trimmed != "" {
 			*s = append(*s, trimmed)
@@ -100,7 +100,7 @@ func (o *optionalBool) IsBoolFlag() bool {
 
 func splitCSV(value string) []string {
 	out := []string{}
-	for _, item := range strings.Split(value, ",") {
+	for item := range strings.SplitSeq(value, ",") {
 		trimmed := strings.TrimSpace(item)
 		if trimmed != "" {
 			out = append(out, trimmed)
@@ -246,10 +246,7 @@ func cmdList(args []string) {
 		for _, row := range rows {
 			parts := make([]string, 0, len(row))
 			for i, value := range row {
-				padding := widths[i] - displayWidth(value)
-				if padding < 0 {
-					padding = 0
-				}
+				padding := max(0, widths[i]-displayWidth(value))
 				parts = append(parts, value+strings.Repeat(" ", padding))
 			}
 			fmt.Println(strings.Join(parts, "  "))
@@ -598,7 +595,7 @@ func cmdAccept(args []string) {
 	fs.Var(&names, "case", "Case name filter")
 	_ = fs.Parse(args)
 
-	confirm := !(*noConfirm || *yes)
+	confirm := !*noConfirm && !*yes
 
 	absRoot := mustAbs(*root)
 	cases, errs := casefile.Find(absRoot, *casesDir)
@@ -862,7 +859,7 @@ func cmdNew(args []string) {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
 	}
-	if err := writeSnapcaseJSON(filepath.Join(caseDir, "snapcase.json"), caseName, *title, *kind, tags, *force); err != nil {
+	if err := writeSnapcaseJSON(filepath.Join(caseDir, "snapcase.json"), *title, *kind, tags, *force); err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
 	}
@@ -983,7 +980,7 @@ func writeCaseGitignore(path string, force bool) error {
 	return writeFile(path, contents, force)
 }
 
-func writeSnapcaseJSON(path, name, title, kind string, tags []string, force bool) error {
+func writeSnapcaseJSON(path, title, kind string, tags []string, force bool) error {
 	payload := map[string]any{
 		"version":     1,
 		"kind":        kind,

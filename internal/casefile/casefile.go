@@ -1,3 +1,4 @@
+// Package casefile loads and filters snapcase.json files.
 package casefile
 
 import (
@@ -6,6 +7,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"slices"
 	"sort"
 	"strings"
 )
@@ -194,17 +196,8 @@ func Filter(cases []Case, tags []string, names []string) []Case {
 		if !matchTags(c.Tags, tags) {
 			continue
 		}
-		if len(names) > 0 {
-			matched := false
-			for _, name := range names {
-				if name == c.Name {
-					matched = true
-					break
-				}
-			}
-			if !matched {
-				continue
-			}
+		if len(names) > 0 && !slices.Contains(names, c.Name) {
+			continue
 		}
 		out = append(out, c)
 	}

@@ -1,3 +1,4 @@
+// Package collector runs a scenario and captures a UI snapshot from Neovim.
 package collector
 
 import (
