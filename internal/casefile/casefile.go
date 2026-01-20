@@ -29,15 +29,7 @@ type Config struct {
 	LogLevel    string   `json:"log_level"`
 	DataHome    string   `json:"data_home"`
 	ConfigHome  string   `json:"config_home"`
-	Outputs     Outputs  `json:"outputs"`
-	OutDir      string   `json:"out_dir"`
 	RTP         Strings  `json:"rtp"`
-}
-
-type Outputs struct {
-	JSON any `json:"json"`
-	ANSI any `json:"ansi"`
-	HTML any `json:"html"`
 }
 
 type Strings []string

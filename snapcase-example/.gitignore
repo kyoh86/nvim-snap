@@ -1,6 +1,5 @@
 .nvim-data/
 .nvim-config/
-.out/
 current/
 baseline/
 actual/

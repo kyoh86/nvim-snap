@@ -74,37 +74,6 @@
       "type": "string",
       "description": "Neovim log level (NVIM_LOG_LEVEL)"
     },
-    "out_dir": {
-      "type": "string",
-      "description": "Output directory (default: .out)"
-    },
-    "outputs": {
-      "type": "object",
-      "properties": {
-        "json": {
-          "type": [
-            "string",
-            "boolean"
-          ],
-          "description": "snapshot.json path, false or \"none\" to disable"
-        },
-        "ansi": {
-          "type": [
-            "string",
-            "boolean"
-          ],
-          "description": "snapshot.ansi path, false or \"none\" to disable"
-        },
-        "html": {
-          "type": [
-            "string",
-            "boolean"
-          ],
-          "description": "snapshot.html path, false or \"none\" to disable"
-        }
-      },
-      "additionalProperties": false
-    },
     "data_home": {
       "type": "string",
       "description": "XDG data home (default: .nvim-data)"

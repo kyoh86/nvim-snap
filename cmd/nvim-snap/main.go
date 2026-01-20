@@ -1279,7 +1279,6 @@ func writeCaseGitignore(path string, force bool) error {
 	contents := strings.Join([]string{
 		".nvim-data/",
 		".nvim-config/",
-		".out/",
 		"current/",
 		"baseline/",
 		"actual/",
@@ -1294,14 +1293,8 @@ func writeSnapcaseJSON(path, title, kind string, tags []string, force bool) erro
 		"version":     1,
 		"kind":        kind,
 		"scenario":    "scenario.lua",
-		"out_dir":     ".out",
 		"data_home":   ".nvim-data",
 		"config_home": ".nvim-config",
-		"outputs": map[string]any{
-			"json": "snapshot.json",
-			"ansi": "snapshot.ansi",
-			"html": "snapshot.html",
-		},
 		"rtp": []string{"."},
 	}
 	if title != "" {

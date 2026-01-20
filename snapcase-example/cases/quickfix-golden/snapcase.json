@@ -8,15 +8,9 @@
     "example"
   ],
   "scenario": "target.lua",
-  "out_dir": ".out",
   "data_home": ".nvim-data",
   "config_home": ".nvim-config",
   "wait_done": true,
-  "outputs": {
-    "json": "snapshot.json",
-    "ansi": "snapshot.ansi",
-    "html": "snapshot.html"
-  },
   "rtp": [
     "."
   ]
