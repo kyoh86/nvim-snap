@@ -174,7 +174,7 @@ func main() {
 
 func usage() {
 	fmt.Println("usage:")
-	fmt.Println("  nvim-snap-go <command> [options]")
+	fmt.Println("  nvim-snap <command> [options]")
 	fmt.Println("")
 	fmt.Println("commands:")
 	fmt.Println("  list    list test cases")

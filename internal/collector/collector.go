@@ -6,12 +6,15 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"sort"
+	"strings"
 	"sync/atomic"
 	"time"
 
 	"github.com/kyoh86/nvim-snap/internal/snapshots"
+	"github.com/neovim/go-client/msgpack/rpc"
 	"github.com/neovim/go-client/nvim"
 )
 
@@ -111,7 +114,15 @@ func Collect(opts Options) (Result, error) {
 	if err != nil {
 		return Result{}, fmt.Errorf("failed to start nvim: %w", err)
 	}
-	defer v.Close()
+	closed := false
+	closeNvim := func() error {
+		if closed {
+			return nil
+		}
+		closed = true
+		return v.Close()
+	}
+	defer closeNvim()
 
 	state := &State{
 		Grids:    map[int]*GridState{},
@@ -142,6 +153,9 @@ func Collect(opts Options) (Result, error) {
 			}
 		}
 	}); err != nil {
+		if isSessionClosed(err) {
+			return Result{}, wrapClosed(err, closeNvim)
+		}
 		return Result{}, fmt.Errorf("failed to register redraw handler: %w", err)
 	}
 	if err := v.RegisterHandler("snap_done", func(_ ...any) {
@@ -150,6 +164,9 @@ func Collect(opts Options) (Result, error) {
 		default:
 		}
 	}); err != nil {
+		if isSessionClosed(err) {
+			return Result{}, wrapClosed(err, closeNvim)
+		}
 		return Result{}, fmt.Errorf("failed to register done handler: %w", err)
 	}
 
@@ -159,6 +176,9 @@ func Collect(opts Options) (Result, error) {
 		"ext_multigrid": false,
 	}
 	if err := v.AttachUI(defaultInt(opts.Width, 80), defaultInt(opts.Height, 24), uiOpts); err != nil {
+		if isSessionClosed(err) {
+			return Result{}, wrapClosed(err, closeNvim)
+		}
 		return Result{}, fmt.Errorf("failed to attach UI: %w", err)
 	}
 
@@ -167,6 +187,9 @@ func Collect(opts Options) (Result, error) {
 for i = #paths, 1, -1 do
   vim.opt.rtp:prepend(paths[i])
 end`, nil, opts.RTP); err != nil {
+			if isSessionClosed(err) {
+				return Result{}, wrapClosed(err, closeNvim)
+			}
 			return Result{}, fmt.Errorf("failed to set rtp: %w", err)
 		}
 	}
@@ -177,19 +200,31 @@ end`, nil, opts.RTP); err != nil {
 _G.snap_done = function()
   vim.rpcnotify(chan, "snap_done")
 end`, nil, channelID); err != nil {
+			if isSessionClosed(err) {
+				return Result{}, wrapClosed(err, closeNvim)
+			}
 			return Result{}, fmt.Errorf("failed to set done helper: %w", err)
 		}
 	} else {
 		if err := v.ExecLua(`_G.snap_done = function() end`, nil); err != nil {
+			if isSessionClosed(err) {
+				return Result{}, wrapClosed(err, closeNvim)
+			}
 			return Result{}, fmt.Errorf("failed to set done helper: %w", err)
 		}
 	}
 
 	if err := v.ExecLua(`local p = ...; dofile(p)`, nil, absScenario); err != nil {
+		if isSessionClosed(err) {
+			return Result{}, wrapClosed(err, closeNvim)
+		}
 		return Result{}, fmt.Errorf("failed to run scenario: %w", err)
 	}
 	if opts.PostWaitMS > 0 {
 		if err := v.ExecLua(`vim.wait(...)`, nil, opts.PostWaitMS); err != nil {
+			if isSessionClosed(err) {
+				return Result{}, wrapClosed(err, closeNvim)
+			}
 			return Result{}, fmt.Errorf("failed to wait after scenario: %w", err)
 		}
 	}
@@ -212,6 +247,9 @@ end`, nil, channelID); err != nil {
 
 	resetFlush(state, flushCh)
 	if err := v.Command("redraw"); err != nil {
+		if isSessionClosed(err) {
+			return Result{}, wrapClosed(err, closeNvim)
+		}
 		return Result{}, fmt.Errorf("failed to redraw: %w", err)
 	}
 	waitMS := defaultInt(opts.WaitMS, 200)
@@ -233,6 +271,28 @@ end`, nil, channelID); err != nil {
 	_ = v.Command("qa!")
 
 	return result, nil
+}
+
+func isSessionClosed(err error) bool {
+	if err == nil {
+		return false
+	}
+	if errors.Is(err, rpc.ErrClosed) {
+		return true
+	}
+	return strings.Contains(err.Error(), "msgpack/rpc: session closed")
+}
+
+func wrapClosed(err error, closeNvim func() error) error {
+	closeErr := closeNvim()
+	if closeErr == nil {
+		return err
+	}
+	var exitErr *exec.ExitError
+	if errors.As(closeErr, &exitErr) {
+		return fmt.Errorf("%w (nvim exited: %s)", err, exitErr.ProcessState.String())
+	}
+	return fmt.Errorf("%w (close error: %v)", err, closeErr)
 }
 
 func ensureFile(path string) error {
