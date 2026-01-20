@@ -16,3 +16,6 @@ vim.cmd("copen")
 vim.cmd("wincmd p")
 vim.cmd("setlocal nonumber")
 vim.cmd("setlocal norelativenumber")
+
+vim.cmd.redraw()
+snap_done()

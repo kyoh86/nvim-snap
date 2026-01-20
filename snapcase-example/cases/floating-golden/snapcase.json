@@ -16,6 +16,7 @@
     "ansi": "snapshot.ansi",
     "html": "snapshot.html"
   },
+  "wait_done": true,
   "rtp": [
     "."
   ]
