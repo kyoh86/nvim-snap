@@ -417,7 +417,7 @@ func cmdCompare(args []string) {
 			reason := err.Error()
 			entry["error_reason"] = reason
 			results = append(results, entry)
-			fmt.Fprintf(os.Stderr, "%s: %s\n", c.Name, reason)
+			fmt.Fprintf(os.Stderr, "%s: %s not found: %v\n", c.Name, c.ExpectedLabel, err)
 			summary["error"]++
 			failed = true
 			continue
@@ -427,7 +427,7 @@ func cmdCompare(args []string) {
 			reason := err.Error()
 			entry["error_reason"] = reason
 			results = append(results, entry)
-			fmt.Fprintf(os.Stderr, "%s: %s\n", c.Name, reason)
+			fmt.Fprintf(os.Stderr, "%s: %s not found: %v\n", c.Name, c.ActualLabel, err)
 			summary["error"]++
 			failed = true
 			continue
@@ -483,12 +483,12 @@ func cmdCompare(args []string) {
 	}
 }
 
-func unifiedDiffText(expected, actual string) (string, error) {
+func unifiedDiffText(fromLabel, toLabel, expected, actual string) (string, error) {
 	d := difflib.UnifiedDiff{
 		A:        difflib.SplitLines(expected),
 		B:        difflib.SplitLines(actual),
-		FromFile: "expected",
-		ToFile:   "actual",
+		FromFile: fromLabel,
+		ToFile:   toLabel,
 		Context:  3,
 	}
 	return difflib.GetUnifiedDiffString(d)
@@ -500,7 +500,7 @@ func writeDiffOutputs(c casefile.Case, expected, actual snapshots.Snapshot, form
 	}
 	paths := map[string]string{}
 	if formats["text"] {
-		diff, err := unifiedDiffText(snapshots.RenderText(expected), snapshots.RenderText(actual))
+		diff, err := unifiedDiffText(c.ExpectedLabel, c.ActualLabel, snapshots.RenderText(expected), snapshots.RenderText(actual))
 		if err != nil {
 			return nil, err
 		}
@@ -511,7 +511,7 @@ func writeDiffOutputs(c casefile.Case, expected, actual snapshots.Snapshot, form
 		paths["text"] = path
 	}
 	if formats["ansi"] {
-		diff, err := unifiedDiffText(snapshots.RenderANSI(expected), snapshots.RenderANSI(actual))
+		diff, err := unifiedDiffText(c.ExpectedLabel, c.ActualLabel, snapshots.RenderANSI(expected), snapshots.RenderANSI(actual))
 		if err != nil {
 			return nil, err
 		}
@@ -522,7 +522,7 @@ func writeDiffOutputs(c casefile.Case, expected, actual snapshots.Snapshot, form
 		paths["ansi"] = path
 	}
 	if formats["html"] {
-		html := htmldiff.RenderHTML(expected, actual, "unified")
+		html := htmldiff.RenderHTML(expected, actual, "unified", c.ExpectedLabel, c.ActualLabel)
 		path := filepath.Join(c.DiffDir, "diff.html")
 		if err := writeText(path, html); err != nil {
 			return nil, err
@@ -530,7 +530,7 @@ func writeDiffOutputs(c casefile.Case, expected, actual snapshots.Snapshot, form
 		paths["html"] = path
 	}
 	if formats["png"] {
-		html := htmldiff.RenderHTML(expected, actual, "overlay")
+		html := htmldiff.RenderHTML(expected, actual, "overlay", c.ExpectedLabel, c.ActualLabel)
 		path := filepath.Join(c.DiffDir, "diff.png")
 		if err := pngutil.WritePNGFromHTML(html, path); err != nil {
 			return nil, err
@@ -611,7 +611,7 @@ func cmdAccept(args []string) {
 			continue
 		}
 		if _, err := os.Stat(c.Actual); err != nil {
-			fmt.Fprintf(os.Stderr, "%s: actual not found: %v\n", c.Name, err)
+			fmt.Fprintf(os.Stderr, "%s: %s not found: %v\n", c.Name, c.ActualLabel, err)
 			failed = true
 			continue
 		}
@@ -641,7 +641,7 @@ func cmdAccept(args []string) {
 	}
 
 	if confirm {
-		if !confirmActions("Accept actual snapshots for %d case(s)? [y/N]: ", len(actions)) {
+		if !confirmActions("Accept current snapshots for %d case(s)? [y/N]: ", len(actions)) {
 			fmt.Fprintln(os.Stderr, "aborted")
 			os.Exit(1)
 		}
@@ -863,8 +863,13 @@ func cmdNew(args []string) {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
 	}
-	_ = os.MkdirAll(filepath.Join(caseDir, "expected"), 0o755)
-	_ = os.MkdirAll(filepath.Join(caseDir, "actual"), 0o755)
+	if *kind == "golden" {
+		_ = os.MkdirAll(filepath.Join(caseDir, "baseline"), 0o755)
+		_ = os.MkdirAll(filepath.Join(caseDir, "actual"), 0o755)
+	} else {
+		_ = os.MkdirAll(filepath.Join(caseDir, "accepted"), 0o755)
+		_ = os.MkdirAll(filepath.Join(caseDir, "current"), 0o755)
+	}
 	_ = os.MkdirAll(filepath.Join(caseDir, "diff"), 0o755)
 
 	if *kind == "regression" {
@@ -973,6 +978,8 @@ func writeCaseGitignore(path string, force bool) error {
 		".nvim-data/",
 		".nvim-config/",
 		".out/",
+		"current/",
+		"baseline/",
 		"actual/",
 		"diff/",
 		"",

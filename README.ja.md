@@ -4,8 +4,8 @@ nvim-snapは、NeovimのUIスナップショットに基づくテストを実行
 
 ## コンセプト
 
-シナリオを実行して現在のUIスナップショットを生成し、保存済みの期待値と比較することで表示の一致を検証する。
-テストケース単位でシナリオと期待値を管理し、一括実行やタグでの絞り込みができる。
+シナリオを実行して現在のUIスナップショットを生成し、保存済みの基準と比較することで表示の一致を検証する。
+テストケース単位でシナリオと基準を管理し、一括実行やタグでの絞り込みができる。
 
 ## 例
 
@@ -51,8 +51,8 @@ mise use github:kyoh86/nvim-snap
 - `init` CI向けワークフロー雛形の作成
 - `run` テストケース実行（スナップショット生成）
 - `compare` テストケース比較
-- `accept` リグレッションのexpected更新
-- `golden` ゴールデンexpected生成
+- `accept` リグレッションのaccepted更新
+- `golden` ゴールデンbaseline生成
 
 ### list
 
@@ -79,7 +79,7 @@ nvim-snap new --name sample --kind golden --title "Sample Golden"
 
 ### run
 
-テストケースを実行して `actual/` にスナップショットを生成します。
+テストケースを実行して、regressionは`current/`、goldenは`actual/`にスナップショットを生成します。
 
 ```sh
 nvim-snap run --format json,html
@@ -88,7 +88,7 @@ nvim-snap run --tag ui
 
 ### compare
 
-`expected/` と `actual/` を比較し、差分がある場合は `diff/` に出力します。
+regressionは`accepted/`と`current/`、goldenは`baseline/`と`actual/`を比較し、差分がある場合は `diff/` に出力します。
 
 ```sh
 nvim-snap compare --format text
@@ -98,7 +98,7 @@ nvim-snap compare --format png --diff-always
 
 ### accept
 
-リグレッションのexpectedをactualから更新します。
+リグレッションのacceptedをcurrentから更新します。
 
 ```sh
 nvim-snap accept
@@ -108,7 +108,7 @@ nvim-snap accept --no-confirm
 
 ### golden
 
-`golden.lua` を実行してexpectedを生成します。
+`golden.lua` を実行してbaselineを生成します。
 
 ```sh
 nvim-snap golden
@@ -131,7 +131,7 @@ nvim-snap init --path .github/workflows/nvim-snap.yml
    `nvim-snap new --name my-case --kind regression`
 2. シナリオを書く  
    `scenario.lua`
-3. actualを生成  
+3. currentを生成  
    `nvim-snap run`
 4. 差分を確認  
    `nvim-snap compare --format html`
@@ -145,7 +145,7 @@ nvim-snap init --path .github/workflows/nvim-snap.yml
    `nvim-snap new --name my-case --kind golden`
 2. シナリオを書く  
    `golden.lua` / `target.lua`
-3. expectedを生成  
+3. baselineを生成  
    `nvim-snap golden`
 4. actualを生成  
    `nvim-snap run`
@@ -154,8 +154,8 @@ nvim-snap init --path .github/workflows/nvim-snap.yml
 
 ## テストの種類
 
-- リグレッション: 同一シナリオの結果が過去の期待値と一致するか確認する
-- ゴールデン: 期待表示（golden）と実装結果（target）の一致を確認する
+- リグレッション: 同一シナリオの結果が過去のacceptedと一致するか確認する
+- ゴールデン: baseline（golden）と実装結果（target）の一致を確認する
 
 ## 注意点
 

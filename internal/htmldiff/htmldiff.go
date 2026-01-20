@@ -23,7 +23,13 @@ type rendered struct {
 	html string
 }
 
-func RenderHTML(expected, actual snapshots.Snapshot, defaultView string) string {
+func RenderHTML(expected, actual snapshots.Snapshot, defaultView, expectedLabel, actualLabel string) string {
+	if expectedLabel == "" {
+		expectedLabel = "expected"
+	}
+	if actualLabel == "" {
+		actualLabel = "actual"
+	}
 	expectedLines := snapshots.TextLines(expected)
 	actualLines := snapshots.TextLines(actual)
 	pairs, expectedLineKinds, actualLineKinds, expectedCells, actualCells := alignLines(expectedLines, actualLines)
@@ -35,22 +41,22 @@ func RenderHTML(expected, actual snapshots.Snapshot, defaultView string) string 
 
 	expectedText := snapshots.RenderText(expected)
 	actualText := snapshots.RenderText(actual)
-	unified := unifiedHTML(expectedText, actualText)
+	unified := unifiedHTML(expectedText, actualText, expectedLabel, actualLabel)
 
 	view := defaultView
 	if view == "" {
 		view = "overlay"
 	}
 
-	return wrapHTML(unified, expectedPlain, actualPlain, expectedAligned, actualAligned, view)
+	return wrapHTML(unified, expectedPlain, actualPlain, expectedAligned, actualAligned, view, expectedLabel, actualLabel)
 }
 
-func unifiedHTML(expectedText, actualText string) string {
+func unifiedHTML(expectedText, actualText, expectedLabel, actualLabel string) string {
 	d := difflib.UnifiedDiff{
 		A:        difflib.SplitLines(expectedText),
 		B:        difflib.SplitLines(actualText),
-		FromFile: "expected",
-		ToFile:   "actual",
+		FromFile: expectedLabel,
+		ToFile:   actualLabel,
 		Context:  3,
 	}
 	raw, _ := difflib.GetUnifiedDiffString(d)
@@ -354,7 +360,7 @@ func styleToCSS(s style) string {
 	return strings.Join(parts, ";")
 }
 
-func wrapHTML(unified string, expectedPlain, actualPlain, expectedAligned, actualAligned rendered, defaultView string) string {
+func wrapHTML(unified string, expectedPlain, actualPlain, expectedAligned, actualAligned rendered, defaultView, expectedLabel, actualLabel string) string {
 	return fmt.Sprintf(`<!doctype html>
 <html>
 <head>
@@ -519,11 +525,11 @@ func wrapHTML(unified string, expectedPlain, actualPlain, expectedAligned, actua
   <div class="panel" data-view="side">
     <div class="grid-wrap">
       <div class="grid">
-        <div class="title">expected</div>
+        <div class="title">%s</div>
         <div class="content" style="background:%s;color:%s">%s</div>
       </div>
       <div class="grid">
-        <div class="title">actual</div>
+        <div class="title">%s</div>
         <div class="content" style="background:%s;color:%s">%s</div>
       </div>
     </div>
@@ -532,7 +538,7 @@ func wrapHTML(unified string, expectedPlain, actualPlain, expectedAligned, actua
   <div class="panel" data-view="overlay">
     <div class="grid-wrap">
       <div class="grid">
-        <div class="title">expected</div>
+        <div class="title">%s</div>
         <div class="content" style="background:%s;color:%s">
           <div class="overlay-stack">
             <div class="layer base">%s</div>
@@ -541,7 +547,7 @@ func wrapHTML(unified string, expectedPlain, actualPlain, expectedAligned, actua
         </div>
       </div>
       <div class="grid">
-        <div class="title">actual</div>
+        <div class="title">%s</div>
         <div class="content" style="background:%s;color:%s">
           <div class="overlay-stack">
             <div class="layer base">%s</div>
@@ -571,10 +577,10 @@ func wrapHTML(unified string, expectedPlain, actualPlain, expectedAligned, actua
 </body>
 </html>`,
 		unified,
-		expectedPlain.bg, expectedPlain.fg, expectedPlain.html,
-		actualPlain.bg, actualPlain.fg, actualPlain.html,
-		expectedPlain.bg, expectedPlain.fg, expectedPlain.html, expectedAligned.html,
-		actualPlain.bg, actualPlain.fg, actualPlain.html, actualAligned.html,
+		expectedLabel, expectedPlain.bg, expectedPlain.fg, expectedPlain.html,
+		actualLabel, actualPlain.bg, actualPlain.fg, actualPlain.html,
+		expectedLabel, expectedPlain.bg, expectedPlain.fg, expectedPlain.html, expectedAligned.html,
+		actualLabel, actualPlain.bg, actualPlain.fg, actualPlain.html, actualAligned.html,
 		defaultView,
 	)
 }

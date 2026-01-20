@@ -24,6 +24,7 @@ type Options struct {
 	Width         int
 	Height        int
 	WaitMS        int
+	FlushRetry    int
 	PostWaitMS    int
 	WaitDone      bool
 	DoneTimeoutMS int
@@ -71,6 +72,20 @@ func resetFlush(state *State, flushCh chan struct{}) {
 func Collect(opts Options) (Result, error) {
 	if opts.Scenario == "" {
 		return Result{}, errors.New("scenario is required")
+	}
+
+	log := func(format string, args ...any) {
+		if opts.LogFile == "" {
+			return
+		}
+		msg := fmt.Sprintf(format, args...)
+		line := fmt.Sprintf("[%s] %s\n", time.Now().Format(time.RFC3339Nano), msg)
+		f, err := os.OpenFile(opts.LogFile, os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0o644)
+		if err != nil {
+			return
+		}
+		defer f.Close()
+		_, _ = f.WriteString(line)
 	}
 
 	absScenario, err := filepath.Abs(opts.Scenario)
@@ -153,6 +168,7 @@ func Collect(opts Options) (Result, error) {
 			}
 		}
 	}); err != nil {
+		log("register redraw failed: %v", err)
 		if isSessionClosed(err) {
 			return Result{}, wrapClosed(err, closeNvim)
 		}
@@ -164,6 +180,7 @@ func Collect(opts Options) (Result, error) {
 		default:
 		}
 	}); err != nil {
+		log("register snap_done failed: %v", err)
 		if isSessionClosed(err) {
 			return Result{}, wrapClosed(err, closeNvim)
 		}
@@ -176,6 +193,7 @@ func Collect(opts Options) (Result, error) {
 		"ext_multigrid": false,
 	}
 	if err := v.AttachUI(defaultInt(opts.Width, 80), defaultInt(opts.Height, 24), uiOpts); err != nil {
+		log("attach UI failed: %v", err)
 		if isSessionClosed(err) {
 			return Result{}, wrapClosed(err, closeNvim)
 		}
@@ -183,23 +201,28 @@ func Collect(opts Options) (Result, error) {
 	}
 
 	if len(opts.RTP) > 0 {
+		log("set rtp start")
 		if err := v.ExecLua(`local paths = ...
 for i = #paths, 1, -1 do
   vim.opt.rtp:prepend(paths[i])
 end`, nil, opts.RTP); err != nil {
+			log("set rtp failed: %v", err)
 			if isSessionClosed(err) {
 				return Result{}, wrapClosed(err, closeNvim)
 			}
 			return Result{}, fmt.Errorf("failed to set rtp: %w", err)
 		}
+		log("set rtp ok")
 	}
 
 	channelID := v.ChannelID()
 	if opts.WaitDone {
+		log("define snap_done helper")
 		if err := v.ExecLua(`local chan = ...
 _G.snap_done = function()
   vim.rpcnotify(chan, "snap_done")
 end`, nil, channelID); err != nil {
+			log("define snap_done helper failed: %v", err)
 			if isSessionClosed(err) {
 				return Result{}, wrapClosed(err, closeNvim)
 			}
@@ -207,6 +230,7 @@ end`, nil, channelID); err != nil {
 		}
 	} else {
 		if err := v.ExecLua(`_G.snap_done = function() end`, nil); err != nil {
+			log("define snap_done noop failed: %v", err)
 			if isSessionClosed(err) {
 				return Result{}, wrapClosed(err, closeNvim)
 			}
@@ -214,57 +238,91 @@ end`, nil, channelID); err != nil {
 		}
 	}
 
+	log("run scenario start: %s", absScenario)
 	if err := v.ExecLua(`local p = ...; dofile(p)`, nil, absScenario); err != nil {
+		log("run scenario failed: %v", err)
 		if isSessionClosed(err) {
 			return Result{}, wrapClosed(err, closeNvim)
 		}
 		return Result{}, fmt.Errorf("failed to run scenario: %w", err)
 	}
+	log("run scenario ok")
 	if opts.PostWaitMS > 0 {
+		log("post wait start: %dms", opts.PostWaitMS)
 		if err := v.ExecLua(`vim.wait(...)`, nil, opts.PostWaitMS); err != nil {
+			log("post wait failed: %v", err)
 			if isSessionClosed(err) {
 				return Result{}, wrapClosed(err, closeNvim)
 			}
 			return Result{}, fmt.Errorf("failed to wait after scenario: %w", err)
 		}
+		log("post wait ok")
 	}
 
 	result := Result{}
 	if opts.WaitDone {
 		doneWait := defaultInt(opts.DoneTimeoutMS, 5000)
+		log("wait done start: %dms", doneWait)
 		select {
 		case <-doneCh:
 			result.WaitedDone = true
+			log("wait done ok")
 		case <-time.After(time.Duration(doneWait) * time.Millisecond):
 			result.WaitedDone = false
+			log("wait done timeout")
 		case <-ctx.Done():
 			if errors.Is(ctx.Err(), context.DeadlineExceeded) {
+				log("wait done rpc timeout")
 				return Result{}, errors.New("rpc timeout while waiting done")
 			}
+			log("wait done ctx error: %v", ctx.Err())
 			return Result{}, ctx.Err()
 		}
 	}
 
 	resetFlush(state, flushCh)
-	if err := v.Command("redraw"); err != nil {
-		if isSessionClosed(err) {
-			return Result{}, wrapClosed(err, closeNvim)
-		}
-		return Result{}, fmt.Errorf("failed to redraw: %w", err)
-	}
 	waitMS := defaultInt(opts.WaitMS, 200)
-	select {
-	case <-flushCh:
-		result.GotFlush = true
-	case <-time.After(time.Duration(waitMS) * time.Millisecond):
-		result.GotFlush = false
-	case <-ctx.Done():
-		if errors.Is(ctx.Err(), context.DeadlineExceeded) {
-			return Result{}, errors.New("rpc timeout")
-		}
-		return Result{}, ctx.Err()
+	retries := defaultInt(opts.FlushRetry, 3)
+	if retries < 1 {
+		retries = 1
 	}
-	result.WaitedFlush = true
+	for attempt := 1; attempt <= retries; attempt++ {
+		log("redraw attempt %d/%d", attempt, retries)
+		if err := v.Command("redraw"); err != nil {
+			log("redraw failed: %v", err)
+			if isSessionClosed(err) {
+				return Result{}, wrapClosed(err, closeNvim)
+			}
+			return Result{}, fmt.Errorf("failed to redraw: %w", err)
+		}
+		if err := v.Command("redrawstatus"); err != nil {
+			log("redrawstatus failed: %v", err)
+			if isSessionClosed(err) {
+				return Result{}, wrapClosed(err, closeNvim)
+			}
+			return Result{}, fmt.Errorf("failed to redrawstatus: %w", err)
+		}
+		log("wait flush start: %dms", waitMS)
+		select {
+		case <-flushCh:
+			result.GotFlush = true
+			result.WaitedFlush = true
+			log("wait flush ok")
+			attempt = retries
+			break
+		case <-time.After(time.Duration(waitMS) * time.Millisecond):
+			result.GotFlush = false
+			log("wait flush timeout")
+			resetFlush(state, flushCh)
+		case <-ctx.Done():
+			if errors.Is(ctx.Err(), context.DeadlineExceeded) {
+				log("wait flush rpc timeout")
+				return Result{}, errors.New("rpc timeout")
+			}
+			log("wait flush ctx error: %v", ctx.Err())
+			return Result{}, ctx.Err()
+		}
+	}
 
 	snapshot := snapshotFromState(state, defaultInt(opts.Width, 80), defaultInt(opts.Height, 24))
 	result.Snapshot = snapshot
