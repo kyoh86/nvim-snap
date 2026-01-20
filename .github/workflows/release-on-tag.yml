@@ -1,17 +1,10 @@
 # yaml-language-server: $schema=https://json.schemastore.org/github-workflow.json
 
-name: Release
+name: Release on tag
 on:
-  workflow_dispatch:
-    inputs:
-      method:
-        description: Which number to increment in the semantic versioning.
-        required: true
-        type: choice
-        options:
-          - major
-          - minor
-          - patch
+  push:
+    tags:
+      - "v*"
 
 jobs:
   release:
@@ -21,12 +14,6 @@ jobs:
       contents: write
       statuses: read
     steps:
-      - name: Check Actor
-        if: github.actor != 'kyoh86'
-        run: exit 1
-      - name: Check Branch
-        if: github.ref != 'refs/heads/main'
-        run: exit 1
       - name: Wait commit status
         uses: cloudposse/github-action-wait-commit-status@main
         with:
@@ -40,10 +27,6 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - name: Bump-up Semantic Version
-        uses: kyoh86/git-vertag-action@v1
-        with:
-          method: "${{ github.event.inputs.method }}"
       - name: Setup Go
         uses: actions/setup-go@v5
         with:
