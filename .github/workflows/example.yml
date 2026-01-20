@@ -1,0 +1,38 @@
+# yaml-language-server: $schema=https://json.schemastore.org/github-workflow.json
+
+name: Examples
+on:
+  push:
+  pull_request:
+
+jobs:
+  snapcase:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+      - name: Install Neovim
+        run: sudo apt-get update && sudo apt-get install -y neovim
+      - name: Run snapcase examples
+        run: |
+          go run ./cmd/nvim-snap report \
+            --root snapcase-example \
+            --cases-dir cases \
+            --output diff \
+            --diff-format text \
+            --diff-always
+      - name: Upload diffs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: snapcase-example-diff
+          path: snapcase-example/.nvim-snap-diff/*
+      - name: Upload logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: snapcase-example-log
+          path: snapcase-example/.nvim-snap-log/*
