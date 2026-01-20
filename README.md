@@ -114,6 +114,15 @@ nvim-snap golden
 nvim-snap golden --dry-run
 ```
 
+### report
+
+Run golden baselines, run snapshots, compare, and collect diffs under `.nvim-snap-diff/`.
+
+```sh
+nvim-snap report --output summary --diff-format html
+nvim-snap report --output diff --diff-format text --diff-always
+```
+
 ### init
 
 Scaffold a CI workflow.
@@ -161,3 +170,4 @@ nvim-snap init --path .github/workflows/nvim-snap.yml
 - If your scenario needs plugins, using `vim.pack.add()` is recommended.
 - When using `vim.pack.add()`, set `--data-home` / `--config-home` explicitly.
 - In headless runs, commands that may prompt for input can block. Prefer `vim.api.nvim_cmd` to `vim.cmd`.
+- When using `wait_done`, call `require("nvim_snap").done()` in your scenario.

@@ -124,6 +124,28 @@ func parseFormats(value string, fallback map[string]bool) map[string]bool {
 	return formats
 }
 
+type waitOverrides struct {
+	postWait    optionalInt
+	waitDone    optionalBool
+	doneTimeout optionalInt
+}
+
+func resolveWaits(c casefile.Case, overrides waitOverrides) (int, bool, int) {
+	casePostWait := c.PostWait
+	if overrides.postWait.set {
+		casePostWait = overrides.postWait.value
+	}
+	caseWaitDone := c.WaitDone
+	if overrides.waitDone.set {
+		caseWaitDone = overrides.waitDone.value
+	}
+	caseDoneTimeout := c.DoneTimeout
+	if overrides.doneTimeout.set {
+		caseDoneTimeout = overrides.doneTimeout.value
+	}
+	return casePostWait, caseWaitDone, caseDoneTimeout
+}
+
 func displayWidth(value string) int {
 	return utf8.RuneCountInString(value)
 }
@@ -163,6 +185,8 @@ func main() {
 		cmdAccept(os.Args[2:])
 	case "golden":
 		cmdGolden(os.Args[2:])
+	case "report":
+		cmdReport(os.Args[2:])
 	case "new":
 		cmdNew(os.Args[2:])
 	case "init":
@@ -183,6 +207,7 @@ func usage() {
 	fmt.Println("  compare compare snapshots")
 	fmt.Println("  accept  accept regression snapshots")
 	fmt.Println("  golden  generate golden snapshots")
+	fmt.Println("  report run golden, run, compare, collect diffs")
 	fmt.Println("  new     scaffold a test case")
 	fmt.Println("  init    scaffold CI workflow")
 }
@@ -291,7 +316,31 @@ func cmdRun(args []string) {
 	filtered := casefile.Filter(cases, tags, names)
 
 	failed := len(errs) > 0
-	for _, c := range filtered {
+	if runCases(filtered, runConfig{
+		absRoot: absRoot,
+		formats: formats,
+		overrides: waitOverrides{
+			postWait:    postWait,
+			waitDone:    waitDone,
+			doneTimeout: doneTimeout,
+		},
+	}) {
+		failed = true
+	}
+	if failed {
+		os.Exit(1)
+	}
+}
+
+type runConfig struct {
+	absRoot   string
+	formats   map[string]bool
+	overrides waitOverrides
+}
+
+func runCases(cases []casefile.Case, cfg runConfig) bool {
+	failed := false
+	for _, c := range cases {
 		scenario := c.Scenario
 		if c.Kind == "golden" {
 			scenario = c.Target
@@ -301,18 +350,7 @@ func cmdRun(args []string) {
 			failed = true
 			continue
 		}
-		casePostWait := c.PostWait
-		if postWait.set {
-			casePostWait = postWait.value
-		}
-		caseWaitDone := c.WaitDone
-		if waitDone.set {
-			caseWaitDone = waitDone.value
-		}
-		caseDoneTimeout := c.DoneTimeout
-		if doneTimeout.set {
-			caseDoneTimeout = doneTimeout.value
-		}
+		casePostWait, caseWaitDone, caseDoneTimeout := resolveWaits(c, cfg.overrides)
 		res, err := collector.Collect(collector.Options{
 			Scenario:      scenario,
 			Width:         c.Width,
@@ -326,7 +364,7 @@ func cmdRun(args []string) {
 			ConfigHome:    c.ConfigHome,
 			LogFile:       c.LogFile,
 			LogLevel:      c.LogLevel,
-			WorkDir:       absRoot,
+			WorkDir:       cfg.absRoot,
 			RTP:           c.RTP,
 		})
 		if err != nil {
@@ -338,14 +376,14 @@ func cmdRun(args []string) {
 			fmt.Fprintf(os.Stderr, "%s: wait_done timeout (possible input wait; prefer vim.api.nvim_cmd)\n", c.Name)
 		}
 		actualDir := filepath.Dir(c.Actual)
-		if formats["json"] {
+		if cfg.formats["json"] {
 			if err := writeJSON(c.Actual, res.Snapshot); err != nil {
 				fmt.Fprintf(os.Stderr, "%s: %v\n", c.Name, err)
 				failed = true
 				continue
 			}
 		}
-		if formats["ansi"] {
+		if cfg.formats["ansi"] {
 			ansi := snapshots.RenderANSI(res.Snapshot)
 			if err := writeText(filepath.Join(actualDir, "snapshot.ansi"), ansi); err != nil {
 				fmt.Fprintf(os.Stderr, "%s: %v\n", c.Name, err)
@@ -353,7 +391,7 @@ func cmdRun(args []string) {
 				continue
 			}
 		}
-		if formats["html"] {
+		if cfg.formats["html"] {
 			html := snapshots.RenderHTML(res.Snapshot)
 			if err := writeText(filepath.Join(actualDir, "snapshot.html"), html); err != nil {
 				fmt.Fprintf(os.Stderr, "%s: %v\n", c.Name, err)
@@ -363,9 +401,7 @@ func cmdRun(args []string) {
 		}
 		fmt.Printf("%s\tok\n", c.Name)
 	}
-	if failed {
-		os.Exit(1)
-	}
+	return failed
 }
 
 func cmdCompare(args []string) {
@@ -400,7 +436,45 @@ func cmdCompare(args []string) {
 	}
 	filtered := casefile.Filter(cases, tags, names)
 
-	failed := len(errs) > 0
+	results, summary, failed, hasDiff := compareCases(filtered, formats, *diffAlways, *output == "diff")
+	if len(errs) > 0 {
+		failed = true
+	}
+
+	if *output == "json" {
+		out := map[string]any{
+			"root":    absRoot,
+			"summary": summary,
+			"cases":   results,
+		}
+		payload, err := json.MarshalIndent(out, "", "  ")
+		if err != nil {
+			fmt.Fprintln(os.Stderr, err)
+			os.Exit(2)
+		}
+		fmt.Println(string(payload))
+	} else if *output == "diff" {
+		printCompareDiff(results)
+	} else {
+		diffHeader := "diff_paths"
+		if len(formats) == 1 {
+			for key := range formats {
+				diffHeader = "diff_path(" + key + ")"
+			}
+		}
+		printCompareText(results, diffHeader, len(formats) == 1)
+	}
+
+	if failed {
+		os.Exit(2)
+	}
+	if hasDiff {
+		os.Exit(1)
+	}
+}
+
+func compareCases(cases []casefile.Case, formats map[string]bool, diffAlways bool, wantDiffText bool) ([]map[string]any, map[string]int, bool, bool) {
+	failed := false
 	hasDiff := false
 	results := []map[string]any{}
 	summary := map[string]int{
@@ -409,7 +483,7 @@ func cmdCompare(args []string) {
 		"diff":    0,
 		"error":   0,
 	}
-	for _, c := range filtered {
+	for _, c := range cases {
 		summary["total"]++
 		entry := map[string]any{
 			"name":         c.Name,
@@ -452,7 +526,7 @@ func cmdCompare(args []string) {
 			hasDiff = true
 		}
 
-		if *output == "diff" && entry["result"] == "diff" {
+		if wantDiffText && entry["result"] == "diff" {
 			diff, err := unifiedDiffText(c.ExpectedLabel, c.ActualLabel, snapshots.RenderText(normExpected), snapshots.RenderText(normActual))
 			if err != nil {
 				entry["result"] = "error"
@@ -464,7 +538,7 @@ func cmdCompare(args []string) {
 			}
 		}
 
-		if entry["result"] == "diff" || *diffAlways {
+		if entry["result"] == "diff" || diffAlways {
 			diffPaths, err := writeDiffOutputs(c, normExpected, normActual, formats)
 			if err != nil {
 				entry["result"] = "error"
@@ -477,6 +551,116 @@ func cmdCompare(args []string) {
 		}
 
 		results = append(results, entry)
+	}
+	return results, summary, failed, hasDiff
+}
+
+func collectDiffArtifacts(cases []casefile.Case, destDir string) error {
+	if err := os.RemoveAll(destDir); err != nil {
+		return err
+	}
+	if err := os.MkdirAll(destDir, 0o755); err != nil {
+		return err
+	}
+	for _, c := range cases {
+		entries, err := os.ReadDir(c.DiffDir)
+		if err != nil {
+			if os.IsNotExist(err) {
+				continue
+			}
+			return err
+		}
+		for _, entry := range entries {
+			if entry.IsDir() {
+				continue
+			}
+			src := filepath.Join(c.DiffDir, entry.Name())
+			ext := filepath.Ext(entry.Name())
+			if ext == "" {
+				ext = ".diff"
+			}
+			dest := filepath.Join(destDir, c.Name+ext)
+			if err := copyFile(src, dest); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
+func cmdReport(args []string) {
+	fs := flag.NewFlagSet("report", flag.ExitOnError)
+	root := fs.String("root", ".", "Root directory")
+	casesDir := fs.String("cases-dir", "snapcase", "Cases directory under root")
+	snapshotFormat := fs.String("snapshot-format", "json", "Snapshot formats (json,ansi,html)")
+	diffFormat := fs.String("diff-format", "text", "Diff formats (text,ansi,html,png)")
+	diffAlways := fs.Bool("diff-always", false, "Write diffs even if no difference")
+	output := fs.String("output", "summary", "Output format (summary,diff,json)")
+	var postWait optionalInt
+	var waitDone optionalBool
+	var doneTimeout optionalInt
+	fs.Var(&postWait, "post-wait", "Wait after scenario execution (ms)")
+	fs.Var(&waitDone, "wait-done", "Wait for scenario completion notification")
+	fs.Var(&doneTimeout, "done-timeout", "Scenario completion timeout (ms)")
+	var tags stringList
+	var names stringList
+	fs.Var(&tags, "tag", "Tag filter")
+	fs.Var(&names, "case", "Case name filter")
+	_ = fs.Parse(args)
+
+	snapFormats := parseFormats(*snapshotFormat, map[string]bool{"json": true})
+	for key := range snapFormats {
+		if key != "json" && key != "ansi" && key != "html" {
+			fmt.Fprintf(os.Stderr, "unsupported snapshot format: %s\n", key)
+			os.Exit(2)
+		}
+	}
+	diffFormats := parseFormats(*diffFormat, map[string]bool{"text": true})
+	for key := range diffFormats {
+		if key != "text" && key != "ansi" && key != "html" && key != "png" {
+			fmt.Fprintf(os.Stderr, "unsupported diff format: %s\n", key)
+			os.Exit(2)
+		}
+	}
+	if *output != "summary" && *output != "diff" && *output != "json" {
+		fmt.Fprintf(os.Stderr, "unsupported output: %s\n", *output)
+		os.Exit(2)
+	}
+
+	absRoot := mustAbs(*root)
+	cases, errs := casefile.Find(absRoot, *casesDir)
+	for _, err := range errs {
+		fmt.Fprintln(os.Stderr, err)
+	}
+	filtered := casefile.Filter(cases, tags, names)
+
+	failed := len(errs) > 0
+	if goldenCases(filtered, goldenConfig{
+		absRoot: absRoot,
+		overrides: waitOverrides{
+			postWait:    postWait,
+			waitDone:    waitDone,
+			doneTimeout: doneTimeout,
+		},
+	}) {
+		failed = true
+	}
+
+	if runCases(filtered, runConfig{
+		absRoot: absRoot,
+		formats: snapFormats,
+		overrides: waitOverrides{
+			postWait:    postWait,
+			waitDone:    waitDone,
+			doneTimeout: doneTimeout,
+		},
+	}) {
+		failed = true
+	}
+
+	results, summary, compareFailed, hasDiff := compareCases(filtered, diffFormats, *diffAlways, *output == "diff")
+	if compareFailed {
+		failed = true
 	}
 
 	if *output == "json" {
@@ -495,12 +679,17 @@ func cmdCompare(args []string) {
 		printCompareDiff(results)
 	} else {
 		diffHeader := "diff_paths"
-		if len(formats) == 1 {
-			for key := range formats {
+		if len(diffFormats) == 1 {
+			for key := range diffFormats {
 				diffHeader = "diff_path(" + key + ")"
 			}
 		}
-		printCompareText(results, diffHeader, len(formats) == 1)
+		printCompareText(results, diffHeader, len(diffFormats) == 1)
+	}
+
+	if err := collectDiffArtifacts(filtered, filepath.Join(absRoot, ".nvim-snap-diff")); err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		failed = true
 	}
 
 	if failed {
@@ -742,8 +931,43 @@ func cmdGolden(args []string) {
 	filtered := casefile.Filter(cases, tags, names)
 
 	failed := len(errs) > 0
+	if *dryRun {
+		for _, c := range filtered {
+			if c.Kind != "golden" {
+				continue
+			}
+			fmt.Printf("%s\t%s -> %s\n", c.Name, c.Golden, c.Expected)
+		}
+		if failed {
+			os.Exit(1)
+		}
+		return
+	}
+
+	if goldenCases(filtered, goldenConfig{
+		absRoot: absRoot,
+		overrides: waitOverrides{
+			postWait:    postWait,
+			waitDone:    waitDone,
+			doneTimeout: doneTimeout,
+		},
+	}) {
+		failed = true
+	}
+	if failed {
+		os.Exit(1)
+	}
+}
+
+type goldenConfig struct {
+	absRoot   string
+	overrides waitOverrides
+}
+
+func goldenCases(cases []casefile.Case, cfg goldenConfig) bool {
+	failed := false
 	actions := []casefile.Case{}
-	for _, c := range filtered {
+	for _, c := range cases {
 		if c.Kind != "golden" {
 			continue
 		}
@@ -755,36 +979,8 @@ func cmdGolden(args []string) {
 		actions = append(actions, c)
 	}
 
-	if len(actions) == 0 {
-		if failed {
-			os.Exit(1)
-		}
-		return
-	}
-
-	if *dryRun {
-		for _, c := range actions {
-			fmt.Printf("%s\t%s -> %s\n", c.Name, c.Golden, c.Expected)
-		}
-		if failed {
-			os.Exit(1)
-		}
-		return
-	}
-
 	for _, c := range actions {
-		casePostWait := c.PostWait
-		if postWait.set {
-			casePostWait = postWait.value
-		}
-		caseWaitDone := c.WaitDone
-		if waitDone.set {
-			caseWaitDone = waitDone.value
-		}
-		caseDoneTimeout := c.DoneTimeout
-		if doneTimeout.set {
-			caseDoneTimeout = doneTimeout.value
-		}
+		casePostWait, caseWaitDone, caseDoneTimeout := resolveWaits(c, cfg.overrides)
 		res, err := collector.Collect(collector.Options{
 			Scenario:      c.Golden,
 			Width:         c.Width,
@@ -798,7 +994,7 @@ func cmdGolden(args []string) {
 			ConfigHome:    c.ConfigHome,
 			LogFile:       c.LogFile,
 			LogLevel:      c.LogLevel,
-			WorkDir:       absRoot,
+			WorkDir:       cfg.absRoot,
 			RTP:           c.RTP,
 		})
 		if err != nil {
@@ -816,9 +1012,7 @@ func cmdGolden(args []string) {
 		}
 		fmt.Printf("%s\tgenerated\n", c.Name)
 	}
-	if failed {
-		os.Exit(1)
-	}
+	return failed
 }
 
 func workflowYAML(name, root, casesDir, diffFormat string) string {
@@ -840,23 +1034,9 @@ func workflowYAML(name, root, casesDir, diffFormat string) string {
 		"        run: |",
 		"          curl -sSL https://github.com/kyoh86/nvim-snap/releases/latest/download/nvim-snap -o nvim-snap",
 		"          chmod +x nvim-snap",
-		"      - name: Run snapshots",
+		"      - name: Report snapshots",
 		"        run: |",
-		"          ./nvim-snap run --root " + root + " --cases-dir " + casesDir + " --format json",
-		"      - name: Compare snapshots",
-		"        run: |",
-		"          ./nvim-snap compare --root " + root + " --cases-dir " + casesDir + " --output diff --diff-format " + diffFormat + " --diff-always",
-		"      - name: Collect diffs",
-		"        if: always()",
-		"        run: |",
-		"          rm -rf .nvim-snap-diff",
-		"          mkdir -p .nvim-snap-diff",
-		"          find " + casesDir + " -path \"*/diff/*\" -type f -print0 | \\",
-		"            while IFS= read -r -d '' file; do \\",
-		"              case_name=$(basename \"$(dirname \"$(dirname \"$file\")\")\"); \\",
-		"              ext=${file##*.}; \\",
-		"              cp \"$file\" \".nvim-snap-diff/${case_name}.${ext}\"; \\",
-		"            done",
+		"          ./nvim-snap report --root " + root + " --cases-dir " + casesDir + " --output diff --diff-format " + diffFormat + " --diff-always",
 		"      - name: Upload diffs",
 		"        if: always()",
 		"        uses: actions/upload-artifact@v4",

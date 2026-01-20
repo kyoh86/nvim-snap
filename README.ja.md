@@ -115,6 +115,15 @@ nvim-snap golden
 nvim-snap golden --dry-run
 ```
 
+### report
+
+baseline生成、スナップショット生成、比較、`.nvim-snap-diff/` への収集までをまとめて実行します。
+
+```sh
+nvim-snap report --output summary --diff-format html
+nvim-snap report --output diff --diff-format text --diff-always
+```
+
 ### init
 
 CI向けワークフロー雛形を作成します。
@@ -162,3 +171,4 @@ nvim-snap init --path .github/workflows/nvim-snap.yml
 - シナリオの中でプラグインが必要な場合は、 `vim.pack.add()` を使うのがおすすめです。
 - `vim.pack.add()` を使う場合は `--data-home` / `--config-home` を明示的に設定してください。
 - headless実行では入力待ちが発生するコマンドが止まることがあります。`vim.cmd` より `vim.api.nvim_cmd` を推奨します。
+- `wait_done` を使う場合は `require("nvim_snap").done()` を呼び出してください。

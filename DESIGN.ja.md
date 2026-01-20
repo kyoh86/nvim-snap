@@ -166,6 +166,13 @@ CLIでは `nvim-snap <command>` で呼び出す。
   - 出力: `baseline/`配下の更新（`golden.lua` を実行して生成）
   - `--dry-run` で更新内容を表示のみ
   - 終了コード: 成功=0、失敗=1
+- `report`: baseline生成、スナップショット生成、比較、差分収集をまとめて実行する
+  - 入力: `--root`（既定は `.`）、`--cases-dir`（既定は `snapcase`）
+  - 出力形式: `--output=summary|diff|json`（既定は `summary`）
+  - diff出力形式: `--diff-format=text,ansi,html,png`（既定は `text`）
+  - スナップショット出力形式: `--snapshot-format=json,ansi,html`（既定は `json`）
+  - `.nvim-snap-diff/` に差分ファイルを収集する
+  - 終了コード: 成功=0、不一致=1、失敗=2
 
 ### テストケース定義
 
