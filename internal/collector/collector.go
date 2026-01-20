@@ -24,6 +24,7 @@ type Options struct {
 	Width         int
 	Height        int
 	WaitMS        int
+	FlushRetry    int
 	PostWaitMS    int
 	WaitDone      bool
 	DoneTimeoutMS int
@@ -280,32 +281,48 @@ end`, nil, channelID); err != nil {
 	}
 
 	resetFlush(state, flushCh)
-	log("redraw start")
-	if err := v.Command("redraw"); err != nil {
-		log("redraw failed: %v", err)
-		if isSessionClosed(err) {
-			return Result{}, wrapClosed(err, closeNvim)
-		}
-		return Result{}, fmt.Errorf("failed to redraw: %w", err)
-	}
 	waitMS := defaultInt(opts.WaitMS, 200)
-	log("wait flush start: %dms", waitMS)
-	select {
-	case <-flushCh:
-		result.GotFlush = true
-		log("wait flush ok")
-	case <-time.After(time.Duration(waitMS) * time.Millisecond):
-		result.GotFlush = false
-		log("wait flush timeout")
-	case <-ctx.Done():
-		if errors.Is(ctx.Err(), context.DeadlineExceeded) {
-			log("wait flush rpc timeout")
-			return Result{}, errors.New("rpc timeout")
-		}
-		log("wait flush ctx error: %v", ctx.Err())
-		return Result{}, ctx.Err()
+	retries := defaultInt(opts.FlushRetry, 3)
+	if retries < 1 {
+		retries = 1
 	}
-	result.WaitedFlush = true
+	for attempt := 1; attempt <= retries; attempt++ {
+		log("redraw attempt %d/%d", attempt, retries)
+		if err := v.Command("redraw"); err != nil {
+			log("redraw failed: %v", err)
+			if isSessionClosed(err) {
+				return Result{}, wrapClosed(err, closeNvim)
+			}
+			return Result{}, fmt.Errorf("failed to redraw: %w", err)
+		}
+		if err := v.Command("redrawstatus"); err != nil {
+			log("redrawstatus failed: %v", err)
+			if isSessionClosed(err) {
+				return Result{}, wrapClosed(err, closeNvim)
+			}
+			return Result{}, fmt.Errorf("failed to redrawstatus: %w", err)
+		}
+		log("wait flush start: %dms", waitMS)
+		select {
+		case <-flushCh:
+			result.GotFlush = true
+			result.WaitedFlush = true
+			log("wait flush ok")
+			attempt = retries
+			break
+		case <-time.After(time.Duration(waitMS) * time.Millisecond):
+			result.GotFlush = false
+			log("wait flush timeout")
+			resetFlush(state, flushCh)
+		case <-ctx.Done():
+			if errors.Is(ctx.Err(), context.DeadlineExceeded) {
+				log("wait flush rpc timeout")
+				return Result{}, errors.New("rpc timeout")
+			}
+			log("wait flush ctx error: %v", ctx.Err())
+			return Result{}, ctx.Err()
+		}
+	}
 
 	snapshot := snapshotFromState(state, defaultInt(opts.Width, 80), defaultInt(opts.Height, 24))
 	result.Snapshot = snapshot
