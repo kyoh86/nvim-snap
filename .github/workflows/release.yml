@@ -1,27 +1,47 @@
+# yaml-language-server: $schema=https://json.schemastore.org/github-workflow.json
+
 name: Release
-
 on:
-  push:
-    tags:
-      - "v*"
-
-permissions:
-  contents: write
+  workflow_dispatch:
+    inputs:
+      method:
+        description: Which number to increment in the semantic versioning.
+        required: true
+        type: choice
+        options:
+          - major
+          - minor
+          - patch
 
 jobs:
   release:
+    name: Release Binary
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
-      - uses: actions/checkout@v4
-      - name: Set up Go
+      - name: Check Actor
+        if: github.actor != 'kyoh86'
+        run: exit 1
+      - name: Check Branch
+        if: github.ref != 'refs/heads/main'
+        run: exit 1
+      - name: Checkout Sources
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Bump-up Semantic Version
+        uses: kyoh86/git-vertag-action@v1
+        with:
+          method: "${{ github.event.inputs.method }}"
+      - name: Setup Go
         uses: actions/setup-go@v5
         with:
           go-version-file: go.mod
-      - name: Build binary
-        run: |
-          mkdir -p dist
-          go build -o dist/nvim-snap ./cmd/nvim-snap
-      - name: Create release
-        uses: softprops/action-gh-release@v2
+      - name: Run GoReleaser
+        uses: goreleaser/goreleaser-action@v6
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          files: dist/nvim-snap
+          version: ~> v2
+          args: release --clean

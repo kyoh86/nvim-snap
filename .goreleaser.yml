@@ -1,0 +1,24 @@
+# yaml-language-server: $schema=https://goreleaser.com/static/schema.json
+
+version: 2
+project_name: nvim-snap
+builds:
+  - id: default
+    main: ./cmd/nvim-snap
+    binary: nvim-snap
+    goos:
+      - linux
+      - darwin
+      - windows
+    goarch:
+      - amd64
+      - arm64
+archives:
+  - id: gzip
+    formats: ["tar.gz"]
+    format_overrides:
+      - goos: windows
+        formats: ["zip"]
+    files:
+      - LICENSE*
+      - README*
