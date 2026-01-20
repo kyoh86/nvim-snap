@@ -160,3 +160,4 @@ nvim-snap init --path .github/workflows/nvim-snap.yml
 
 - If your scenario needs plugins, using `vim.pack.add()` is recommended.
 - When using `vim.pack.add()`, set `--data-home` / `--config-home` explicitly.
+- In headless runs, commands that may prompt for input can block. Prefer `vim.api.nvim_cmd` to `vim.cmd`.

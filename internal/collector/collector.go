@@ -273,7 +273,7 @@ end`, nil, channelID); err != nil {
 		case <-ctx.Done():
 			if errors.Is(ctx.Err(), context.DeadlineExceeded) {
 				log("wait done rpc timeout")
-				return Result{}, errors.New("rpc timeout while waiting done")
+				return Result{}, errors.New("rpc timeout while waiting done (headless input wait? prefer vim.api.nvim_cmd)")
 			}
 			log("wait done ctx error: %v", ctx.Err())
 			return Result{}, ctx.Err()
@@ -317,7 +317,7 @@ end`, nil, channelID); err != nil {
 		case <-ctx.Done():
 			if errors.Is(ctx.Err(), context.DeadlineExceeded) {
 				log("wait flush rpc timeout")
-				return Result{}, errors.New("rpc timeout")
+				return Result{}, errors.New("rpc timeout (headless input wait? prefer vim.api.nvim_cmd)")
 			}
 			log("wait flush ctx error: %v", ctx.Err())
 			return Result{}, ctx.Err()
@@ -348,7 +348,7 @@ func wrapClosed(err error, closeNvim func() error) error {
 	}
 	var exitErr *exec.ExitError
 	if errors.As(closeErr, &exitErr) {
-		return fmt.Errorf("%w (nvim exited: %s)", err, exitErr.ProcessState.String())
+		return fmt.Errorf("%w (nvim exited: %s; headless input wait? prefer vim.api.nvim_cmd)", err, exitErr.ProcessState.String())
 	}
 	return fmt.Errorf("%w (close error: %v)", err, closeErr)
 }

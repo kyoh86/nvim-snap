@@ -161,3 +161,4 @@ nvim-snap init --path .github/workflows/nvim-snap.yml
 
 - シナリオの中でプラグインが必要な場合は、 `vim.pack.add()` を使うのがおすすめです。
 - `vim.pack.add()` を使う場合は `--data-home` / `--config-home` を明示的に設定してください。
+- headless実行では入力待ちが発生するコマンドが止まることがあります。`vim.cmd` より `vim.api.nvim_cmd` を推奨します。

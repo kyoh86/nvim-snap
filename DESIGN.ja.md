@@ -114,6 +114,7 @@ CLIでは `nvim-snap <command>` で呼び出す。
   - HTML差分は不一致時のみ生成し、`--diff-always` で常時生成できる
   - サマリ項目: name/title/kind/tags/result/diff_paths/error_reason
   - resultは `no_diff` / `diff` / `error`
+  - headless実行で入力待ちが起きる可能性があるため、シナリオでは `vim.api.nvim_cmd` の利用を推奨する
   - JSON出力:
     - `root` ルートディレクトリ
     - `summary` 集計
