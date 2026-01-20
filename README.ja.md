@@ -117,7 +117,7 @@ nvim-snap golden --dry-run
 
 ### report
 
-baseline生成、スナップショット生成、比較、`.nvim-snap-diff/` への収集までをまとめて実行します。
+baseline生成、スナップショット生成、比較、`.nvim-snap-diff/` と `.nvim-snap-log/` への収集までをまとめて実行します。
 
 ```sh
 nvim-snap report --output summary --diff-format html

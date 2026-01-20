@@ -172,6 +172,7 @@ CLIでは `nvim-snap <command>` で呼び出す。
   - diff出力形式: `--diff-format=text,ansi,html,png`（既定は `text`）
   - スナップショット出力形式: `--snapshot-format=json,ansi,html`（既定は `json`）
   - `.nvim-snap-diff/` に差分ファイルを収集する
+  - `.nvim-snap-log/` にシナリオログを収集する
   - 終了コード: 成功=0、不一致=1、失敗=2
 
 ### テストケース定義

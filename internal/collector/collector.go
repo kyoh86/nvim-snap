@@ -42,6 +42,7 @@ type Result struct {
 	GotFlush    bool
 	WaitedFlush bool
 	WaitedDone  bool
+	Logs        []string
 }
 
 type GridState struct {
@@ -163,6 +164,7 @@ func Collect(opts Options) (Result, error) {
 	}
 	flushCh := make(chan struct{}, 1)
 	doneCh := make(chan struct{}, 1)
+	logCh := make(chan []string, 1)
 	if err := v.RegisterHandler("redraw", func(updates ...[]any) {
 		for _, update := range updates {
 			if len(update) == 0 {
@@ -203,6 +205,22 @@ func Collect(opts Options) (Result, error) {
 		}
 		return Result{}, fmt.Errorf("failed to register done handler: %w", err)
 	}
+	if err := v.RegisterHandler("snap_log", func(args ...any) {
+		parts := make([]string, 0, len(args))
+		for _, item := range args {
+			parts = append(parts, fmt.Sprint(item))
+		}
+		select {
+		case logCh <- parts:
+		default:
+		}
+	}); err != nil {
+		log("register snap_log failed: %v", err)
+		if isSessionClosed(err) {
+			return Result{}, wrapClosed(err, closeNvim)
+		}
+		return Result{}, fmt.Errorf("failed to register log handler: %w", err)
+	}
 
 	uiOpts := map[string]any{
 		"ext_linegrid":  true,
@@ -233,32 +251,35 @@ end`, nil, opts.RTP); err != nil {
 	}
 
 	channelID := v.ChannelID()
-	if opts.WaitDone {
-		log("define nvim_snap module")
-		if err := v.ExecLua(`local chan = ...
+	log("define nvim_snap module")
+	moduleLua := `local chan = ...
 package.preload["nvim_snap"] = function()
   return {
     done = function()
       vim.rpcnotify(chan, "snap_done")
     end,
+    log = function(...)
+      vim.rpcnotify(chan, "snap_log", ...)
+    end,
   }
-end`, nil, channelID); err != nil {
-			log("define nvim_snap module failed: %v", err)
-			if isSessionClosed(err) {
-				return Result{}, wrapClosed(err, closeNvim)
-			}
-			return Result{}, fmt.Errorf("failed to set done helper: %w", err)
+end`
+	if !opts.WaitDone {
+		moduleLua = `local chan = ...
+package.preload["nvim_snap"] = function()
+  return {
+    done = function() end,
+    log = function(...)
+      vim.rpcnotify(chan, "snap_log", ...)
+    end,
+  }
+end`
+	}
+	if err := v.ExecLua(moduleLua, nil, channelID); err != nil {
+		log("define nvim_snap module failed: %v", err)
+		if isSessionClosed(err) {
+			return Result{}, wrapClosed(err, closeNvim)
 		}
-	} else {
-		if err := v.ExecLua(`package.preload["nvim_snap"] = function()
-  return { done = function() end }
-end`, nil); err != nil {
-			log("define nvim_snap module noop failed: %v", err)
-			if isSessionClosed(err) {
-				return Result{}, wrapClosed(err, closeNvim)
-			}
-			return Result{}, fmt.Errorf("failed to set done helper: %w", err)
-		}
+		return Result{}, fmt.Errorf("failed to set done helper: %w", err)
 	}
 
 	log("run scenario start: %s", absScenario)
@@ -301,6 +322,15 @@ end`, nil); err != nil {
 			}
 			log("wait done ctx error: %v", ctx.Err())
 			return Result{}, ctx.Err()
+		}
+	}
+collectLogs:
+	for {
+		select {
+		case parts := <-logCh:
+			result.Logs = append(result.Logs, strings.Join(parts, " "))
+		default:
+			break collectLogs
 		}
 	}
 
@@ -349,6 +379,15 @@ end`, nil); err != nil {
 	}
 
 	snapshot := snapshotFromState(state, defaultInt(opts.Width, 80), defaultInt(opts.Height, 24))
+resultLogsFinal:
+	for {
+		select {
+		case parts := <-logCh:
+			result.Logs = append(result.Logs, strings.Join(parts, " "))
+		default:
+			break resultLogsFinal
+		}
+	}
 	result.Snapshot = snapshot
 	_ = v.Command("qa!")
 

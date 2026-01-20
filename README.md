@@ -116,7 +116,7 @@ nvim-snap golden --dry-run
 
 ### report
 
-Run golden baselines, run snapshots, compare, and collect diffs under `.nvim-snap-diff/`.
+Run golden baselines, run snapshots, compare, and collect diffs under `.nvim-snap-diff/` and logs under `.nvim-snap-log/`.
 
 ```sh
 nvim-snap report --output summary --diff-format html

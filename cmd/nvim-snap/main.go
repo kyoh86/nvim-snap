@@ -316,7 +316,7 @@ func cmdRun(args []string) {
 	filtered := casefile.Filter(cases, tags, names)
 
 	failed := len(errs) > 0
-	if runCases(filtered, runConfig{
+	if runFailed, _ := runCases(filtered, runConfig{
 		absRoot: absRoot,
 		formats: formats,
 		overrides: waitOverrides{
@@ -324,7 +324,7 @@ func cmdRun(args []string) {
 			waitDone:    waitDone,
 			doneTimeout: doneTimeout,
 		},
-	}) {
+	}); runFailed {
 		failed = true
 	}
 	if failed {
@@ -338,8 +338,9 @@ type runConfig struct {
 	overrides waitOverrides
 }
 
-func runCases(cases []casefile.Case, cfg runConfig) bool {
+func runCases(cases []casefile.Case, cfg runConfig) (bool, map[string][]string) {
 	failed := false
+	logs := map[string][]string{}
 	for _, c := range cases {
 		scenario := c.Scenario
 		if c.Kind == "golden" {
@@ -375,6 +376,14 @@ func runCases(cases []casefile.Case, cfg runConfig) bool {
 		if caseWaitDone && !res.WaitedDone {
 			fmt.Fprintf(os.Stderr, "%s: wait_done timeout (possible input wait; prefer vim.api.nvim_cmd)\n", c.Name)
 		}
+		if len(res.Logs) > 0 {
+			logs[c.Name] = append(logs[c.Name], res.Logs...)
+			if err := writeScenarioLogs(cfg.absRoot, c.Name, "run", res.Logs); err != nil {
+				fmt.Fprintf(os.Stderr, "%s: %v\n", c.Name, err)
+				failed = true
+				continue
+			}
+		}
 		actualDir := filepath.Dir(c.Actual)
 		if cfg.formats["json"] {
 			if err := writeJSON(c.Actual, res.Snapshot); err != nil {
@@ -401,7 +410,7 @@ func runCases(cases []casefile.Case, cfg runConfig) bool {
 		}
 		fmt.Printf("%s\tok\n", c.Name)
 	}
-	return failed
+	return failed, logs
 }
 
 func cmdCompare(args []string) {
@@ -588,6 +597,18 @@ func collectDiffArtifacts(cases []casefile.Case, destDir string) error {
 	return nil
 }
 
+func writeScenarioLogs(root, caseName, stage string, logs []string) error {
+	if len(logs) == 0 {
+		return nil
+	}
+	destDir := filepath.Join(root, ".nvim-snap-log")
+	if err := os.MkdirAll(destDir, 0o755); err != nil {
+		return err
+	}
+	path := filepath.Join(destDir, fmt.Sprintf("%s.%s.log", caseName, stage))
+	return writeText(path, strings.Join(logs, "\n")+"\n")
+}
+
 func cmdReport(args []string) {
 	fs := flag.NewFlagSet("report", flag.ExitOnError)
 	root := fs.String("root", ".", "Root directory")
@@ -635,18 +656,19 @@ func cmdReport(args []string) {
 	filtered := casefile.Filter(cases, tags, names)
 
 	failed := len(errs) > 0
-	if goldenCases(filtered, goldenConfig{
+	goldenFailed, goldenLogs := goldenCases(filtered, goldenConfig{
 		absRoot: absRoot,
 		overrides: waitOverrides{
 			postWait:    postWait,
 			waitDone:    waitDone,
 			doneTimeout: doneTimeout,
 		},
-	}) {
+	})
+	if goldenFailed {
 		failed = true
 	}
 
-	if runCases(filtered, runConfig{
+	runFailed, runLogs := runCases(filtered, runConfig{
 		absRoot: absRoot,
 		formats: snapFormats,
 		overrides: waitOverrides{
@@ -654,11 +676,25 @@ func cmdReport(args []string) {
 			waitDone:    waitDone,
 			doneTimeout: doneTimeout,
 		},
-	}) {
+	})
+	if runFailed {
 		failed = true
 	}
 
 	results, summary, compareFailed, hasDiff := compareCases(filtered, diffFormats, *diffAlways, *output == "diff")
+	for _, entry := range results {
+		name, _ := entry["name"].(string)
+		logEntry := map[string][]string{}
+		if logs, ok := goldenLogs[name]; ok && len(logs) > 0 {
+			logEntry["golden"] = append([]string{}, logs...)
+		}
+		if logs, ok := runLogs[name]; ok && len(logs) > 0 {
+			logEntry["run"] = append([]string{}, logs...)
+		}
+		if len(logEntry) > 0 {
+			entry["logs"] = logEntry
+		}
+	}
 	if compareFailed {
 		failed = true
 	}
@@ -964,8 +1000,9 @@ type goldenConfig struct {
 	overrides waitOverrides
 }
 
-func goldenCases(cases []casefile.Case, cfg goldenConfig) bool {
+func goldenCases(cases []casefile.Case, cfg goldenConfig) (bool, map[string][]string) {
 	failed := false
+	logs := map[string][]string{}
 	actions := []casefile.Case{}
 	for _, c := range cases {
 		if c.Kind != "golden" {
@@ -1005,6 +1042,14 @@ func goldenCases(cases []casefile.Case, cfg goldenConfig) bool {
 		if caseWaitDone && !res.WaitedDone {
 			fmt.Fprintf(os.Stderr, "%s: wait_done timeout (possible input wait; prefer vim.api.nvim_cmd)\n", c.Name)
 		}
+		if len(res.Logs) > 0 {
+			logs[c.Name] = append(logs[c.Name], res.Logs...)
+			if err := writeScenarioLogs(cfg.absRoot, c.Name, "golden", res.Logs); err != nil {
+				fmt.Fprintf(os.Stderr, "%s: %v\n", c.Name, err)
+				failed = true
+				continue
+			}
+		}
 		if err := writeJSON(c.Expected, res.Snapshot); err != nil {
 			fmt.Fprintf(os.Stderr, "%s: %v\n", c.Name, err)
 			failed = true
@@ -1012,7 +1057,7 @@ func goldenCases(cases []casefile.Case, cfg goldenConfig) bool {
 		}
 		fmt.Printf("%s\tgenerated\n", c.Name)
 	}
-	return failed
+	return failed, logs
 }
 
 func workflowYAML(name, root, casesDir, diffFormat string) string {
@@ -1044,6 +1089,13 @@ func workflowYAML(name, root, casesDir, diffFormat string) string {
 		"          name: nvim-snap-diff",
 		"          path: |",
 		"            .nvim-snap-diff/*",
+		"      - name: Upload logs",
+		"        if: always()",
+		"        uses: actions/upload-artifact@v4",
+		"        with:",
+		"          name: nvim-snap-log",
+		"          path: |",
+		"            .nvim-snap-log/*",
 		"",
 	}
 	return strings.Join(lines, "\n")
