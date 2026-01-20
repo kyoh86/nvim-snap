@@ -11,10 +11,10 @@ nvim-snapは、NeovimのUIスナップショットに基づくテストを実行
 個別のテストケースは次の2種類を前提とする
 
 - リグレッションテスト
-    - 現在の表示結果（current）が、前回承認した基準（accepted）と一致することを確認する
+    - 同一シナリオの結果をコミット単位で保存し、指定したコミット同士で比較する
 - ゴールデンテスト
-    - 実装したものの表示（actual）が同一環境で生成した基準（baseline）と一致することを確認する
-    - baselineの生成のために、ゴールデンシナリオは分離されている
+    - ゴールデンシナリオとターゲットシナリオを同一環境で実行し、結果同士を比較する
+    - ゴールデンシナリオ（baseline）とターゲットシナリオ（actual）は分離されている
 
 ### テストケース管理の方針
 
@@ -23,11 +23,8 @@ nvim-snapは、NeovimのUIスナップショットに基づくテストを実行
 
 - テストケースの表示
 - テストケースの一括実行
-    - current/actualのスナップショットを生成する
-    - accepted/baseline と合うことを確認して、合わなければ適切にレポートする
-- 基準の更新
-    - リグレッションテストなら、今の結果（current）をacceptedとして採用する
-    - ゴールデンテストなら、用意されたシナリオからbaselineを生成する
+    - リグレッション: 指定IDで保存したスナップショット同士を比較する
+    - ゴールデン: 同一実行で生成したbaselineとactualを比較する
 
 必要に応じて処理対象のテストケースをタグで絞り込みを行えるようにする。
 また、個別のテストケースを直接指定して実行できるようにする。
@@ -35,10 +32,12 @@ nvim-snapは、NeovimのUIスナップショットに基づくテストを実行
 レポートは標準出力でのサマリを基本とし、失敗したテストケースについては
 結果とHTML差分のパス、簡単なエラー理由を出力する。
 
+リグレッションの保存結果は `.result/` 配下に集約し、GitHub Actionsのcache対象にしやすくする。
+
 ### 低/高レイヤーの責務
 
 低レイヤーは `capture/normalize/compare` をパス指定で完結するプリミティブとして提供する。
-高レイヤーはケース単位の運用を担い、一覧化・一括実行・期待値の扱いなどを受け持つ。
+高レイヤーはケース単位の運用を担い、一覧化・一括実行・比較を受け持つ。
 
 ## 設計
 
@@ -51,7 +50,7 @@ nvim-snapは、NeovimのUIスナップショットに基づくテストを実行
   - 入力: スナップショットJSON（ファイルまたは標準入力）
   - 出力: 正規化済みJSON（ファイルまたは標準出力）
 - `compare`: スナップショットJSON同士を比較する
-  - 入力: baseline/actual または accepted/current のスナップショットJSON
+  - 入力: baseline/actual または regressionの保存済みスナップショットJSON
   - 出力: 一致/不一致の判定と、必要に応じたdiff出力（text/ansi/html）
   - 期待値の更新は高レイヤーで行う
 
@@ -60,8 +59,8 @@ CLIでは `nvim-snap <command>` で呼び出す。
 ### 高レイヤーのコマンド
 
 ケース探索の起点は `--root`、その配下に `--cases-dir`（既定は `snapcase/`）を掘る。
-ケースは `<root>/<cases-dir>/<case-name>/snapcase.json` に配置する。
-`list/run/compare/accept/golden` は `--tag` / `--case` で絞り込みできる。
+ケースは `<root>/<cases-dir>/{regression|golden}/<case-name>/snapcase.json` に配置する。
+`list` は `--tag` / `--case` で絞り込みできる。
 
 - `list`: テストケースの一覧を表示する
   - 入力: `--root`（既定は `.`）、`--cases-dir`（既定は `snapcase`）
@@ -91,86 +90,42 @@ CLIでは `nvim-snap <command>` で呼び出す。
       }
       ```
   - 終了コード: 成功=0、失敗=1
-- `new`: テストケースの雛形を作成する
-  - 入力: `--root`（既定は `.`）、`--cases-dir`（既定は `snapcase`）、`--name`（省略時は自動生成）、`--title`、`--kind`、`--tag`
-  - 出力: ケースディレクトリ配下の`snapcase.json`とシナリオ雛形、`accepted/current/diff`（regression）または`baseline/actual/diff`（golden）の作成
+- `regression new`: リグレッションの雛形を作成する
+  - 入力: `--root`（既定は `.`）、`--cases-dir`（既定は `snapcase`）、`--name`（省略時は自動生成）、`--title`、`--tag`
+  - 出力: ケースディレクトリ配下の`snapcase.json`とシナリオ雛形、`diff` の作成
+  - `--force` で既存ファイルを上書きできる
+- `golden new`: ゴールデンの雛形を作成する
+  - 入力: `--root`（既定は `.`）、`--cases-dir`（既定は `snapcase`）、`--name`（省略時は自動生成）、`--title`、`--tag`
+  - 出力: ケースディレクトリ配下の`snapcase.json`とシナリオ雛形、`diff` の作成
   - `--force` で既存ファイルを上書きできる
 - `init`: GitHub Actions向けのワークフロー雛形を作成する
   - 入力: `--path`（既定は `.github/workflows/nvim-snap.yml`）、`--root`（既定は `.`）、`--cases-dir`（既定は `snapcase`）、`--diff-format`
   - 出力: ワークフローYAML
   - `--force` で既存ファイルを上書きできる
-- `run`: テストケースを実行してcurrent/actualを生成する
-  - 入力: `--root`（既定は `.`）、`--cases-dir`（既定は `snapcase`）
-  - 対象: `<root>/<cases-dir>/*/snapcase.json`
-  - 出力: regressionは`current/`、goldenは`actual/`配下にスナップショット
+- `regression save`: リグレッション結果を保存する
+  - 入力: `--root`（既定は `.`）、`--cases-dir`（既定は `snapcase`）、`--id`
+  - 対象: `<root>/<cases-dir>/regression/*/snapcase.json`
+  - `--id` 省略時は現在のGitコミットハッシュを使用
+  - 変更がある場合（dirty）はエラー
+  - 出力: `<root>/<cases-dir>/.result/regression/<case-name>/snapshot-<id>.json`
   - 出力形式: `--format=json,ansi,html`（既定は `json`）
   - 終了コード: 成功=0、失敗=1
-- `compare`: accepted/current または baseline/actual を比較し、結果をサマリ出力する
-  - 入力: `--root`（既定は `.`）、`--cases-dir`（既定は `snapcase`）
-  - 対象: `<root>/<cases-dir>/*/snapcase.json`
+- `regression test`: 指定ID同士の結果を比較する
+  - 入力: `--root`（既定は `.`）、`--cases-dir`（既定は `snapcase`）、`--base`、`--target`
+  - 対象: `<root>/<cases-dir>/regression/*/snapcase.json`
   - 出力: 標準出力のサマリ/差分/JSON
   - 出力形式: `--output=summary|diff|json`（既定は `summary`）
   - diff出力形式: `--diff-format=text,ansi,html,png`（既定は `text`）
   - HTML差分は不一致時のみ生成し、`--diff-always` で常時生成できる
-  - サマリ項目: name/title/kind/tags/result/diff_paths/error_reason
   - resultは `no_diff` / `diff` / `error`
   - headless実行で入力待ちが起きる可能性があるため、シナリオでは `vim.api.nvim_cmd` の利用を推奨する
-  - JSON出力:
-    - `root` ルートディレクトリ
-    - `summary` 集計
-      - `total` / `no_diff` / `diff` / `error`
-    - `cases[]` ケース配列
-      - `name` / `title` / `kind` / `tags` / `result` / `diff_paths` / `error_reason`
-      - `diff_paths` は出力形式ごとのパス
-    - 例:
-      ```json
-      {
-        "root": ".",
-        "summary": {
-          "total": 1,
-          "no_diff": 0,
-          "diff": 1,
-          "error": 0
-        },
-        "cases": [
-          {
-            "name": "case-name",
-            "title": "Case Title",
-            "kind": "golden",
-            "tags": [
-              "ui",
-              "golden"
-            ],
-            "result": "diff",
-            "diff_paths": {
-              "text": "tests/cases/case-name/diff/diff.txt",
-              "ansi": "tests/cases/case-name/diff/diff.ansi",
-              "html": "tests/cases/case-name/diff/diff.html"
-            },
-            "error_reason": null
-          }
-        ]
-      }
-      ```
   - 終了コード: 成功=0、差分あり=1、エラーあり=2
-- `accept`: リグレッションのacceptedを更新する
+- `golden test`: ゴールデンのbaselineとactualを生成して比較する
   - 入力: `--root`（既定は `.`）、`--cases-dir`（既定は `snapcase`）
-  - 対象: `<root>/<cases-dir>/*/snapcase.json`
-  - 出力: `accepted/`配下の更新（currentをacceptedとして採用）
-  - `--dry-run` で更新内容を表示のみ
-  - 規定は対話確認
-  - `--no-confirm`（または `--yes`）で対話を省略して実行
-- `golden`: ゴールデンのbaselineを生成する
-  - 入力: `--root`（既定は `.`）、`--cases-dir`（既定は `snapcase`）
-  - 対象: `<root>/<cases-dir>/*/snapcase.json`
-  - 出力: `baseline/`配下の更新（`golden.lua` を実行して生成）
-  - `--dry-run` で更新内容を表示のみ
-  - 終了コード: 成功=0、失敗=1
-- `report`: baseline生成、スナップショット生成、比較、差分収集をまとめて実行する
-  - 入力: `--root`（既定は `.`）、`--cases-dir`（既定は `snapcase`）
+  - 対象: `<root>/<cases-dir>/golden/*/snapcase.json`
+  - 出力: 標準出力のサマリ/差分/JSON
   - 出力形式: `--output=summary|diff|json`（既定は `summary`）
   - diff出力形式: `--diff-format=text,ansi,html,png`（既定は `text`）
-  - スナップショット出力形式: `--snapshot-format=json,ansi,html`（既定は `json`）
   - `.nvim-snap-diff/` に差分ファイルを収集する
   - `.nvim-snap-log/` にシナリオログを収集する
   - 終了コード: 成功=0、不一致=1、失敗=2
@@ -183,8 +138,8 @@ CLIでは `nvim-snap <command>` で呼び出す。
 #### ケースディレクトリ構成
 
 - `snapcase.json` ケース定義ファイル（後述）
-- regression: `accepted/`（基準）と`current/`（実行結果）
-- golden: `baseline/`（基準）と`actual/`（実行結果）
+- regression: `.result/regression/<case-name>/snapshot-<id>.json`（コミット単位の保存先）
+- golden: `baseline/`（ゴールデン実行結果）と`actual/`（ターゲット実行結果）
 - `diff/` 比較結果（HTMLなど、任意）
 - `scenario.lua` リグレッションテスト用のシナリオ
 - `golden.lua` ゴールデンテスト用のゴールデンシナリオ
