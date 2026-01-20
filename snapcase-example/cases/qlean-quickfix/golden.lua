@@ -1,0 +1,5 @@
+vim.fn.setline(1, { "test for qlean quickfix" })
+vim.cmd.copen()
+vim.cmd.wincmd("k")
+vim.cmd.redraw()
+require("nvim_snap").done()

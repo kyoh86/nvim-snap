@@ -15,7 +15,10 @@ nvim-snap run --root snapcase-example --cases-dir cases --case diff-example --fo
 - `snapcase.schema.json` ケース定義と取得設定用のJSON Schema
 - `cases/` 複数ケースのサンプル（regression/golden混在）
   - `diff-example/` 差分確認向けのリグレッションケース
+  - `qlean-hidden/` `vim.pack.add()` で `qlean.nvim` を取得するゴールデンケース
+  - `qlean-quickfix/` `vim.pack.add()` で `qlean.nvim` を取得するゴールデンケース
 
 ## 補足
 
-`snapcase.json` はケースごとの capture 設定に使います。
+`snapcase.json` はケースごとの capture 設定に使います。  
+`qlean-*` は `git` とネットワークアクセスが必要です。

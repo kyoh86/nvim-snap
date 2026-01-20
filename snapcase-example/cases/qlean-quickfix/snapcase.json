@@ -1,0 +1,18 @@
+{
+  "version": 1,
+  "title": "Qlean closes quickfix window",
+  "kind": "golden",
+  "tags": [
+    "qlean",
+    "golden",
+    "example",
+    "pack-add"
+  ],
+  "scenario": "target.lua",
+  "wait": 500,
+  "wait_done": true,
+  "done_timeout": 15000,
+  "rpc_timeout": 30000,
+  "data_home": ".nvim-data",
+  "config_home": ".nvim-config"
+}
