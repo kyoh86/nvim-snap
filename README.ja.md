@@ -91,9 +91,9 @@ nvim-snap run --tag ui
 regressionは`accepted/`と`current/`、goldenは`baseline/`と`actual/`を比較し、差分がある場合は `diff/` に出力します。
 
 ```sh
-nvim-snap compare --format text
-nvim-snap compare --format html --diff-always
-nvim-snap compare --format png --diff-always
+nvim-snap compare --output summary --diff-format html
+nvim-snap compare --output diff --diff-format text
+nvim-snap compare --output summary --diff-format png --diff-always
 ```
 
 ### accept
@@ -134,7 +134,7 @@ nvim-snap init --path .github/workflows/nvim-snap.yml
 3. currentを生成  
    `nvim-snap run`
 4. 差分を確認  
-   `nvim-snap compare --format html`
+   `nvim-snap compare --output summary --diff-format html`
 5. 判断  
    - バグ修正して再実行  
    - 仕様変更なら受け入れ: `nvim-snap accept`
@@ -150,7 +150,7 @@ nvim-snap init --path .github/workflows/nvim-snap.yml
 4. actualを生成  
    `nvim-snap run`
 5. 差分を確認  
-   `nvim-snap compare --format html`
+   `nvim-snap compare --output summary --diff-format html`
 
 ## テストの種類
 

@@ -90,9 +90,9 @@ nvim-snap run --tag ui
 Compare `accepted/` and `current/` (regression) or `baseline/` and `actual/` (golden), writing diffs under `diff/` when needed.
 
 ```sh
-nvim-snap compare --format text
-nvim-snap compare --format html --diff-always
-nvim-snap compare --format png --diff-always
+nvim-snap compare --output summary --diff-format html
+nvim-snap compare --output diff --diff-format text
+nvim-snap compare --output summary --diff-format png --diff-always
 ```
 
 ### accept
@@ -133,7 +133,7 @@ nvim-snap init --path .github/workflows/nvim-snap.yml
 3. Run current
    `nvim-snap run`
 4. Review diffs
-   `nvim-snap compare --format html`
+   `nvim-snap compare --output summary --diff-format html`
 5. Decide
    - Fix the scenario/plugin and re-run
    - Or accept the new output: `nvim-snap accept`
@@ -149,7 +149,7 @@ nvim-snap init --path .github/workflows/nvim-snap.yml
 4. Run actual
    `nvim-snap run`
 5. Review diffs
-   `nvim-snap compare --format html`
+   `nvim-snap compare --output summary --diff-format html`
 
 ## Test Types
 

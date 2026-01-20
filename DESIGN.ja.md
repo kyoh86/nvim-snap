@@ -96,7 +96,7 @@ CLIでは `nvim-snap <command>` で呼び出す。
   - 出力: ケースディレクトリ配下の`snapcase.json`とシナリオ雛形、`accepted/current/diff`（regression）または`baseline/actual/diff`（golden）の作成
   - `--force` で既存ファイルを上書きできる
 - `init`: GitHub Actions向けのワークフロー雛形を作成する
-  - 入力: `--path`（既定は `.github/workflows/nvim-snap.yml`）、`--root`（既定は `.`）、`--cases-dir`（既定は `snapcase`）、`--format`
+  - 入力: `--path`（既定は `.github/workflows/nvim-snap.yml`）、`--root`（既定は `.`）、`--cases-dir`（既定は `snapcase`）、`--diff-format`
   - 出力: ワークフローYAML
   - `--force` で既存ファイルを上書きできる
 - `run`: テストケースを実行してcurrent/actualを生成する
@@ -108,8 +108,9 @@ CLIでは `nvim-snap <command>` で呼び出す。
 - `compare`: accepted/current または baseline/actual を比較し、結果をサマリ出力する
   - 入力: `--root`（既定は `.`）、`--cases-dir`（既定は `snapcase`）
   - 対象: `<root>/<cases-dir>/*/snapcase.json`
-  - 出力: 標準出力のサマリ、ケースごとの`diff/`配下にHTML差分（必要時）
-  - 出力形式: `--format=text,ansi,html`（既定は `text`）
+  - 出力: 標準出力のサマリ/差分/JSON
+  - 出力形式: `--output=summary|diff|json`（既定は `summary`）
+  - diff出力形式: `--diff-format=text,ansi,html,png`（既定は `text`）
   - HTML差分は不一致時のみ生成し、`--diff-always` で常時生成できる
   - サマリ項目: name/title/kind/tags/result/diff_paths/error_reason
   - resultは `no_diff` / `diff` / `error`

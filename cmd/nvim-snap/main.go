@@ -368,21 +368,25 @@ func cmdCompare(args []string) {
 	fs := flag.NewFlagSet("compare", flag.ExitOnError)
 	root := fs.String("root", ".", "Root directory")
 	casesDir := fs.String("cases-dir", "snapcase", "Cases directory under root")
-	format := fs.String("format", "text", "Diff formats (text,ansi,html,png)")
+	diffFormat := fs.String("diff-format", "text", "Diff formats (text,ansi,html,png)")
 	diffAlways := fs.Bool("diff-always", false, "Write diffs even if no difference")
-	jsonOut := fs.Bool("json", false, "Output JSON summary")
+	output := fs.String("output", "summary", "Output format (summary,diff,json)")
 	var tags stringList
 	var names stringList
 	fs.Var(&tags, "tag", "Tag filter")
 	fs.Var(&names, "case", "Case name filter")
 	_ = fs.Parse(args)
 
-	formats := parseFormats(*format, map[string]bool{"text": true})
+	formats := parseFormats(*diffFormat, map[string]bool{"text": true})
 	for key := range formats {
 		if key != "text" && key != "ansi" && key != "html" && key != "png" {
 			fmt.Fprintf(os.Stderr, "unsupported format: %s\n", key)
 			os.Exit(2)
 		}
+	}
+	if *output != "summary" && *output != "diff" && *output != "json" {
+		fmt.Fprintf(os.Stderr, "unsupported output: %s\n", *output)
+		os.Exit(2)
 	}
 
 	absRoot := mustAbs(*root)
@@ -444,6 +448,18 @@ func cmdCompare(args []string) {
 			hasDiff = true
 		}
 
+		if *output == "diff" && entry["result"] == "diff" {
+			diff, err := unifiedDiffText(c.ExpectedLabel, c.ActualLabel, snapshots.RenderText(normExpected), snapshots.RenderText(normActual))
+			if err != nil {
+				entry["result"] = "error"
+				entry["error_reason"] = err.Error()
+				summary["error"]++
+				failed = true
+			} else {
+				entry["diff_text"] = diff
+			}
+		}
+
 		if entry["result"] == "diff" || *diffAlways {
 			diffPaths, err := writeDiffOutputs(c, normExpected, normActual, formats)
 			if err != nil {
@@ -459,7 +475,7 @@ func cmdCompare(args []string) {
 		results = append(results, entry)
 	}
 
-	if *jsonOut {
+	if *output == "json" {
 		out := map[string]any{
 			"root":    absRoot,
 			"summary": summary,
@@ -471,6 +487,8 @@ func cmdCompare(args []string) {
 			os.Exit(2)
 		}
 		fmt.Println(string(payload))
+	} else if *output == "diff" {
+		printCompareDiff(results)
 	} else {
 		printCompareText(results)
 	}
@@ -568,6 +586,27 @@ func printCompareText(results []map[string]any) {
 			diffPaths = strings.Join(items, ",")
 		}
 		fmt.Printf("%s\t%s\t%s\t%s\t%s\t%s\t%s\n", name, title, kind, tags, result, diffPaths, errorReason)
+	}
+}
+
+func printCompareDiff(results []map[string]any) {
+	for _, entry := range results {
+		result, _ := entry["result"].(string)
+		if result != "diff" {
+			continue
+		}
+		name, _ := entry["name"].(string)
+		title, _ := entry["title"].(string)
+		kind, _ := entry["kind"].(string)
+		tags := ""
+		if list, ok := entry["tags"].([]string); ok {
+			tags = strings.Join(list, ",")
+		}
+		fmt.Printf("%s\t%s\t%s\t%s\n", name, title, kind, tags)
+		diffText, _ := entry["diff_text"].(string)
+		if diffText != "" {
+			fmt.Println(diffText)
+		}
 	}
 }
 
@@ -762,7 +801,7 @@ func cmdGolden(args []string) {
 	}
 }
 
-func workflowYAML(name, root, casesDir, format string) string {
+func workflowYAML(name, root, casesDir, diffFormat string) string {
 	lines := []string{
 		"name: " + name,
 		"",
@@ -786,7 +825,7 @@ func workflowYAML(name, root, casesDir, format string) string {
 		"          ./nvim-snap run --root " + root + " --cases-dir " + casesDir + " --format json",
 		"      - name: Compare snapshots",
 		"        run: |",
-		"          ./nvim-snap compare --root " + root + " --cases-dir " + casesDir + " --format " + format + " --diff-always",
+		"          ./nvim-snap compare --root " + root + " --cases-dir " + casesDir + " --output diff --diff-format " + diffFormat + " --diff-always",
 		"      - name: Upload diffs",
 		"        if: always()",
 		"        uses: actions/upload-artifact@v4",
@@ -804,12 +843,12 @@ func cmdInit(args []string) {
 	path := fs.String("path", ".github/workflows/nvim-snap.yml", "Workflow path")
 	root := fs.String("root", ".", "Root directory")
 	casesDir := fs.String("cases-dir", "snapcase", "Cases directory under root")
-	format := fs.String("format", "html", "Diff formats (text,ansi,html,png)")
+	diffFormat := fs.String("diff-format", "html", "Diff formats (text,ansi,html,png)")
 	name := fs.String("name", "nvim-snap", "Workflow name")
 	force := fs.Bool("force", false, "Overwrite existing workflow")
 	_ = fs.Parse(args)
 
-	if err := writeFile(*path, workflowYAML(*name, *root, *casesDir, *format), *force); err != nil {
+	if err := writeFile(*path, workflowYAML(*name, *root, *casesDir, *diffFormat), *force); err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
 	}
