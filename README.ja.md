@@ -17,36 +17,20 @@ nvim-snapは、NeovimのUIスナップショットに基づくテストを実行
 
 ## インストール
 
-簡易インストーラを使う場合:
-
-```sh
-git clone https://github.com/kyoh86/nvim-snap.git
-cd nvim-snap
-./install.sh
-```
-
-`PREFIX` を指定するとインストール先を変更できます（既定は `~/.local`）。
-`~/.local/bin` がPATHに入っていない場合は追加してください。
-
-単一ファイルの `nvim-snap` を `~/.local/bin` に配置します。
-`dist/nvim-snap` が存在しない場合は `scripts/bundle.sh` を実行します。
-
 ### 依存関係
 
 - Neovim（`nvim`）
-- 単一ファイル配布の生成に `luabundler`（Node.js、開発時のみ）
 - PNG出力に `google-chrome`/`chromium`/`msedge`/`wkhtmltoimage`
 
-### 単一ファイル配布
+### リリースから取得
 
-`luabundler` を使って `dist/nvim-snap` を生成できます。
+リリースページの `nvim-snap` をダウンロードして PATH に置いてください。
+
+### ソースからビルド
 
 ```sh
-scripts/bundle.sh
+go build -o nvim-snap ./cmd/nvim-snap
 ```
-
-生成された `dist/nvim-snap` は単一ファイルで配布できます。
-リリースページに添付されるため、そこから直接ダウンロードして使うこともできます。
 
 ### mise での利用
 
@@ -54,30 +38,11 @@ scripts/bundle.sh
 mise use 'github:kyoh86/nvim-snap[asset_pattern=nvim-snap]'
 ```
 
-### Go PoC（実験的）
-
-Go 製 PoC は `cmd/snap-poc` に置いてあります。埋め込み Neovim を起動し、
-シナリオを実行して redraw flush を待って終了します。
-スナップショットJSONは既定で標準出力に書き出されます（ファイル保存は `-out`）。
-シナリオ実行後に `-post-wait` を指定すると、Neovim内で待機します（非同期UI更新向け）。
-シナリオが完了通知を出す場合は `-wait-done` と `-done-timeout` を使います。
-
-```sh
-go run ./cmd/snap-poc -scenario ./snapcase/example/scenario.lua -out snapshot.json
-```
-
-`snap-compare` PoC は 2つのスナップショットJSONを比較します。
-`-format text` で unified diff、`-format html` で side-by-side HTML diff を出力します。
-
-```sh
-go run ./cmd/snap-compare -expected expected.json -actual actual.json -format text -out diff.txt
-go run ./cmd/snap-compare -expected expected.json -actual actual.json -format html -out diff.html
-```
 
 ## コマンド
 
 以下の説明は、既定のオプションで `snapcase/<case-name>/snapcase.json` のように配置されている想定です。
-ケース名はディレクトリ名で決まり、`snapcase.json` でケース情報と `core capture` の設定をまとめて管理します。
+ケース名はディレクトリ名で決まり、`snapcase.json` でケース情報と capture の設定をまとめて管理します。
 `snapcase.json` の `rtp` は文字列または配列で、runtimepathに追加するパスを指定します。
 `${CASE}`（ケースディレクトリ）と `${ROOT}`（`--root` のパス）のプレースホルダが使えます。
 
@@ -148,7 +113,6 @@ nvim-snap accept --no-confirm
 ```sh
 nvim-snap golden
 nvim-snap golden --dry-run
-nvim-snap golden --no-confirm
 ```
 
 ### init

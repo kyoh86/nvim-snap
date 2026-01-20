@@ -55,7 +55,7 @@ nvim-snapは、NeovimのUIスナップショットに基づくテストを実行
   - 出力: 一致/不一致の判定と、必要に応じたdiff出力（text/ansi/html）
   - 期待値の更新は高レイヤーで行う
 
-CLIでは `snap.lua core <command>` で呼び出す。
+CLIでは `nvim-snap <command>` で呼び出す。
 
 ### 高レイヤーのコマンド
 
@@ -163,8 +163,6 @@ CLIでは `snap.lua core <command>` で呼び出す。
   - 対象: `<root>/<cases-dir>/*/snapcase.json`
   - 出力: `expected/`配下の更新（`golden.lua` を実行して生成）
   - `--dry-run` で更新内容を表示のみ
-  - 規定は対話確認
-  - `--no-confirm`（または `--yes`）で対話を省略して実行
   - 終了コード: 成功=0、失敗=1
 
 ### テストケース定義

@@ -17,36 +17,20 @@ Cases live under `<root>/<cases-dir>/<case-name>/snapcase.json`.
 
 ## Installation
 
-Use the simple installer:
-
-```sh
-git clone https://github.com/kyoh86/nvim-snap.git
-cd nvim-snap
-./install.sh
-```
-
-Set `PREFIX` to change the install location (default: `~/.local`).
-Ensure `~/.local/bin` is on your PATH.
-
-This installs the single-file `nvim-snap` binary into `~/.local/bin`.
-If `dist/nvim-snap` is missing, it runs `scripts/bundle.sh`.
-
 ### Requirements
 
 - Neovim (`nvim`)
-- `luabundler` (Node.js, dev-only) for single-file bundle generation
 - `google-chrome`/`chromium`/`msedge`/`wkhtmltoimage` for PNG output
 
-### Single-file bundle
+### Download from releases
 
-Use `luabundler` to generate `dist/nvim-snap`.
+Download `nvim-snap` from the release page and put it on your PATH.
+
+### Build from source
 
 ```sh
-scripts/bundle.sh
+go build -o nvim-snap ./cmd/nvim-snap
 ```
-
-The generated `dist/nvim-snap` can be distributed as a single file.
-It is also attached to releases, so you can download it directly from the release page.
 
 ### Using mise
 
@@ -54,30 +38,10 @@ It is also attached to releases, so you can download it directly from the releas
 mise use 'github:kyoh86/nvim-snap[asset_pattern=nvim-snap]'
 ```
 
-### Go PoC (experimental)
-
-The Go-based PoC lives under `cmd/snap-poc`. It starts an embedded Neovim,
-executes a scenario, waits for a redraw flush, and exits.
-It writes the snapshot JSON to stdout by default (use `-out` to save to a file).
-Use `-post-wait` to wait inside Neovim after the scenario runs (for async UI updates).
-Use `-wait-done` with `-done-timeout` when a scenario explicitly notifies completion.
-
-```sh
-go run ./cmd/snap-poc -scenario ./snapcase/example/scenario.lua -out snapshot.json
-```
-
-The `snap-compare` PoC compares two snapshot JSON files. Use `-format text` for
-unified diff output, or `-format html` for a side-by-side HTML diff.
-
-```sh
-go run ./cmd/snap-compare -expected expected.json -actual actual.json -format text -out diff.txt
-go run ./cmd/snap-compare -expected expected.json -actual actual.json -format html -out diff.html
-```
-
 ## Commands
 
 The examples below assume cases are under `snapcase/<case-name>/snapcase.json` with the default options.
-Case names come from the directory name, and `snapcase.json` holds the case metadata and `core capture` settings.
+Case names come from the directory name, and `snapcase.json` holds the case metadata and capture settings.
 `snapcase.json` accepts `rtp` (string or list) to prepend runtimepath entries.
 Use `${CASE}` or `${ROOT}` placeholders to target the case directory or the `--root` path.
 
@@ -148,7 +112,6 @@ Generate golden snapshots by running `golden.lua`.
 ```sh
 nvim-snap golden
 nvim-snap golden --dry-run
-nvim-snap golden --no-confirm
 ```
 
 ### init

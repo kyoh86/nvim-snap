@@ -7,11 +7,7 @@
 ## 使い方
 
 ```sh
-nvim-snap core capture --scenario snapcase-example/cases/diff-example/scenario.lua \
-  --out-dir snapcase-example/cases/diff-example/.out \
-  --data-home snapcase-example/cases/diff-example/.nvim-data \
-  --config-home snapcase-example/cases/diff-example/.nvim-config \
-  --json --ansi --html
+nvim-snap run --root snapcase-example --cases-dir cases --case diff-example --format json,ansi,html
 ```
 
 ## 構成
@@ -22,4 +18,4 @@ nvim-snap core capture --scenario snapcase-example/cases/diff-example/scenario.l
 
 ## 補足
 
-`snapcase.json` は高レイヤーと `core capture` の両方で参照します。
+`snapcase.json` はケースごとの capture 設定に使います。

@@ -7,11 +7,7 @@ This is the minimal setup for snapshot generation using `nvim-snap`.
 ## Usage
 
 ```sh
-nvim-snap core capture --scenario snapcase-example/cases/diff-example/scenario.lua \
-  --out-dir snapcase-example/cases/diff-example/.out \
-  --data-home snapcase-example/cases/diff-example/.nvim-data \
-  --config-home snapcase-example/cases/diff-example/.nvim-config \
-  --json --ansi --html
+nvim-snap run --root snapcase-example --cases-dir cases --case diff-example --format json,ansi,html
 ```
 
 ## Layout
@@ -22,4 +18,4 @@ nvim-snap core capture --scenario snapcase-example/cases/diff-example/scenario.l
 
 ## Notes
 
-`snapcase.json` is used by both the high-level commands and `core capture`.
+`snapcase.json` is used by the CLI to configure capture settings per case.
