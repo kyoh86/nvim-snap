@@ -675,15 +675,11 @@ func cmdGolden(args []string) {
 	fs.Var(&waitDone, "wait-done", "Wait for scenario completion notification")
 	fs.Var(&doneTimeout, "done-timeout", "Scenario completion timeout (ms)")
 	dryRun := fs.Bool("dry-run", false, "Show updates without writing")
-	noConfirm := fs.Bool("no-confirm", false, "Skip confirmation prompt")
-	yes := fs.Bool("yes", false, "Skip confirmation prompt")
 	var tags stringList
 	var names stringList
 	fs.Var(&tags, "tag", "Tag filter")
 	fs.Var(&names, "case", "Case name filter")
 	_ = fs.Parse(args)
-
-	confirm := !(*noConfirm || *yes)
 
 	absRoot := mustAbs(*root)
 	cases, errs := casefile.Find(absRoot, *casesDir)
@@ -721,13 +717,6 @@ func cmdGolden(args []string) {
 			os.Exit(1)
 		}
 		return
-	}
-
-	if confirm {
-		if !confirmActions("Generate golden snapshots for %d case(s)? [y/N]: ", len(actions)) {
-			fmt.Fprintln(os.Stderr, "aborted")
-			os.Exit(1)
-		}
 	}
 
 	for _, c := range actions {
