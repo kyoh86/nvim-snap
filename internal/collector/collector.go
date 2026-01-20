@@ -159,12 +159,16 @@ end`, nil, opts.RTP); err != nil {
 		}
 	}
 
+	channelID := v.ChannelID()
 	if opts.WaitDone {
-		channelID := v.ChannelID()
 		if err := v.ExecLua(`local chan = ...
 _G.snap_done = function()
   vim.rpcnotify(chan, "snap_done")
 end`, nil, channelID); err != nil {
+			return Result{}, fmt.Errorf("failed to set done helper: %w", err)
+		}
+	} else {
+		if err := v.ExecLua(`_G.snap_done = function() end`, nil); err != nil {
 			return Result{}, fmt.Errorf("failed to set done helper: %w", err)
 		}
 	}
