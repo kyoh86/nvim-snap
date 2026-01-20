@@ -334,6 +334,9 @@ func cmdRun(args []string) {
 			failed = true
 			continue
 		}
+		if caseWaitDone && !res.WaitedDone {
+			fmt.Fprintf(os.Stderr, "%s: wait_done timeout (possible input wait; prefer vim.api.nvim_cmd)\n", c.Name)
+		}
 		actualDir := filepath.Dir(c.Actual)
 		if formats["json"] {
 			if err := writeJSON(c.Actual, res.Snapshot); err != nil {
@@ -802,6 +805,9 @@ func cmdGolden(args []string) {
 			fmt.Fprintf(os.Stderr, "%s: %v\n", c.Name, err)
 			failed = true
 			continue
+		}
+		if caseWaitDone && !res.WaitedDone {
+			fmt.Fprintf(os.Stderr, "%s: wait_done timeout (possible input wait; prefer vim.api.nvim_cmd)\n", c.Name)
 		}
 		if err := writeJSON(c.Expected, res.Snapshot); err != nil {
 			fmt.Fprintf(os.Stderr, "%s: %v\n", c.Name, err)

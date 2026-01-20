@@ -138,6 +138,23 @@ func Collect(opts Options) (Result, error) {
 		return v.Close()
 	}
 	defer closeNvim()
+	logMessages := func(tag string) {
+		if opts.LogFile == "" {
+			return
+		}
+		var out string
+		if err := v.ExecLua(`return vim.fn.execute("messages")`, &out); err != nil {
+			log("%s messages failed: %v", tag, err)
+			return
+		}
+		for _, line := range strings.Split(out, "\n") {
+			line = strings.TrimSpace(line)
+			if line == "" {
+				continue
+			}
+			log("%s message: %s", tag, line)
+		}
+	}
 
 	state := &State{
 		Grids:    map[int]*GridState{},
@@ -270,6 +287,7 @@ end`, nil, channelID); err != nil {
 		case <-time.After(time.Duration(doneWait) * time.Millisecond):
 			result.WaitedDone = false
 			log("wait done timeout")
+			logMessages("wait done timeout")
 		case <-ctx.Done():
 			if errors.Is(ctx.Err(), context.DeadlineExceeded) {
 				log("wait done rpc timeout")
