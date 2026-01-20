@@ -11,22 +11,25 @@ import (
 )
 
 type Config struct {
-	Version    int      `json:"version"`
-	Title      string   `json:"title"`
-	Kind       string   `json:"kind"`
-	Tags       []string `json:"tags"`
-	Scenario   string   `json:"scenario"`
-	Width      int      `json:"width"`
-	Height     int      `json:"height"`
-	Wait       int      `json:"wait"`
-	RPCTimeout int      `json:"rpc_timeout"`
-	LogFile    string   `json:"log_file"`
-	LogLevel   string   `json:"log_level"`
-	DataHome   string   `json:"data_home"`
-	ConfigHome string   `json:"config_home"`
-	Outputs    Outputs  `json:"outputs"`
-	OutDir     string   `json:"out_dir"`
-	RTP        Strings  `json:"rtp"`
+	Version     int      `json:"version"`
+	Title       string   `json:"title"`
+	Kind        string   `json:"kind"`
+	Tags        []string `json:"tags"`
+	Scenario    string   `json:"scenario"`
+	Width       int      `json:"width"`
+	Height      int      `json:"height"`
+	Wait        int      `json:"wait"`
+	PostWait    int      `json:"post_wait"`
+	WaitDone    bool     `json:"wait_done"`
+	DoneTimeout int      `json:"done_timeout"`
+	RPCTimeout  int      `json:"rpc_timeout"`
+	LogFile     string   `json:"log_file"`
+	LogLevel    string   `json:"log_level"`
+	DataHome    string   `json:"data_home"`
+	ConfigHome  string   `json:"config_home"`
+	Outputs     Outputs  `json:"outputs"`
+	OutDir      string   `json:"out_dir"`
+	RTP         Strings  `json:"rtp"`
 }
 
 type Outputs struct {
@@ -55,27 +58,30 @@ func (s *Strings) UnmarshalJSON(data []byte) error {
 }
 
 type Case struct {
-	Name       string
-	Title      string
-	Kind       string
-	Tags       []string
-	Dir        string
-	Path       string
-	Scenario   string
-	Golden     string
-	Target     string
-	Expected   string
-	Actual     string
-	DiffDir    string
-	Width      int
-	Height     int
-	Wait       int
-	RPCTimeout int
-	LogFile    string
-	LogLevel   string
-	DataHome   string
-	ConfigHome string
-	RTP        []string
+	Name        string
+	Title       string
+	Kind        string
+	Tags        []string
+	Dir         string
+	Path        string
+	Scenario    string
+	Golden      string
+	Target      string
+	Expected    string
+	Actual      string
+	DiffDir     string
+	Width       int
+	Height      int
+	Wait        int
+	PostWait    int
+	WaitDone    bool
+	DoneTimeout int
+	RPCTimeout  int
+	LogFile     string
+	LogLevel    string
+	DataHome    string
+	ConfigHome  string
+	RTP         []string
 }
 
 func Load(casePath, root string) (Case, error) {
@@ -122,27 +128,30 @@ func Load(casePath, root string) (Case, error) {
 	rtp := expandRTP(caseDir, root, cfg.RTP)
 
 	return Case{
-		Name:       name,
-		Title:      title,
-		Kind:       cfg.Kind,
-		Tags:       filterTags(cfg.Tags),
-		Dir:        caseDir,
-		Path:       caseDir,
-		Scenario:   filepath.Join(caseDir, scenario),
-		Golden:     filepath.Join(caseDir, "golden.lua"),
-		Target:     filepath.Join(caseDir, "target.lua"),
-		Expected:   filepath.Join(caseDir, "expected", "snapshot.json"),
-		Actual:     filepath.Join(caseDir, "actual", "snapshot.json"),
-		DiffDir:    filepath.Join(caseDir, "diff"),
-		Width:      positiveOrZero(cfg.Width),
-		Height:     positiveOrZero(cfg.Height),
-		Wait:       positiveOrZero(cfg.Wait),
-		RPCTimeout: positiveOrZero(cfg.RPCTimeout),
-		LogFile:    optionalPath(caseDir, cfg.LogFile),
-		LogLevel:   cfg.LogLevel,
-		DataHome:   filepath.Join(caseDir, dataHome),
-		ConfigHome: filepath.Join(caseDir, configHome),
-		RTP:        rtp,
+		Name:        name,
+		Title:       title,
+		Kind:        cfg.Kind,
+		Tags:        filterTags(cfg.Tags),
+		Dir:         caseDir,
+		Path:        caseDir,
+		Scenario:    filepath.Join(caseDir, scenario),
+		Golden:      filepath.Join(caseDir, "golden.lua"),
+		Target:      filepath.Join(caseDir, "target.lua"),
+		Expected:    filepath.Join(caseDir, "expected", "snapshot.json"),
+		Actual:      filepath.Join(caseDir, "actual", "snapshot.json"),
+		DiffDir:     filepath.Join(caseDir, "diff"),
+		Width:       positiveOrZero(cfg.Width),
+		Height:      positiveOrZero(cfg.Height),
+		Wait:        positiveOrZero(cfg.Wait),
+		PostWait:    positiveOrZero(cfg.PostWait),
+		WaitDone:    cfg.WaitDone,
+		DoneTimeout: positiveOrZero(cfg.DoneTimeout),
+		RPCTimeout:  positiveOrZero(cfg.RPCTimeout),
+		LogFile:     optionalPath(caseDir, cfg.LogFile),
+		LogLevel:    cfg.LogLevel,
+		DataHome:    filepath.Join(caseDir, dataHome),
+		ConfigHome:  filepath.Join(caseDir, configHome),
+		RTP:         rtp,
 	}, nil
 }
 

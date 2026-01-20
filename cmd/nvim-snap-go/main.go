@@ -10,6 +10,7 @@ import (
 	"path/filepath"
 	"reflect"
 	"sort"
+	"strconv"
 	"strings"
 	"time"
 	"unicode/utf8"
@@ -39,6 +40,62 @@ func (s *stringList) Set(value string) error {
 		}
 	}
 	return nil
+}
+
+type optionalInt struct {
+	value int
+	set   bool
+}
+
+func (o *optionalInt) String() string {
+	if !o.set {
+		return ""
+	}
+	return strconv.Itoa(o.value)
+}
+
+func (o *optionalInt) Set(value string) error {
+	v, err := strconv.Atoi(value)
+	if err != nil {
+		return err
+	}
+	o.value = v
+	o.set = true
+	return nil
+}
+
+type optionalBool struct {
+	value bool
+	set   bool
+}
+
+func (o *optionalBool) String() string {
+	if !o.set {
+		return ""
+	}
+	if o.value {
+		return "true"
+	}
+	return "false"
+}
+
+func (o *optionalBool) Set(value string) error {
+	if value == "" {
+		o.value = true
+		o.set = true
+		return nil
+	}
+	v, err := strconv.ParseBool(value)
+	if err != nil {
+		return err
+	}
+	o.value = v
+	o.set = true
+	return nil
+}
+
+func (o *optionalBool) IsBoolFlag() bool {
+	return true
 }
 
 func splitCSV(value string) []string {
@@ -208,9 +265,12 @@ func cmdRun(args []string) {
 	root := fs.String("root", ".", "Root directory")
 	casesDir := fs.String("cases-dir", "snapcase", "Cases directory under root")
 	format := fs.String("format", "json", "Output formats (json,ansi,html)")
-	postWait := fs.Int("post-wait", 0, "Wait after scenario execution (ms)")
-	waitDone := fs.Bool("wait-done", false, "Wait for scenario completion notification")
-	doneTimeout := fs.Int("done-timeout", 5000, "Scenario completion timeout (ms)")
+	var postWait optionalInt
+	var waitDone optionalBool
+	var doneTimeout optionalInt
+	fs.Var(&postWait, "post-wait", "Wait after scenario execution (ms)")
+	fs.Var(&waitDone, "wait-done", "Wait for scenario completion notification")
+	fs.Var(&doneTimeout, "done-timeout", "Scenario completion timeout (ms)")
 	var tags stringList
 	var names stringList
 	fs.Var(&tags, "tag", "Tag filter")
@@ -243,14 +303,26 @@ func cmdRun(args []string) {
 			failed = true
 			continue
 		}
+		casePostWait := c.PostWait
+		if postWait.set {
+			casePostWait = postWait.value
+		}
+		caseWaitDone := c.WaitDone
+		if waitDone.set {
+			caseWaitDone = waitDone.value
+		}
+		caseDoneTimeout := c.DoneTimeout
+		if doneTimeout.set {
+			caseDoneTimeout = doneTimeout.value
+		}
 		res, err := collector.Collect(collector.Options{
 			Scenario:      scenario,
 			Width:         c.Width,
 			Height:        c.Height,
 			WaitMS:        c.Wait,
-			PostWaitMS:    *postWait,
-			WaitDone:      *waitDone,
-			DoneTimeoutMS: *doneTimeout,
+			PostWaitMS:    casePostWait,
+			WaitDone:      caseWaitDone,
+			DoneTimeoutMS: caseDoneTimeout,
 			RPCTimeoutMS:  c.RPCTimeout,
 			DataHome:      c.DataHome,
 			ConfigHome:    c.ConfigHome,
@@ -596,9 +668,12 @@ func cmdGolden(args []string) {
 	fs := flag.NewFlagSet("golden", flag.ExitOnError)
 	root := fs.String("root", ".", "Root directory")
 	casesDir := fs.String("cases-dir", "snapcase", "Cases directory under root")
-	postWait := fs.Int("post-wait", 0, "Wait after scenario execution (ms)")
-	waitDone := fs.Bool("wait-done", false, "Wait for scenario completion notification")
-	doneTimeout := fs.Int("done-timeout", 5000, "Scenario completion timeout (ms)")
+	var postWait optionalInt
+	var waitDone optionalBool
+	var doneTimeout optionalInt
+	fs.Var(&postWait, "post-wait", "Wait after scenario execution (ms)")
+	fs.Var(&waitDone, "wait-done", "Wait for scenario completion notification")
+	fs.Var(&doneTimeout, "done-timeout", "Scenario completion timeout (ms)")
 	dryRun := fs.Bool("dry-run", false, "Show updates without writing")
 	noConfirm := fs.Bool("no-confirm", false, "Skip confirmation prompt")
 	yes := fs.Bool("yes", false, "Skip confirmation prompt")
@@ -656,14 +731,26 @@ func cmdGolden(args []string) {
 	}
 
 	for _, c := range actions {
+		casePostWait := c.PostWait
+		if postWait.set {
+			casePostWait = postWait.value
+		}
+		caseWaitDone := c.WaitDone
+		if waitDone.set {
+			caseWaitDone = waitDone.value
+		}
+		caseDoneTimeout := c.DoneTimeout
+		if doneTimeout.set {
+			caseDoneTimeout = doneTimeout.value
+		}
 		res, err := collector.Collect(collector.Options{
 			Scenario:      c.Golden,
 			Width:         c.Width,
 			Height:        c.Height,
 			WaitMS:        c.Wait,
-			PostWaitMS:    *postWait,
-			WaitDone:      *waitDone,
-			DoneTimeoutMS: *doneTimeout,
+			PostWaitMS:    casePostWait,
+			WaitDone:      caseWaitDone,
+			DoneTimeoutMS: caseDoneTimeout,
 			RPCTimeoutMS:  c.RPCTimeout,
 			DataHome:      c.DataHome,
 			ConfigHome:    c.ConfigHome,

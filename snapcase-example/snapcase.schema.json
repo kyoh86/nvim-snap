@@ -47,6 +47,20 @@
       "minimum": 1,
       "description": "Wait for redraw flush (ms)"
     },
+    "post_wait": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "Wait after scenario execution (ms)"
+    },
+    "wait_done": {
+      "type": "boolean",
+      "description": "Wait for scenario completion notification"
+    },
+    "done_timeout": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "Wait timeout for scenario completion (ms)"
+    },
     "rpc_timeout": {
       "type": "integer",
       "minimum": 1,
