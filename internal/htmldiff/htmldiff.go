@@ -33,7 +33,9 @@ func RenderHTML(expected, actual snapshots.Snapshot, defaultView string) string 
 	expectedAligned := renderAligned(expected, pairs, expectedLineKinds, expectedCells, "removed", false)
 	actualAligned := renderAligned(actual, pairs, actualLineKinds, actualCells, "added", false)
 
-	unified := unifiedHTML(expectedLines, actualLines)
+	expectedText := snapshots.RenderText(expected)
+	actualText := snapshots.RenderText(actual)
+	unified := unifiedHTML(expectedText, actualText)
 
 	view := defaultView
 	if view == "" {
@@ -43,10 +45,10 @@ func RenderHTML(expected, actual snapshots.Snapshot, defaultView string) string 
 	return wrapHTML(unified, expectedPlain, actualPlain, expectedAligned, actualAligned, view)
 }
 
-func unifiedHTML(expectedLines, actualLines []string) string {
+func unifiedHTML(expectedText, actualText string) string {
 	d := difflib.UnifiedDiff{
-		A:        expectedLines,
-		B:        actualLines,
+		A:        difflib.SplitLines(expectedText),
+		B:        difflib.SplitLines(actualText),
 		FromFile: "expected",
 		ToFile:   "actual",
 		Context:  3,
