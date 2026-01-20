@@ -20,9 +20,13 @@ jobs:
         run: go test ./...
       - name: Mark releasable
         if: github.ref == 'refs/heads/main'
-        uses: myrotvorets/set-commit-status-action@v2
-        with:
-          sha: ${{ github.sha }}
-          status: releasable
-          token: ${{ github.token }}
-          state: success
+        run: |
+          gh api \
+            --method POST \
+            -H "Accept: application/vnd.github+json" \
+            /repos/${{ github.repository }}/statuses/${{ github.sha }} \
+            -f state='success' \
+            -f description='Mark the commit is able to release binary' \
+            -f context='releasable'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
