@@ -21,4 +21,4 @@ vim.api.nvim_open_win(buf, false, {
 })
 
 vim.cmd.redraw()
-snap_done()
+require("nvim_snap").done()

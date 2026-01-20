@@ -234,20 +234,26 @@ end`, nil, opts.RTP); err != nil {
 
 	channelID := v.ChannelID()
 	if opts.WaitDone {
-		log("define snap_done helper")
+		log("define nvim_snap module")
 		if err := v.ExecLua(`local chan = ...
-_G.snap_done = function()
-  vim.rpcnotify(chan, "snap_done")
+package.preload["nvim_snap"] = function()
+  return {
+    done = function()
+      vim.rpcnotify(chan, "snap_done")
+    end,
+  }
 end`, nil, channelID); err != nil {
-			log("define snap_done helper failed: %v", err)
+			log("define nvim_snap module failed: %v", err)
 			if isSessionClosed(err) {
 				return Result{}, wrapClosed(err, closeNvim)
 			}
 			return Result{}, fmt.Errorf("failed to set done helper: %w", err)
 		}
 	} else {
-		if err := v.ExecLua(`_G.snap_done = function() end`, nil); err != nil {
-			log("define snap_done noop failed: %v", err)
+		if err := v.ExecLua(`package.preload["nvim_snap"] = function()
+  return { done = function() end }
+end`, nil); err != nil {
+			log("define nvim_snap module noop failed: %v", err)
 			if isSessionClosed(err) {
 				return Result{}, wrapClosed(err, closeNvim)
 			}

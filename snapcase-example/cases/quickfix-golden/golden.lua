@@ -18,4 +18,4 @@ vim.cmd("setlocal nonumber")
 vim.cmd("setlocal norelativenumber")
 
 vim.cmd.redraw()
-snap_done()
+require("nvim_snap").done()
