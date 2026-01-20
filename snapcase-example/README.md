@@ -21,4 +21,4 @@ nvim-snap run --root snapcase-example --cases-dir cases --case diff-example --fo
 ## Notes
 
 `snapcase.json` is used by the CLI to configure capture settings per case.
-`qlean-*` cases require `git` and network access to fetch the plugin.
+`qlean-*` cases require `git`, network access, and Neovim with `vim.pack` (0.12+).

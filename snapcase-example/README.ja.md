@@ -21,4 +21,4 @@ nvim-snap run --root snapcase-example --cases-dir cases --case diff-example --fo
 ## 補足
 
 `snapcase.json` はケースごとの capture 設定に使います。  
-`qlean-*` は `git` とネットワークアクセスが必要です。
+`qlean-*` は `git` とネットワークアクセス、`vim.pack` が使えるNeovim（0.12+）が必要です。

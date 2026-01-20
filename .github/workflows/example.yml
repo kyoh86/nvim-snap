@@ -14,8 +14,11 @@ jobs:
         uses: actions/setup-go@v5
         with:
           go-version-file: go.mod
-      - name: Install Neovim
-        run: sudo apt-get update && sudo apt-get install -y neovim
+      - name: Install Neovim (nightly)
+        run: |
+          curl -sSL https://github.com/neovim/neovim/releases/download/nightly/nvim-linux64.tar.gz -o nvim-linux64.tar.gz
+          tar xzf nvim-linux64.tar.gz
+          echo "${PWD}/nvim-linux64/bin" >> "${GITHUB_PATH}"
       - name: Run snapcase examples
         run: |
           go run ./cmd/nvim-snap report \
