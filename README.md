@@ -35,7 +35,7 @@ go build -o nvim-snap ./cmd/nvim-snap
 ### Using mise
 
 ```sh
-mise use 'github:kyoh86/nvim-snap[asset_pattern=nvim-snap]'
+mise use github:kyoh86/nvim-snap
 ```
 
 ## Commands
