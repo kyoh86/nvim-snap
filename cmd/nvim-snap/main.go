@@ -980,14 +980,14 @@ func cmdGolden(args []string) {
 		return
 	}
 
-	if goldenCases(filtered, goldenConfig{
+	if goldenFailed, _ := goldenCases(filtered, goldenConfig{
 		absRoot: absRoot,
 		overrides: waitOverrides{
 			postWait:    postWait,
 			waitDone:    waitDone,
 			doneTimeout: doneTimeout,
 		},
-	}) {
+	}); goldenFailed {
 		failed = true
 	}
 	if failed {
