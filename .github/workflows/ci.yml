@@ -1,0 +1,28 @@
+# yaml-language-server: $schema=https://json.schemastore.org/github-workflow.json
+
+name: CI
+on:
+  push:
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    permissions:
+      statuses: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+      - name: Test
+        run: go test ./...
+      - name: Mark releasable
+        if: github.ref == 'refs/heads/main'
+        uses: myrotvorets/set-commit-status-action@v2
+        with:
+          sha: ${{ github.sha }}
+          status: releasable
+          token: ${{ github.token }}
+          state: success
