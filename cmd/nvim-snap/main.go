@@ -565,7 +565,8 @@ func writeDiffOutputs(c casefile.Case, expected, actual snapshots.Snapshot, form
 }
 
 func printCompareText(results []map[string]any, diffHeader string, singleFormat bool) {
-	fmt.Printf("name\ttitle\tkind\ttags\tresult\t%s\terror_reason\n", diffHeader)
+	tw := tabwriter.NewWriter(os.Stdout, 0, 4, 2, ' ', 0)
+	fmt.Fprintf(tw, "name\ttitle\tkind\ttags\tresult\t%s\terror_reason\n", diffHeader)
 	for _, entry := range results {
 		name, _ := entry["name"].(string)
 		title, _ := entry["title"].(string)
@@ -596,8 +597,9 @@ func printCompareText(results []map[string]any, diffHeader string, singleFormat 
 			}
 			diffPaths = strings.Join(items, ",")
 		}
-		fmt.Printf("%s\t%s\t%s\t%s\t%s\t%s\t%s\n", name, title, kind, tags, result, diffPaths, errorReason)
+		fmt.Fprintf(tw, "%s\t%s\t%s\t%s\t%s\t%s\t%s\n", name, title, kind, tags, result, diffPaths, errorReason)
 	}
+	_ = tw.Flush()
 }
 
 func printCompareDiff(results []map[string]any) {
