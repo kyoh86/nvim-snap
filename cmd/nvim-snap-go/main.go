@@ -539,8 +539,6 @@ func cmdAccept(args []string) {
 	actions := []map[string]any{}
 	for _, c := range filtered {
 		if c.Kind != "regression" {
-			fmt.Fprintf(os.Stderr, "%s: case kind must be regression\n", c.Name)
-			failed = true
 			continue
 		}
 		if _, err := os.Stat(c.Actual); err != nil {
@@ -623,8 +621,6 @@ func cmdGolden(args []string) {
 	actions := []casefile.Case{}
 	for _, c := range filtered {
 		if c.Kind != "golden" {
-			fmt.Fprintf(os.Stderr, "%s: case kind must be golden\n", c.Name)
-			failed = true
 			continue
 		}
 		if _, err := os.Stat(c.Golden); err != nil {
