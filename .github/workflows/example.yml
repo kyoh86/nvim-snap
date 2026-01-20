@@ -15,10 +15,10 @@ jobs:
         with:
           go-version-file: go.mod
       - name: Install Neovim (nightly)
-        run: |
-          curl -sSL https://github.com/neovim/neovim/releases/download/nightly/nvim-linux64.tar.gz -o nvim-linux64.tar.gz
-          tar xzf nvim-linux64.tar.gz
-          echo "${PWD}/nvim-linux64/bin" >> "${GITHUB_PATH}"
+        uses: rhysd/action-setup-vim@v1
+        with:
+          neovim: true
+          version: nightly
       - name: Run snapcase examples
         run: |
           go run ./cmd/nvim-snap report \
