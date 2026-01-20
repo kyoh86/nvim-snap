@@ -4,8 +4,8 @@ nvim-snap is a tool for running tests based on Neovim UI snapshots.
 
 ## Concept
 
-Run a scenario to generate the current UI snapshot, then compare it with stored expected snapshots to verify display correctness.
-Test cases manage scenarios and expected snapshots, and can be executed in batch or filtered by tags.
+Run a scenario to generate the current UI snapshot, then compare it with stored baselines to verify display correctness.
+Test cases manage scenarios and baselines, and can be executed in batch or filtered by tags.
 
 ## Example
 
@@ -78,7 +78,7 @@ When `--name` is omitted, `nvim-snap` generates a random case name under `<root>
 
 ### run
 
-Run cases and write snapshots under `actual/`.
+Run cases and write snapshots under `current/` (regression) or `actual/` (golden).
 
 ```sh
 nvim-snap run --format json,html
@@ -87,7 +87,7 @@ nvim-snap run --tag ui
 
 ### compare
 
-Compare `expected/` and `actual/`, writing diffs under `diff/` when needed.
+Compare `accepted/` and `current/` (regression) or `baseline/` and `actual/` (golden), writing diffs under `diff/` when needed.
 
 ```sh
 nvim-snap compare --format text
@@ -97,7 +97,7 @@ nvim-snap compare --format png --diff-always
 
 ### accept
 
-Accept regression snapshots from `actual/`.
+Accept regression snapshots from `current/`.
 
 ```sh
 nvim-snap accept
@@ -107,7 +107,7 @@ nvim-snap accept --no-confirm
 
 ### golden
 
-Generate golden snapshots by running `golden.lua`.
+Generate golden baselines by running `golden.lua`.
 
 ```sh
 nvim-snap golden
@@ -130,7 +130,7 @@ nvim-snap init --path .github/workflows/nvim-snap.yml
    `nvim-snap new --name my-case --kind regression`
 2. Write the scenario
    `scenario.lua`
-3. Run actual
+3. Run current
    `nvim-snap run`
 4. Review diffs
    `nvim-snap compare --format html`
@@ -144,7 +144,7 @@ nvim-snap init --path .github/workflows/nvim-snap.yml
    `nvim-snap new --name my-case --kind golden`
 2. Write scenarios
    `golden.lua` / `target.lua`
-3. Generate expected
+3. Generate baseline
    `nvim-snap golden`
 4. Run actual
    `nvim-snap run`
@@ -153,8 +153,8 @@ nvim-snap init --path .github/workflows/nvim-snap.yml
 
 ## Test Types
 
-- Regression: verify the same scenario matches the stored expected snapshot
-- Golden: compare the expected (golden) output with the implementation result (target)
+- Regression: verify the same scenario matches the stored accepted snapshot
+- Golden: compare the baseline (golden) output with the implementation result (target)
 
 ## Notes
 

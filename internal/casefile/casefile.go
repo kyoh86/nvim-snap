@@ -60,30 +60,32 @@ func (s *Strings) UnmarshalJSON(data []byte) error {
 }
 
 type Case struct {
-	Name        string
-	Title       string
-	Kind        string
-	Tags        []string
-	Dir         string
-	Path        string
-	Scenario    string
-	Golden      string
-	Target      string
-	Expected    string
-	Actual      string
-	DiffDir     string
-	Width       int
-	Height      int
-	Wait        int
-	PostWait    int
-	WaitDone    bool
-	DoneTimeout int
-	RPCTimeout  int
-	LogFile     string
-	LogLevel    string
-	DataHome    string
-	ConfigHome  string
-	RTP         []string
+	Name          string
+	Title         string
+	Kind          string
+	Tags          []string
+	Dir           string
+	Path          string
+	Scenario      string
+	Golden        string
+	Target        string
+	Expected      string
+	Actual        string
+	ExpectedLabel string
+	ActualLabel   string
+	DiffDir       string
+	Width         int
+	Height        int
+	Wait          int
+	PostWait      int
+	WaitDone      bool
+	DoneTimeout   int
+	RPCTimeout    int
+	LogFile       string
+	LogLevel      string
+	DataHome      string
+	ConfigHome    string
+	RTP           []string
 }
 
 func Load(casePath, root string) (Case, error) {
@@ -128,32 +130,44 @@ func Load(casePath, root string) (Case, error) {
 	}
 
 	rtp := expandRTP(caseDir, root, cfg.RTP)
+	expectedDir := "accepted"
+	actualDir := "current"
+	expectedLabel := "accepted"
+	actualLabel := "current"
+	if cfg.Kind == "golden" {
+		expectedDir = "baseline"
+		actualDir = "actual"
+		expectedLabel = "baseline"
+		actualLabel = "actual"
+	}
 
 	return Case{
-		Name:        name,
-		Title:       title,
-		Kind:        cfg.Kind,
-		Tags:        filterTags(cfg.Tags),
-		Dir:         caseDir,
-		Path:        caseDir,
-		Scenario:    filepath.Join(caseDir, scenario),
-		Golden:      filepath.Join(caseDir, "golden.lua"),
-		Target:      filepath.Join(caseDir, "target.lua"),
-		Expected:    filepath.Join(caseDir, "expected", "snapshot.json"),
-		Actual:      filepath.Join(caseDir, "actual", "snapshot.json"),
-		DiffDir:     filepath.Join(caseDir, "diff"),
-		Width:       positiveOrZero(cfg.Width),
-		Height:      positiveOrZero(cfg.Height),
-		Wait:        positiveOrZero(cfg.Wait),
-		PostWait:    positiveOrZero(cfg.PostWait),
-		WaitDone:    cfg.WaitDone,
-		DoneTimeout: positiveOrZero(cfg.DoneTimeout),
-		RPCTimeout:  positiveOrZero(cfg.RPCTimeout),
-		LogFile:     optionalPath(caseDir, cfg.LogFile),
-		LogLevel:    cfg.LogLevel,
-		DataHome:    filepath.Join(caseDir, dataHome),
-		ConfigHome:  filepath.Join(caseDir, configHome),
-		RTP:         rtp,
+		Name:          name,
+		Title:         title,
+		Kind:          cfg.Kind,
+		Tags:          filterTags(cfg.Tags),
+		Dir:           caseDir,
+		Path:          caseDir,
+		Scenario:      filepath.Join(caseDir, scenario),
+		Golden:        filepath.Join(caseDir, "golden.lua"),
+		Target:        filepath.Join(caseDir, "target.lua"),
+		Expected:      filepath.Join(caseDir, expectedDir, "snapshot.json"),
+		Actual:        filepath.Join(caseDir, actualDir, "snapshot.json"),
+		ExpectedLabel: expectedLabel,
+		ActualLabel:   actualLabel,
+		DiffDir:       filepath.Join(caseDir, "diff"),
+		Width:         positiveOrZero(cfg.Width),
+		Height:        positiveOrZero(cfg.Height),
+		Wait:          positiveOrZero(cfg.Wait),
+		PostWait:      positiveOrZero(cfg.PostWait),
+		WaitDone:      cfg.WaitDone,
+		DoneTimeout:   positiveOrZero(cfg.DoneTimeout),
+		RPCTimeout:    positiveOrZero(cfg.RPCTimeout),
+		LogFile:       optionalPath(caseDir, cfg.LogFile),
+		LogLevel:      cfg.LogLevel,
+		DataHome:      filepath.Join(caseDir, dataHome),
+		ConfigHome:    filepath.Join(caseDir, configHome),
+		RTP:           rtp,
 	}, nil
 }
 

@@ -88,7 +88,7 @@ func main() {
 
 	switch diffFormat(format) {
 	case formatHTML:
-		html := htmldiff.RenderHTML(normExpected, normActual, "unified")
+		html := htmldiff.RenderHTML(normExpected, normActual, "unified", "expected", "actual")
 		if err := writeOutput(outPath, []byte(html)); err != nil {
 			fmt.Fprintf(os.Stderr, "failed to write diff: %v\n", err)
 			os.Exit(1)
@@ -98,7 +98,7 @@ func main() {
 			fmt.Fprintln(os.Stderr, "png output requires a file path")
 			os.Exit(2)
 		}
-		html := htmldiff.RenderHTML(normExpected, normActual, "overlay")
+		html := htmldiff.RenderHTML(normExpected, normActual, "overlay", "expected", "actual")
 		if err := pngutil.WritePNGFromHTML(html, outPath); err != nil {
 			fmt.Fprintf(os.Stderr, "failed to write diff: %v\n", err)
 			os.Exit(1)
