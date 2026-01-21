@@ -19,6 +19,21 @@ jobs:
         with:
           neovim: true
           version: nightly
+      - name: Restore snapshots cache
+        uses: actions/cache@v4
+        with:
+          path: snapcase-example/snapcase/.result
+          key: nvim-snap-${{ runner.os }}-${{ github.sha }}
+          restore-keys: |
+            nvim-snap-${{ runner.os }}-
+      - name: Resolve regression ids
+        env:
+          PR_BASE: ${{ github.event.pull_request.base.sha }}
+          EVENT_BEFORE: ${{ github.event.before }}
+        run: |
+          BASE=${PR_BASE:-${EVENT_BEFORE:-$GITHUB_SHA}}
+          echo "SNAP_BASE=$BASE" >> $GITHUB_ENV
+          echo "SNAP_TARGET=$GITHUB_SHA" >> $GITHUB_ENV
       - name: Save regression snapshots
         run: |
           go run ./cmd/nvim-snap regression save \
@@ -29,8 +44,8 @@ jobs:
           go run ./cmd/nvim-snap regression test \
             --root snapcase-example \
             --cases-dir snapcase \
-            --base "${GITHUB_SHA}" \
-            --target "${GITHUB_SHA}" \
+            --base "${SNAP_BASE}" \
+            --target "${SNAP_TARGET}" \
             --output diff \
             --diff-format text \
             --diff-always
