@@ -700,13 +700,15 @@ func compareCases(cases []compareCase, formats map[string]bool, diffAlways bool,
 	for _, c := range cases {
 		summary["total"]++
 		entry := map[string]any{
-			"name":         c.Name,
-			"title":        c.Title,
-			"kind":         c.Kind,
-			"tags":         c.Tags,
-			"result":       "error",
-			"diff_paths":   nil,
-			"error_reason": nil,
+			"name":          c.Name,
+			"title":         c.Title,
+			"kind":          c.Kind,
+			"tags":          c.Tags,
+			"expected_path": c.ExpectedPath,
+			"actual_path":   c.ActualPath,
+			"result":        "error",
+			"diff_paths":    nil,
+			"error_reason":  nil,
 		}
 		expected, err := readSnapshot(c.ExpectedPath)
 		if err != nil {
