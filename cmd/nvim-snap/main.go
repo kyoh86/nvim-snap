@@ -356,9 +356,17 @@ func filterByKind(cases []casefile.Case, kind string) []casefile.Case {
 	return out
 }
 
-func collectSnapshot(c casefile.Case, scenario string, cfg runConfig, stage string) (collector.Result, error) {
+func collectSnapshot(c casefile.Case, scenario string, cfg runConfig, stage, dataHomeOverride, configHomeOverride string) (collector.Result, error) {
 	if _, err := os.Stat(scenario); err != nil {
 		return collector.Result{}, fmt.Errorf("scenario not found: %w", err)
+	}
+	dataHome := c.DataHome
+	if dataHomeOverride != "" {
+		dataHome = dataHomeOverride
+	}
+	configHome := c.ConfigHome
+	if configHomeOverride != "" {
+		configHome = configHomeOverride
 	}
 	casePostWait, caseWaitDone, caseDoneTimeout := resolveWaits(c, cfg.overrides)
 	res, err := collector.Collect(collector.Options{
@@ -370,8 +378,8 @@ func collectSnapshot(c casefile.Case, scenario string, cfg runConfig, stage stri
 		WaitDone:      caseWaitDone,
 		DoneTimeoutMS: caseDoneTimeout,
 		RPCTimeoutMS:  c.RPCTimeout,
-		DataHome:      c.DataHome,
-		ConfigHome:    c.ConfigHome,
+		DataHome:      dataHome,
+		ConfigHome:    configHome,
 		LogFile:       c.LogFile,
 		LogLevel:      c.LogLevel,
 		WorkDir:       cfg.absRoot,
@@ -741,7 +749,7 @@ func cmdRegressionSave(args []string) {
 
 	failed := len(errs) > 0
 	for _, c := range filtered {
-		res, err := collectSnapshot(c, c.Scenario, cfg, "save")
+		res, err := collectSnapshot(c, c.Scenario, cfg, "save", "", "")
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "%s: %v\n", c.Name, err)
 			failed = true
@@ -935,7 +943,11 @@ func cmdGoldenTest(args []string) {
 		baselineDir := filepath.Join(resultDir, "baseline")
 		actualDir := filepath.Join(resultDir, "actual")
 
-		goldenRes, err := collectSnapshot(c, c.Golden, cfg, "golden")
+		goldenDataHome := filepath.Join(c.DataHome, "golden")
+		goldenConfigHome := filepath.Join(c.ConfigHome, "golden")
+		targetDataHome := filepath.Join(c.DataHome, "target")
+		targetConfigHome := filepath.Join(c.ConfigHome, "target")
+		goldenRes, err := collectSnapshot(c, c.Golden, cfg, "golden", goldenDataHome, goldenConfigHome)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "%s: golden: %v\n", c.Name, err)
 			failed = true
@@ -947,7 +959,7 @@ func cmdGoldenTest(args []string) {
 			continue
 		}
 
-		targetRes, err := collectSnapshot(c, c.Target, cfg, "target")
+		targetRes, err := collectSnapshot(c, c.Target, cfg, "target", targetDataHome, targetConfigHome)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "%s: target: %v\n", c.Name, err)
 			failed = true

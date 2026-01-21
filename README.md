@@ -157,5 +157,6 @@ nvim-snap init --path .github/workflows/nvim-snap.yml
 - `regression save` defaults to the current git commit id and fails on dirty trees.
 - If your scenario needs plugins, using `vim.pack.add()` is recommended.
 - When using `vim.pack.add()`, set `data_home` / `config_home` in `snapcase.json`.
+- Golden runs isolate `data_home` / `config_home` per scenario under the configured paths.
 - In headless runs, commands that may prompt for input can block. Prefer `vim.api.nvim_cmd` to `vim.cmd`.
 - When using `wait_done`, call `require("nvim_snap").done()` in your scenario.

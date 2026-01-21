@@ -158,5 +158,6 @@ nvim-snap init --path .github/workflows/nvim-snap.yml
 - `regression save` は既定で現在のGitコミットIDを使い、作業ツリーがdirtyだとエラーになります。
 - シナリオの中でプラグインが必要な場合は、 `vim.pack.add()` を使うのがおすすめです。
 - `vim.pack.add()` を使う場合は `snapcase.json` の `data_home` / `config_home` を明示的に設定してください。
+- Golden の実行では、設定した `data_home` / `config_home` の下でシナリオごとに分離します。
 - headless実行では入力待ちが発生するコマンドが止まることがあります。`vim.cmd` より `vim.api.nvim_cmd` を推奨します。
 - `wait_done` を使う場合は `require("nvim_snap").done()` を呼び出してください。
