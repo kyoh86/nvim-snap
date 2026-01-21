@@ -64,13 +64,13 @@ CLIでは `nvim-snap <command>` で呼び出す。
 
 - `list`: テストケースの一覧を表示する
   - 入力: `--root`（既定は `.`）、`--cases-dir`（既定は `snapcase`）
-  - 対象: `<root>/<cases-dir>/*/snapcase.json`
+  - 対象: `<root>/<cases-dir>/{regression|golden}/*/snapcase.json`
   - 出力: 一覧（name/title/kind/tags/path）
   - 形式: 既定はテキスト、`--json` でJSON出力
   - JSON出力:
     - `root` ルートディレクトリ
     - `cases[]` ケース配列
-      - `name` / `title` / `kind` / `tags` / `path`
+      - `name` / `title` / `kind` / `tags` / `path`（絶対パス）
     - 例:
       ```json
       {
@@ -84,7 +84,7 @@ CLIでは `nvim-snap <command>` で呼び出す。
               "ui",
               "regression"
             ],
-            "path": "snapcase/regression/case-name"
+            "path": "/path/to/root/snapcase/regression/case-name"
           }
         ]
       }
@@ -92,11 +92,11 @@ CLIでは `nvim-snap <command>` で呼び出す。
   - 終了コード: 成功=0、失敗=1
 - `regression new`: リグレッションの雛形を作成する
   - 入力: `--root`（既定は `.`）、`--cases-dir`（既定は `snapcase`）、`--name`（省略時は自動生成）、`--title`、`--tag`
-  - 出力: ケースディレクトリ配下の`snapcase.json`とシナリオ雛形、`diff` の作成
+  - 出力: ケースディレクトリ配下の`snapcase.json`とシナリオ雛形
   - `--force` で既存ファイルを上書きできる
 - `golden new`: ゴールデンの雛形を作成する
   - 入力: `--root`（既定は `.`）、`--cases-dir`（既定は `snapcase`）、`--name`（省略時は自動生成）、`--title`、`--tag`
-  - 出力: ケースディレクトリ配下の`snapcase.json`とシナリオ雛形、`diff` の作成
+  - 出力: ケースディレクトリ配下の`snapcase.json`とシナリオ雛形
   - `--force` で既存ファイルを上書きできる
 - `init`: GitHub Actions向けのワークフロー雛形を作成する
   - 入力: `--path`（既定は `.github/workflows/nvim-snap.yml`）、`--root`（既定は `.`）、`--cases-dir`（既定は `snapcase`）、`--diff-format`
