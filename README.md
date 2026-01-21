@@ -166,6 +166,8 @@ nvim-snap init --path .github/workflows/nvim-snap.yml
 5. Compare
    `nvim-snap regression test --base <base-id> --target <target-id>`
 
+In CI, make sure the base snapshot is available (for example, via an Actions cache of `.result/`).
+
 ### Golden flow
 
 1. Create a golden case

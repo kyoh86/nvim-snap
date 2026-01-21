@@ -167,6 +167,8 @@ nvim-snap init --path .github/workflows/nvim-snap.yml
 5. 比較  
    `nvim-snap regression test --base <base-id> --target <target-id>`
 
+CIでは、ベース側のスナップショットが存在する前提になるため、`.result/` のキャッシュ利用などで用意してください。
+
 ### ゴールデンの流れ
 
 1. ゴールデンケースを作る  
