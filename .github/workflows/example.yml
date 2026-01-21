@@ -19,23 +19,32 @@ jobs:
         with:
           neovim: true
           version: nightly
-      - name: Run snapcase examples
+      - name: Save regression snapshots
         run: |
-          go run ./cmd/nvim-snap report \
+          go run ./cmd/nvim-snap regression save \
             --root snapcase-example \
-            --cases-dir cases \
+            --cases-dir snapcase
+      - name: Compare regression snapshots
+        run: |
+          go run ./cmd/nvim-snap regression test \
+            --root snapcase-example \
+            --cases-dir snapcase \
+            --base "${GITHUB_SHA}" \
+            --target "${GITHUB_SHA}" \
             --output diff \
             --diff-format text \
             --diff-always
-      - name: Upload diffs
+      - name: Run golden tests
+        run: |
+          go run ./cmd/nvim-snap golden test \
+            --root snapcase-example \
+            --cases-dir snapcase \
+            --output diff \
+            --diff-format text \
+            --diff-always
+      - name: Upload results
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: snapcase-example-diff
-          path: snapcase-example/.nvim-snap-diff/*
-      - name: Upload logs
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: snapcase-example-log
-          path: snapcase-example/.nvim-snap-log/*
+          name: snapcase-example-result
+          path: snapcase-example/snapcase/.result/**

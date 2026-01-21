@@ -1,13 +1,12 @@
 {
   "version": 1,
-  "title": "Floating Window Golden",
+  "title": "Quickfix Golden",
   "kind": "golden",
   "tags": [
-    "float",
+    "quickfix",
     "golden",
     "example"
   ],
-  "scenario": "target.lua",
   "data_home": ".nvim-data",
   "config_home": ".nvim-config",
   "wait_done": true,

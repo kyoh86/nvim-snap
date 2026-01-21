@@ -7,16 +7,18 @@
 ## 使い方
 
 ```sh
-nvim-snap run --root snapcase-example --cases-dir cases --case diff-example --format json,ansi,html
+nvim-snap golden test --root snapcase-example --cases-dir snapcase --output diff --diff-format text
 ```
 
 ## 構成
 
 - `snapcase.schema.json` ケース定義と取得設定用のJSON Schema
-- `cases/` 複数ケースのサンプル（regression/golden混在）
-  - `diff-example/` 差分確認向けのリグレッションケース
-  - `qlean-hidden/` `vim.pack.add()` で `qlean.nvim` を取得するゴールデンケース
-  - `qlean-quickfix/` `vim.pack.add()` で `qlean.nvim` を取得するゴールデンケース
+- `snapcase/` サンプルケース
+  - `regression/` リグレッションケース
+    - `diff-example/` 差分確認向けのリグレッションケース
+  - `golden/` ゴールデンケース
+    - `qlean-hidden/` `vim.pack.add()` で `qlean.nvim` を取得するゴールデンケース
+    - `qlean-quickfix/` `vim.pack.add()` で `qlean.nvim` を取得するゴールデンケース
 
 ## 補足
 

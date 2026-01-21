@@ -84,7 +84,7 @@ CLIでは `nvim-snap <command>` で呼び出す。
               "ui",
               "regression"
             ],
-            "path": "tests/cases/case-name"
+            "path": "snapcase/regression/case-name"
           }
         ]
       }
@@ -126,8 +126,7 @@ CLIでは `nvim-snap <command>` で呼び出す。
   - 出力: 標準出力のサマリ/差分/JSON
   - 出力形式: `--output=summary|diff|json`（既定は `summary`）
   - diff出力形式: `--diff-format=text,ansi,html,png`（既定は `text`）
-  - `.nvim-snap-diff/` に差分ファイルを収集する
-  - `.nvim-snap-log/` にシナリオログを収集する
+  - `.result/golden/<case-name>/baseline|actual|diff` に結果を出力する
   - 終了コード: 成功=0、不一致=1、失敗=2
 
 ### テストケース定義
@@ -139,7 +138,7 @@ CLIでは `nvim-snap <command>` で呼び出す。
 
 - `snapcase.json` ケース定義ファイル（後述）
 - regression: `.result/regression/<case-name>/snapshot-<id>.json`（コミット単位の保存先）
-- golden: `baseline/`（ゴールデン実行結果）と`actual/`（ターゲット実行結果）
+- golden: `.result/golden/<case-name>/baseline|actual`（ゴールデン/ターゲットの実行結果）
 - `diff/` 比較結果（HTMLなど、任意）
 - `scenario.lua` リグレッションテスト用のシナリオ
 - `golden.lua` ゴールデンテスト用のゴールデンシナリオ

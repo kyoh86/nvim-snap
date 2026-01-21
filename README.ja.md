@@ -4,8 +4,8 @@ nvim-snapは、NeovimのUIスナップショットに基づくテストを実行
 
 ## コンセプト
 
-シナリオを実行して現在のUIスナップショットを生成し、保存済みの基準と比較することで表示の一致を検証する。
-テストケース単位でシナリオと基準を管理し、一括実行やタグでの絞り込みができる。
+シナリオを実行してUIスナップショットを生成し、結果を比較する。
+リグレッションはコミット単位で保存した結果同士を比較し、ゴールデンは同一実行内でgolden/targetを比較する。
 
 ## 例
 
@@ -13,7 +13,9 @@ nvim-snapは、NeovimのUIスナップショットに基づくテストを実行
 
 このリポジトリ内に `snapcase-example` を同梱しているので、そのままケースを実行して動作を確認できます。
 既定では `--root` はカレントディレクトリ、`--cases-dir` は `snapcase/` です。
-ケースは `<root>/<cases-dir>/<case-name>/snapcase.json` に置きます。
+ケースは `<root>/<cases-dir>/regression/<case-name>/snapcase.json` または
+`<root>/<cases-dir>/golden/<case-name>/snapcase.json` に置きます。
+出力は `<root>/<cases-dir>/.result/` に保存します。
 
 ## インストール
 
@@ -41,18 +43,19 @@ mise use github:kyoh86/nvim-snap
 
 ## コマンド
 
-以下の説明は、既定のオプションで `snapcase/<case-name>/snapcase.json` のように配置されている想定です。
-ケース名はディレクトリ名で決まり、`snapcase.json` でケース情報と capture の設定をまとめて管理します。
+ケースは `snapcase/regression/<case-name>/snapcase.json` または
+`snapcase/golden/<case-name>/snapcase.json` に配置します。
+ケース名はディレクトリ名で決まり、`snapcase.json` にメタデータと取得設定を記述します。
 `snapcase.json` の `rtp` は文字列または配列で、runtimepathに追加するパスを指定します。
 `${CASE}`（ケースディレクトリ）と `${ROOT}`（`--root` のパス）のプレースホルダが使えます。
 
 - `list` テストケース一覧
-- `new` テストケース雛形の作成
 - `init` CI向けワークフロー雛形の作成
-- `run` テストケース実行（スナップショット生成）
-- `compare` テストケース比較
-- `accept` リグレッションのaccepted更新
-- `golden` ゴールデンbaseline生成
+- `regression new` リグレッションケース雛形の作成
+- `regression save` コミット単位で保存
+- `regression test` 保存済みスナップショットの比較
+- `golden new` ゴールデンケース雛形の作成
+- `golden test` ゴールデン/ターゲットの比較
 
 ### list
 
@@ -65,63 +68,51 @@ nvim-snap list --case basic-regression
 nvim-snap list --json
 ```
 
-### new
+### regression new
 
-テストケースの雛形を作成します。
+リグレッションケースの雛形を作成します。
 
 ```sh
-nvim-snap new --name basic-regression --kind regression
-nvim-snap new --name sample --kind golden --title "Sample Golden"
+nvim-snap regression new --name basic-regression
 ```
 
-`--name` を省略するとランダムなケース名を生成し、`<root>/<cases-dir>/` 配下にディレクトリを作成します。
+`--name` を省略するとランダムなケース名を生成し、`<root>/<cases-dir>/regression/` 配下にディレクトリを作成します。
 
+### regression save
 
-### run
-
-テストケースを実行して、regressionは`current/`、goldenは`actual/`にスナップショットを生成します。
+現在のコミット（既定）でスナップショットを保存します。
 
 ```sh
-nvim-snap run --format json,html
-nvim-snap run --tag ui
+nvim-snap regression save
+nvim-snap regression save --id abcdef1234
+nvim-snap regression save --tag ui
 ```
 
-### compare
+### regression test
 
-regressionは`accepted/`と`current/`、goldenは`baseline/`と`actual/`を比較し、差分がある場合は `diff/` に出力します。
+保存済みスナップショットを比較します。
+`--target` を省略すると現在のコミットIDを使います。
 
 ```sh
-nvim-snap compare --output summary --diff-format html
-nvim-snap compare --output diff --diff-format text
-nvim-snap compare --output summary --diff-format png --diff-always
+nvim-snap regression test --base abcdef1234 --target 0123456789
+nvim-snap regression test --base abcdef1234 --output diff --diff-format text
 ```
 
-### accept
+### golden new
 
-リグレッションのacceptedをcurrentから更新します。
+ゴールデンケースの雛形を作成します。
 
 ```sh
-nvim-snap accept
-nvim-snap accept --dry-run
-nvim-snap accept --no-confirm
+nvim-snap golden new --name sample-golden --title "Sample Golden"
 ```
 
-### golden
+### golden test
 
-`golden.lua` を実行してbaselineを生成します。
-
-```sh
-nvim-snap golden
-nvim-snap golden --dry-run
-```
-
-### report
-
-baseline生成、スナップショット生成、比較、`.nvim-snap-diff/` と `.nvim-snap-log/` への収集までをまとめて実行します。
+golden/targetを実行して比較します。
 
 ```sh
-nvim-snap report --output summary --diff-format html
-nvim-snap report --output diff --diff-format text --diff-always
+nvim-snap golden test --output summary --diff-format html
+nvim-snap golden test --output diff --diff-format text --diff-always
 ```
 
 ### init
@@ -137,38 +128,35 @@ nvim-snap init --path .github/workflows/nvim-snap.yml
 ### リグレッションの流れ
 
 1. リグレッションケースを作る  
-   `nvim-snap new --name my-case --kind regression`
+   `nvim-snap regression new --name my-case`
 2. シナリオを書く  
    `scenario.lua`
-3. currentを生成  
-   `nvim-snap run`
-4. 差分を確認  
-   `nvim-snap compare --output summary --diff-format html`
-5. 判断  
-   - バグ修正して再実行  
-   - 仕様変更なら受け入れ: `nvim-snap accept`
+3. ベースコミットで保存  
+   `nvim-snap regression save`
+4. ターゲットコミットで保存  
+   `nvim-snap regression save`
+5. 比較  
+   `nvim-snap regression test --base <base-id> --target <target-id>`
 
 ### ゴールデンの流れ
 
 1. ゴールデンケースを作る  
-   `nvim-snap new --name my-case --kind golden`
+   `nvim-snap golden new --name my-case`
 2. シナリオを書く  
    `golden.lua` / `target.lua`
-3. baselineを生成  
-   `nvim-snap golden`
-4. actualを生成  
-   `nvim-snap run`
-5. 差分を確認  
-   `nvim-snap compare --output summary --diff-format html`
+3. 実行と比較  
+   `nvim-snap golden test --output summary --diff-format html`
 
 ## テストの種類
 
-- リグレッション: 同一シナリオの結果が過去のacceptedと一致するか確認する
-- ゴールデン: baseline（golden）と実装結果（target）の一致を確認する
+- リグレッション: 同一シナリオの結果をコミット単位で保存し比較する
+- ゴールデン: golden/targetを同一実行で比較する
 
 ## 注意点
 
+- 出力は `<root>/<cases-dir>/.result/` に保存されます。
+- `regression save` は既定で現在のGitコミットIDを使い、作業ツリーがdirtyだとエラーになります。
 - シナリオの中でプラグインが必要な場合は、 `vim.pack.add()` を使うのがおすすめです。
-- `vim.pack.add()` を使う場合は `--data-home` / `--config-home` を明示的に設定してください。
+- `vim.pack.add()` を使う場合は `snapcase.json` の `data_home` / `config_home` を明示的に設定してください。
 - headless実行では入力待ちが発生するコマンドが止まることがあります。`vim.cmd` より `vim.api.nvim_cmd` を推奨します。
 - `wait_done` を使う場合は `require("nvim_snap").done()` を呼び出してください。

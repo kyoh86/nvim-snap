@@ -7,16 +7,18 @@ This is the minimal setup for snapshot generation using `nvim-snap`.
 ## Usage
 
 ```sh
-nvim-snap run --root snapcase-example --cases-dir cases --case diff-example --format json,ansi,html
+nvim-snap golden test --root snapcase-example --cases-dir snapcase --output diff --diff-format text
 ```
 
 ## Layout
 
 - `snapcase.schema.json` JSON Schema for case definition and capture settings
-- `cases/` sample cases (regression/golden mixed)
-  - `diff-example/` regression case with diff-oriented scenarios
-  - `qlean-hidden/` golden case that installs `qlean.nvim` via `vim.pack.add()`
-  - `qlean-quickfix/` golden case that installs `qlean.nvim` via `vim.pack.add()`
+- `snapcase/` sample cases
+  - `regression/` regression cases
+    - `diff-example/` regression case with diff-oriented scenarios
+  - `golden/` golden cases
+    - `qlean-hidden/` golden case that installs `qlean.nvim` via `vim.pack.add()`
+    - `qlean-quickfix/` golden case that installs `qlean.nvim` via `vim.pack.add()`
 
 ## Notes
 

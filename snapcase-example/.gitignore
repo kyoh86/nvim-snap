@@ -1,6 +1,3 @@
 .nvim-data/
 .nvim-config/
-current/
-baseline/
-actual/
-diff/
+snapcase/.result/

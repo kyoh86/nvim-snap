@@ -4,8 +4,8 @@ nvim-snap is a tool for running tests based on Neovim UI snapshots.
 
 ## Concept
 
-Run a scenario to generate the current UI snapshot, then compare it with stored baselines to verify display correctness.
-Test cases manage scenarios and baselines, and can be executed in batch or filtered by tags.
+Run Neovim scenarios, capture UI snapshots, and compare results.
+Regression compares snapshots saved per commit, while golden compares the golden and target scenarios executed in the same run.
 
 ## Example
 
@@ -13,7 +13,9 @@ Test cases manage scenarios and baselines, and can be executed in batch or filte
 
 This repository includes `snapcase-example`, so you can run the cases as-is to confirm behavior.
 By default, `--root` is the current directory and `--cases-dir` is `snapcase/`.
-Cases live under `<root>/<cases-dir>/<case-name>/snapcase.json`.
+Cases live under `<root>/<cases-dir>/regression/<case-name>/snapcase.json` or
+`<root>/<cases-dir>/golden/<case-name>/snapcase.json`.
+Outputs are stored under `<root>/<cases-dir>/.result/`.
 
 ## Installation
 
@@ -40,18 +42,18 @@ mise use github:kyoh86/nvim-snap
 
 ## Commands
 
-The examples below assume cases are under `snapcase/<case-name>/snapcase.json` with the default options.
+Cases live under `snapcase/regression/<case-name>/snapcase.json` or `snapcase/golden/<case-name>/snapcase.json`.
 Case names come from the directory name, and `snapcase.json` holds the case metadata and capture settings.
 `snapcase.json` accepts `rtp` (string or list) to prepend runtimepath entries.
 Use `${CASE}` or `${ROOT}` placeholders to target the case directory or the `--root` path.
 
 - `list` list test cases
-- `new` scaffold a test case
 - `init` scaffold a CI workflow
-- `run` run test cases (generate snapshots)
-- `compare` compare test cases
-- `accept` accept regression snapshots
-- `golden` generate golden snapshots
+- `regression new` scaffold a regression case
+- `regression save` save regression snapshots by id
+- `regression test` compare regression snapshots by id
+- `golden new` scaffold a golden case
+- `golden test` run golden and target scenarios and compare
 
 ### list
 
@@ -64,63 +66,52 @@ nvim-snap list --case basic-regression
 nvim-snap list --json
 ```
 
-### new
+### regression new
 
-Create a case scaffold.
+Create a regression case scaffold.
 
 ```sh
-nvim-snap new --name basic-regression --kind regression
-nvim-snap new --name sample --kind golden --title "Sample Golden"
+nvim-snap regression new --name basic-regression
 ```
 
-When `--name` is omitted, `nvim-snap` generates a random case name under `<root>/<cases-dir>/`.
+When `--name` is omitted, `nvim-snap` generates a random case name under
+`<root>/<cases-dir>/regression/`.
 
+### regression save
 
-### run
-
-Run cases and write snapshots under `current/` (regression) or `actual/` (golden).
+Save snapshots for the current commit (default) into `.result/`.
 
 ```sh
-nvim-snap run --format json,html
-nvim-snap run --tag ui
+nvim-snap regression save
+nvim-snap regression save --id abcdef1234
+nvim-snap regression save --tag ui
 ```
 
-### compare
+### regression test
 
-Compare `accepted/` and `current/` (regression) or `baseline/` and `actual/` (golden), writing diffs under `diff/` when needed.
+Compare saved snapshots by id and output diffs.
+`--target` defaults to the current commit id.
 
 ```sh
-nvim-snap compare --output summary --diff-format html
-nvim-snap compare --output diff --diff-format text
-nvim-snap compare --output summary --diff-format png --diff-always
+nvim-snap regression test --base abcdef1234 --target 0123456789
+nvim-snap regression test --base abcdef1234 --output diff --diff-format text
 ```
 
-### accept
+### golden new
 
-Accept regression snapshots from `current/`.
+Create a golden case scaffold.
 
 ```sh
-nvim-snap accept
-nvim-snap accept --dry-run
-nvim-snap accept --no-confirm
+nvim-snap golden new --name sample-golden --title "Sample Golden"
 ```
 
-### golden
+### golden test
 
-Generate golden baselines by running `golden.lua`.
-
-```sh
-nvim-snap golden
-nvim-snap golden --dry-run
-```
-
-### report
-
-Run golden baselines, run snapshots, compare, and collect diffs under `.nvim-snap-diff/` and logs under `.nvim-snap-log/`.
+Run golden and target scenarios, then compare results.
 
 ```sh
-nvim-snap report --output summary --diff-format html
-nvim-snap report --output diff --diff-format text --diff-always
+nvim-snap golden test --output summary --diff-format html
+nvim-snap golden test --output diff --diff-format text --diff-always
 ```
 
 ### init
@@ -136,38 +127,35 @@ nvim-snap init --path .github/workflows/nvim-snap.yml
 ### Regression flow
 
 1. Create a regression case
-   `nvim-snap new --name my-case --kind regression`
+   `nvim-snap regression new --name my-case`
 2. Write the scenario
    `scenario.lua`
-3. Run current
-   `nvim-snap run`
-4. Review diffs
-   `nvim-snap compare --output summary --diff-format html`
-5. Decide
-   - Fix the scenario/plugin and re-run
-   - Or accept the new output: `nvim-snap accept`
+3. Save snapshots at the base commit
+   `nvim-snap regression save`
+4. Save snapshots at the target commit
+   `nvim-snap regression save`
+5. Compare
+   `nvim-snap regression test --base <base-id> --target <target-id>`
 
 ### Golden flow
 
 1. Create a golden case
-   `nvim-snap new --name my-case --kind golden`
+   `nvim-snap golden new --name my-case`
 2. Write scenarios
    `golden.lua` / `target.lua`
-3. Generate baseline
-   `nvim-snap golden`
-4. Run actual
-   `nvim-snap run`
-5. Review diffs
-   `nvim-snap compare --output summary --diff-format html`
+3. Run and compare
+   `nvim-snap golden test --output summary --diff-format html`
 
 ## Test Types
 
-- Regression: verify the same scenario matches the stored accepted snapshot
-- Golden: compare the baseline (golden) output with the implementation result (target)
+- Regression: compare snapshots saved per commit from the same scenario
+- Golden: compare golden and target scenario outputs in the same run
 
 ## Notes
 
+- Outputs are stored under `<root>/<cases-dir>/.result/`.
+- `regression save` defaults to the current git commit id and fails on dirty trees.
 - If your scenario needs plugins, using `vim.pack.add()` is recommended.
-- When using `vim.pack.add()`, set `--data-home` / `--config-home` explicitly.
+- When using `vim.pack.add()`, set `data_home` / `config_home` in `snapcase.json`.
 - In headless runs, commands that may prompt for input can block. Prefer `vim.api.nvim_cmd` to `vim.cmd`.
 - When using `wait_done`, call `require("nvim_snap").done()` in your scenario.

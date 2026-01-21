@@ -19,7 +19,7 @@
         "regression",
         "golden"
       ],
-      "description": "テスト種別"
+      "description": "テスト種別（ディレクトリ名と一致させる）"
     },
     "tags": {
       "type": "array",
@@ -30,7 +30,7 @@
     },
     "scenario": {
       "type": "string",
-      "description": "Scenario script path (default: scenario.lua)"
+      "description": "Scenario script path for regression (default: scenario.lua)"
     },
     "width": {
       "type": "integer",

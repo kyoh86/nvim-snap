@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "title": "Qlean closes quickfix window",
+  "title": "Qlean hidden modified buffer",
   "kind": "golden",
   "tags": [
     "qlean",
@@ -8,7 +8,6 @@
     "example",
     "pack-add"
   ],
-  "scenario": "target.lua",
   "wait": 500,
   "wait_done": true,
   "done_timeout": 15000,
