@@ -1,12 +1,13 @@
 package main
 
 import (
-	"bufio"
+	"bytes"
 	"encoding/json"
 	"flag"
 	"fmt"
 	"io"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"reflect"
 	"sort"
@@ -177,20 +178,12 @@ func main() {
 	switch os.Args[1] {
 	case "list":
 		cmdList(os.Args[2:])
-	case "run":
-		cmdRun(os.Args[2:])
-	case "compare":
-		cmdCompare(os.Args[2:])
-	case "accept":
-		cmdAccept(os.Args[2:])
-	case "golden":
-		cmdGolden(os.Args[2:])
-	case "report":
-		cmdReport(os.Args[2:])
-	case "new":
-		cmdNew(os.Args[2:])
 	case "init":
 		cmdInit(os.Args[2:])
+	case "regression":
+		cmdRegression(os.Args[2:])
+	case "golden":
+		cmdGolden(os.Args[2:])
 	default:
 		usage()
 		os.Exit(2)
@@ -202,14 +195,63 @@ func usage() {
 	fmt.Println("  nvim-snap <command> [options]")
 	fmt.Println("")
 	fmt.Println("commands:")
-	fmt.Println("  list    list test cases")
-	fmt.Println("  run     run test cases (generate snapshots)")
-	fmt.Println("  compare compare snapshots")
-	fmt.Println("  accept  accept regression snapshots")
-	fmt.Println("  golden  generate golden snapshots")
-	fmt.Println("  report run golden, run, compare, collect diffs")
-	fmt.Println("  new     scaffold a test case")
-	fmt.Println("  init    scaffold CI workflow")
+	fmt.Println("  list        list test cases")
+	fmt.Println("  init        scaffold CI workflow")
+	fmt.Println("  regression  regression commands (new/save/test)")
+	fmt.Println("  golden      golden commands (new/test)")
+}
+
+func usageRegression() {
+	fmt.Println("usage:")
+	fmt.Println("  nvim-snap regression <command> [options]")
+	fmt.Println("")
+	fmt.Println("commands:")
+	fmt.Println("  new   scaffold a regression test case")
+	fmt.Println("  save  run scenarios and save snapshots by id")
+	fmt.Println("  test  compare saved snapshots by id")
+}
+
+func usageGolden() {
+	fmt.Println("usage:")
+	fmt.Println("  nvim-snap golden <command> [options]")
+	fmt.Println("")
+	fmt.Println("commands:")
+	fmt.Println("  new   scaffold a golden test case")
+	fmt.Println("  test  run golden+target scenarios and compare")
+}
+
+func cmdRegression(args []string) {
+	if len(args) == 0 {
+		usageRegression()
+		os.Exit(2)
+	}
+	switch args[0] {
+	case "new":
+		cmdRegressionNew(args[1:])
+	case "save":
+		cmdRegressionSave(args[1:])
+	case "test":
+		cmdRegressionTest(args[1:])
+	default:
+		usageRegression()
+		os.Exit(2)
+	}
+}
+
+func cmdGolden(args []string) {
+	if len(args) == 0 {
+		usageGolden()
+		os.Exit(2)
+	}
+	switch args[0] {
+	case "new":
+		cmdGoldenNew(args[1:])
+	case "test":
+		cmdGoldenTest(args[1:])
+	default:
+		usageGolden()
+		os.Exit(2)
+	}
 }
 
 func cmdList(args []string) {
@@ -283,206 +325,150 @@ func cmdList(args []string) {
 	}
 }
 
-func cmdRun(args []string) {
-	fs := flag.NewFlagSet("run", flag.ExitOnError)
-	root := fs.String("root", ".", "Root directory")
-	casesDir := fs.String("cases-dir", "snapcase", "Cases directory under root")
-	format := fs.String("format", "json", "Output formats (json,ansi,html)")
-	var postWait optionalInt
-	var waitDone optionalBool
-	var doneTimeout optionalInt
-	fs.Var(&postWait, "post-wait", "Wait after scenario execution (ms)")
-	fs.Var(&waitDone, "wait-done", "Wait for scenario completion notification")
-	fs.Var(&doneTimeout, "done-timeout", "Scenario completion timeout (ms)")
-	var tags stringList
-	var names stringList
-	fs.Var(&tags, "tag", "Tag filter")
-	fs.Var(&names, "case", "Case name filter")
-	_ = fs.Parse(args)
-
-	formats := parseFormats(*format, map[string]bool{"json": true})
-	for key := range formats {
-		if key != "json" && key != "ansi" && key != "html" {
-			fmt.Fprintf(os.Stderr, "unsupported format: %s\n", key)
-			os.Exit(2)
-		}
-	}
-
-	absRoot := mustAbs(*root)
-	cases, errs := casefile.Find(absRoot, *casesDir)
-	for _, err := range errs {
-		fmt.Fprintln(os.Stderr, err)
-	}
-	filtered := casefile.Filter(cases, tags, names)
-
-	failed := len(errs) > 0
-	if runFailed, _ := runCases(filtered, runConfig{
-		absRoot: absRoot,
-		formats: formats,
-		overrides: waitOverrides{
-			postWait:    postWait,
-			waitDone:    waitDone,
-			doneTimeout: doneTimeout,
-		},
-	}); runFailed {
-		failed = true
-	}
-	if failed {
-		os.Exit(1)
-	}
-}
-
 type runConfig struct {
-	absRoot   string
-	formats   map[string]bool
-	overrides waitOverrides
+	absRoot     string
+	resultsRoot string
+	formats     map[string]bool
+	overrides   waitOverrides
 }
 
-func runCases(cases []casefile.Case, cfg runConfig) (bool, map[string][]string) {
-	failed := false
-	logs := map[string][]string{}
+func resolveCasesRoot(absRoot, casesDir string) string {
+	if casesDir == "" {
+		casesDir = "snapcase"
+	}
+	if filepath.IsAbs(casesDir) {
+		return casesDir
+	}
+	return filepath.Join(absRoot, casesDir)
+}
+
+func resolveResultsRoot(absRoot, casesDir string) string {
+	return filepath.Join(resolveCasesRoot(absRoot, casesDir), ".result")
+}
+
+func filterByKind(cases []casefile.Case, kind string) []casefile.Case {
+	out := make([]casefile.Case, 0, len(cases))
 	for _, c := range cases {
-		scenario := c.Scenario
-		if c.Kind == "golden" {
-			scenario = c.Target
+		if c.Kind == kind {
+			out = append(out, c)
 		}
-		if _, err := os.Stat(scenario); err != nil {
-			fmt.Fprintf(os.Stderr, "%s: scenario not found: %v\n", c.Name, err)
-			failed = true
-			continue
-		}
-		casePostWait, caseWaitDone, caseDoneTimeout := resolveWaits(c, cfg.overrides)
-		res, err := collector.Collect(collector.Options{
-			Scenario:      scenario,
-			Width:         c.Width,
-			Height:        c.Height,
-			WaitMS:        c.Wait,
-			PostWaitMS:    casePostWait,
-			WaitDone:      caseWaitDone,
-			DoneTimeoutMS: caseDoneTimeout,
-			RPCTimeoutMS:  c.RPCTimeout,
-			DataHome:      c.DataHome,
-			ConfigHome:    c.ConfigHome,
-			LogFile:       c.LogFile,
-			LogLevel:      c.LogLevel,
-			WorkDir:       cfg.absRoot,
-			RTP:           c.RTP,
-		})
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "%s: %v\n", c.Name, err)
-			failed = true
-			continue
-		}
-		if caseWaitDone && !res.WaitedDone {
-			fmt.Fprintf(os.Stderr, "%s: wait_done timeout (possible input wait; prefer vim.api.nvim_cmd)\n", c.Name)
-		}
-		if len(res.Logs) > 0 {
-			logs[c.Name] = append(logs[c.Name], res.Logs...)
-			if err := writeScenarioLogs(cfg.absRoot, c.Name, "run", res.Logs); err != nil {
-				fmt.Fprintf(os.Stderr, "%s: %v\n", c.Name, err)
-				failed = true
-				continue
-			}
-		}
-		actualDir := filepath.Dir(c.Actual)
-		if cfg.formats["json"] {
-			if err := writeJSON(c.Actual, res.Snapshot); err != nil {
-				fmt.Fprintf(os.Stderr, "%s: %v\n", c.Name, err)
-				failed = true
-				continue
-			}
-		}
-		if cfg.formats["ansi"] {
-			ansi := snapshots.RenderANSI(res.Snapshot)
-			if err := writeText(filepath.Join(actualDir, "snapshot.ansi"), ansi); err != nil {
-				fmt.Fprintf(os.Stderr, "%s: %v\n", c.Name, err)
-				failed = true
-				continue
-			}
-		}
-		if cfg.formats["html"] {
-			html := snapshots.RenderHTML(res.Snapshot)
-			if err := writeText(filepath.Join(actualDir, "snapshot.html"), html); err != nil {
-				fmt.Fprintf(os.Stderr, "%s: %v\n", c.Name, err)
-				failed = true
-				continue
-			}
-		}
-		fmt.Printf("%s\tok\n", c.Name)
 	}
-	return failed, logs
+	return out
 }
 
-func cmdCompare(args []string) {
-	fs := flag.NewFlagSet("compare", flag.ExitOnError)
-	root := fs.String("root", ".", "Root directory")
-	casesDir := fs.String("cases-dir", "snapcase", "Cases directory under root")
-	diffFormat := fs.String("diff-format", "text", "Diff formats (text,ansi,html,png)")
-	diffAlways := fs.Bool("diff-always", false, "Write diffs even if no difference")
-	output := fs.String("output", "summary", "Output format (summary,diff,json)")
-	var tags stringList
-	var names stringList
-	fs.Var(&tags, "tag", "Tag filter")
-	fs.Var(&names, "case", "Case name filter")
-	_ = fs.Parse(args)
-
-	formats := parseFormats(*diffFormat, map[string]bool{"text": true})
-	for key := range formats {
-		if key != "text" && key != "ansi" && key != "html" && key != "png" {
-			fmt.Fprintf(os.Stderr, "unsupported format: %s\n", key)
-			os.Exit(2)
+func collectSnapshot(c casefile.Case, scenario string, cfg runConfig, stage string) (collector.Result, error) {
+	if _, err := os.Stat(scenario); err != nil {
+		return collector.Result{}, fmt.Errorf("scenario not found: %w", err)
+	}
+	casePostWait, caseWaitDone, caseDoneTimeout := resolveWaits(c, cfg.overrides)
+	res, err := collector.Collect(collector.Options{
+		Scenario:      scenario,
+		Width:         c.Width,
+		Height:        c.Height,
+		WaitMS:        c.Wait,
+		PostWaitMS:    casePostWait,
+		WaitDone:      caseWaitDone,
+		DoneTimeoutMS: caseDoneTimeout,
+		RPCTimeoutMS:  c.RPCTimeout,
+		DataHome:      c.DataHome,
+		ConfigHome:    c.ConfigHome,
+		LogFile:       c.LogFile,
+		LogLevel:      c.LogLevel,
+		WorkDir:       cfg.absRoot,
+		RTP:           c.RTP,
+	})
+	if err != nil {
+		return collector.Result{}, err
+	}
+	if caseWaitDone && !res.WaitedDone {
+		fmt.Fprintf(os.Stderr, "%s: wait_done timeout (possible input wait; prefer vim.api.nvim_cmd)\n", c.Name)
+	}
+	if len(res.Logs) > 0 {
+		if err := writeScenarioLogs(cfg.resultsRoot, c.Name, stage, res.Logs); err != nil {
+			return collector.Result{}, err
 		}
 	}
-	if *output != "summary" && *output != "diff" && *output != "json" {
-		fmt.Fprintf(os.Stderr, "unsupported output: %s\n", *output)
-		os.Exit(2)
-	}
-
-	absRoot := mustAbs(*root)
-	cases, errs := casefile.Find(absRoot, *casesDir)
-	for _, err := range errs {
-		fmt.Fprintln(os.Stderr, err)
-	}
-	filtered := casefile.Filter(cases, tags, names)
-
-	results, summary, failed, hasDiff := compareCases(filtered, formats, *diffAlways, *output == "diff")
-	if len(errs) > 0 {
-		failed = true
-	}
-
-	if *output == "json" {
-		out := map[string]any{
-			"root":    absRoot,
-			"summary": summary,
-			"cases":   results,
-		}
-		payload, err := json.MarshalIndent(out, "", "  ")
-		if err != nil {
-			fmt.Fprintln(os.Stderr, err)
-			os.Exit(2)
-		}
-		fmt.Println(string(payload))
-	} else if *output == "diff" {
-		printCompareDiff(results)
-	} else {
-		diffHeader := "diff_paths"
-		if len(formats) == 1 {
-			for key := range formats {
-				diffHeader = "diff_path(" + key + ")"
-			}
-		}
-		printCompareText(results, diffHeader, len(formats) == 1)
-	}
-
-	if failed {
-		os.Exit(2)
-	}
-	if hasDiff {
-		os.Exit(1)
-	}
+	return res, nil
 }
 
-func compareCases(cases []casefile.Case, formats map[string]bool, diffAlways bool, wantDiffText bool) ([]map[string]any, map[string]int, bool, bool) {
+func writeSnapshotOutputs(dir, base string, snapshot snapshots.Snapshot, formats map[string]bool) error {
+	if formats["json"] {
+		if err := writeJSON(filepath.Join(dir, base+".json"), snapshot); err != nil {
+			return err
+		}
+	}
+	if formats["ansi"] {
+		ansi := snapshots.RenderANSI(snapshot)
+		if err := writeText(filepath.Join(dir, base+".ansi"), ansi); err != nil {
+			return err
+		}
+	}
+	if formats["html"] {
+		html := snapshots.RenderHTML(snapshot)
+		if err := writeText(filepath.Join(dir, base+".html"), html); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func writeScenarioLogs(resultsRoot, caseName, stage string, logs []string) error {
+	if len(logs) == 0 {
+		return nil
+	}
+	destDir := filepath.Join(resultsRoot, "logs")
+	if err := os.MkdirAll(destDir, 0o755); err != nil {
+		return err
+	}
+	path := filepath.Join(destDir, fmt.Sprintf("%s.%s.log", caseName, stage))
+	return writeText(path, strings.Join(logs, "\n")+"\n")
+}
+
+func gitHead(absRoot string) (string, error) {
+	cmd := exec.Command("git", "-C", absRoot, "rev-parse", "HEAD")
+	out, err := cmd.Output()
+	if err != nil {
+		return "", err
+	}
+	return strings.TrimSpace(string(out)), nil
+}
+
+func gitDirty(absRoot string) (bool, error) {
+	cmd := exec.Command("git", "-C", absRoot, "status", "--porcelain")
+	out, err := cmd.Output()
+	if err != nil {
+		return false, err
+	}
+	return len(bytes.TrimSpace(out)) > 0, nil
+}
+
+func resolveCommitID(absRoot, id string) (string, error) {
+	if id != "" {
+		return id, nil
+	}
+	dirty, err := gitDirty(absRoot)
+	if err != nil {
+		return "", err
+	}
+	if dirty {
+		return "", fmt.Errorf("working tree is dirty")
+	}
+	return gitHead(absRoot)
+}
+
+type compareCase struct {
+	Name          string
+	Title         string
+	Kind          string
+	Tags          []string
+	ExpectedPath  string
+	ActualPath    string
+	ExpectedLabel string
+	ActualLabel   string
+	DiffDir       string
+}
+
+func compareCases(cases []compareCase, formats map[string]bool, diffAlways bool, wantDiffText bool) ([]map[string]any, map[string]int, bool, bool) {
 	failed := false
 	hasDiff := false
 	results := []map[string]any{}
@@ -503,7 +489,7 @@ func compareCases(cases []casefile.Case, formats map[string]bool, diffAlways boo
 			"diff_paths":   nil,
 			"error_reason": nil,
 		}
-		expected, err := readSnapshot(c.Expected)
+		expected, err := readSnapshot(c.ExpectedPath)
 		if err != nil {
 			reason := err.Error()
 			entry["error_reason"] = reason
@@ -513,7 +499,7 @@ func compareCases(cases []casefile.Case, formats map[string]bool, diffAlways boo
 			failed = true
 			continue
 		}
-		actual, err := readSnapshot(c.Actual)
+		actual, err := readSnapshot(c.ActualPath)
 		if err != nil {
 			reason := err.Error()
 			entry["error_reason"] = reason
@@ -548,7 +534,7 @@ func compareCases(cases []casefile.Case, formats map[string]bool, diffAlways boo
 		}
 
 		if entry["result"] == "diff" || diffAlways {
-			diffPaths, err := writeDiffOutputs(c, normExpected, normActual, formats)
+			diffPaths, err := writeDiffOutputs(c.DiffDir, c.ExpectedLabel, c.ActualLabel, normExpected, normActual, formats)
 			if err != nil {
 				entry["result"] = "error"
 				entry["error_reason"] = err.Error()
@@ -564,178 +550,6 @@ func compareCases(cases []casefile.Case, formats map[string]bool, diffAlways boo
 	return results, summary, failed, hasDiff
 }
 
-func collectDiffArtifacts(cases []casefile.Case, destDir string) error {
-	if err := os.RemoveAll(destDir); err != nil {
-		return err
-	}
-	if err := os.MkdirAll(destDir, 0o755); err != nil {
-		return err
-	}
-	for _, c := range cases {
-		entries, err := os.ReadDir(c.DiffDir)
-		if err != nil {
-			if os.IsNotExist(err) {
-				continue
-			}
-			return err
-		}
-		for _, entry := range entries {
-			if entry.IsDir() {
-				continue
-			}
-			src := filepath.Join(c.DiffDir, entry.Name())
-			ext := filepath.Ext(entry.Name())
-			if ext == "" {
-				ext = ".diff"
-			}
-			dest := filepath.Join(destDir, c.Name+ext)
-			if err := copyFile(src, dest); err != nil {
-				return err
-			}
-		}
-	}
-	return nil
-}
-
-func writeScenarioLogs(root, caseName, stage string, logs []string) error {
-	if len(logs) == 0 {
-		return nil
-	}
-	destDir := filepath.Join(root, ".nvim-snap-log")
-	if err := os.MkdirAll(destDir, 0o755); err != nil {
-		return err
-	}
-	path := filepath.Join(destDir, fmt.Sprintf("%s.%s.log", caseName, stage))
-	return writeText(path, strings.Join(logs, "\n")+"\n")
-}
-
-func cmdReport(args []string) {
-	fs := flag.NewFlagSet("report", flag.ExitOnError)
-	root := fs.String("root", ".", "Root directory")
-	casesDir := fs.String("cases-dir", "snapcase", "Cases directory under root")
-	snapshotFormat := fs.String("snapshot-format", "json", "Snapshot formats (json,ansi,html)")
-	diffFormat := fs.String("diff-format", "text", "Diff formats (text,ansi,html,png)")
-	diffAlways := fs.Bool("diff-always", false, "Write diffs even if no difference")
-	output := fs.String("output", "summary", "Output format (summary,diff,json)")
-	var postWait optionalInt
-	var waitDone optionalBool
-	var doneTimeout optionalInt
-	fs.Var(&postWait, "post-wait", "Wait after scenario execution (ms)")
-	fs.Var(&waitDone, "wait-done", "Wait for scenario completion notification")
-	fs.Var(&doneTimeout, "done-timeout", "Scenario completion timeout (ms)")
-	var tags stringList
-	var names stringList
-	fs.Var(&tags, "tag", "Tag filter")
-	fs.Var(&names, "case", "Case name filter")
-	_ = fs.Parse(args)
-
-	snapFormats := parseFormats(*snapshotFormat, map[string]bool{"json": true})
-	for key := range snapFormats {
-		if key != "json" && key != "ansi" && key != "html" {
-			fmt.Fprintf(os.Stderr, "unsupported snapshot format: %s\n", key)
-			os.Exit(2)
-		}
-	}
-	diffFormats := parseFormats(*diffFormat, map[string]bool{"text": true})
-	for key := range diffFormats {
-		if key != "text" && key != "ansi" && key != "html" && key != "png" {
-			fmt.Fprintf(os.Stderr, "unsupported diff format: %s\n", key)
-			os.Exit(2)
-		}
-	}
-	if *output != "summary" && *output != "diff" && *output != "json" {
-		fmt.Fprintf(os.Stderr, "unsupported output: %s\n", *output)
-		os.Exit(2)
-	}
-
-	absRoot := mustAbs(*root)
-	cases, errs := casefile.Find(absRoot, *casesDir)
-	for _, err := range errs {
-		fmt.Fprintln(os.Stderr, err)
-	}
-	filtered := casefile.Filter(cases, tags, names)
-
-	failed := len(errs) > 0
-	goldenFailed, goldenLogs := goldenCases(filtered, goldenConfig{
-		absRoot: absRoot,
-		overrides: waitOverrides{
-			postWait:    postWait,
-			waitDone:    waitDone,
-			doneTimeout: doneTimeout,
-		},
-	})
-	if goldenFailed {
-		failed = true
-	}
-
-	runFailed, runLogs := runCases(filtered, runConfig{
-		absRoot: absRoot,
-		formats: snapFormats,
-		overrides: waitOverrides{
-			postWait:    postWait,
-			waitDone:    waitDone,
-			doneTimeout: doneTimeout,
-		},
-	})
-	if runFailed {
-		failed = true
-	}
-
-	results, summary, compareFailed, hasDiff := compareCases(filtered, diffFormats, *diffAlways, *output == "diff")
-	for _, entry := range results {
-		name, _ := entry["name"].(string)
-		logEntry := map[string][]string{}
-		if logs, ok := goldenLogs[name]; ok && len(logs) > 0 {
-			logEntry["golden"] = append([]string{}, logs...)
-		}
-		if logs, ok := runLogs[name]; ok && len(logs) > 0 {
-			logEntry["run"] = append([]string{}, logs...)
-		}
-		if len(logEntry) > 0 {
-			entry["logs"] = logEntry
-		}
-	}
-	if compareFailed {
-		failed = true
-	}
-
-	if *output == "json" {
-		out := map[string]any{
-			"root":    absRoot,
-			"summary": summary,
-			"cases":   results,
-		}
-		payload, err := json.MarshalIndent(out, "", "  ")
-		if err != nil {
-			fmt.Fprintln(os.Stderr, err)
-			os.Exit(2)
-		}
-		fmt.Println(string(payload))
-	} else if *output == "diff" {
-		printCompareDiff(results)
-	} else {
-		diffHeader := "diff_paths"
-		if len(diffFormats) == 1 {
-			for key := range diffFormats {
-				diffHeader = "diff_path(" + key + ")"
-			}
-		}
-		printCompareText(results, diffHeader, len(diffFormats) == 1)
-	}
-
-	if err := collectDiffArtifacts(filtered, filepath.Join(absRoot, ".nvim-snap-diff")); err != nil {
-		fmt.Fprintln(os.Stderr, err)
-		failed = true
-	}
-
-	if failed {
-		os.Exit(2)
-	}
-	if hasDiff {
-		os.Exit(1)
-	}
-}
-
 func unifiedDiffText(fromLabel, toLabel, expected, actual string) (string, error) {
 	d := difflib.UnifiedDiff{
 		A:        difflib.SplitLines(expected),
@@ -747,44 +561,44 @@ func unifiedDiffText(fromLabel, toLabel, expected, actual string) (string, error
 	return difflib.GetUnifiedDiffString(d)
 }
 
-func writeDiffOutputs(c casefile.Case, expected, actual snapshots.Snapshot, formats map[string]bool) (map[string]string, error) {
-	if err := os.MkdirAll(c.DiffDir, 0o755); err != nil {
+func writeDiffOutputs(diffDir, expectedLabel, actualLabel string, expected, actual snapshots.Snapshot, formats map[string]bool) (map[string]string, error) {
+	if err := os.MkdirAll(diffDir, 0o755); err != nil {
 		return nil, err
 	}
 	paths := map[string]string{}
 	if formats["text"] {
-		diff, err := unifiedDiffText(c.ExpectedLabel, c.ActualLabel, snapshots.RenderText(expected), snapshots.RenderText(actual))
+		diff, err := unifiedDiffText(expectedLabel, actualLabel, snapshots.RenderText(expected), snapshots.RenderText(actual))
 		if err != nil {
 			return nil, err
 		}
-		path := filepath.Join(c.DiffDir, "diff.txt")
+		path := filepath.Join(diffDir, "diff.txt")
 		if err := writeText(path, diff); err != nil {
 			return nil, err
 		}
 		paths["text"] = path
 	}
 	if formats["ansi"] {
-		diff, err := unifiedDiffText(c.ExpectedLabel, c.ActualLabel, snapshots.RenderANSI(expected), snapshots.RenderANSI(actual))
+		diff, err := unifiedDiffText(expectedLabel, actualLabel, snapshots.RenderANSI(expected), snapshots.RenderANSI(actual))
 		if err != nil {
 			return nil, err
 		}
-		path := filepath.Join(c.DiffDir, "diff.ansi")
+		path := filepath.Join(diffDir, "diff.ansi")
 		if err := writeText(path, diff); err != nil {
 			return nil, err
 		}
 		paths["ansi"] = path
 	}
 	if formats["html"] {
-		html := htmldiff.RenderHTML(expected, actual, "unified", c.ExpectedLabel, c.ActualLabel)
-		path := filepath.Join(c.DiffDir, "diff.html")
+		html := htmldiff.RenderHTML(expected, actual, "unified", expectedLabel, actualLabel)
+		path := filepath.Join(diffDir, "diff.html")
 		if err := writeText(path, html); err != nil {
 			return nil, err
 		}
 		paths["html"] = path
 	}
 	if formats["png"] {
-		html := htmldiff.RenderHTML(expected, actual, "overlay", c.ExpectedLabel, c.ActualLabel)
-		path := filepath.Join(c.DiffDir, "diff.png")
+		html := htmldiff.RenderHTML(expected, actual, "overlay", expectedLabel, actualLabel)
+		path := filepath.Join(diffDir, "diff.png")
 		if err := pngutil.WritePNGFromHTML(html, path); err != nil {
 			return nil, err
 		}
@@ -870,212 +684,330 @@ func printCompareDiff(results []map[string]any) {
 	}
 }
 
-func confirmActions(prompt string, count int) bool {
-	fmt.Fprintf(os.Stderr, prompt, count)
-	reader := bufio.NewReader(os.Stdin)
-	answer, err := reader.ReadString('\n')
-	if err != nil && answer == "" {
-		return false
-	}
-	answer = strings.TrimSpace(strings.ToLower(answer))
-	return answer == "y" || answer == "yes"
-}
-
-func cmdAccept(args []string) {
-	fs := flag.NewFlagSet("accept", flag.ExitOnError)
+func cmdRegressionSave(args []string) {
+	fs := flag.NewFlagSet("regression save", flag.ExitOnError)
 	root := fs.String("root", ".", "Root directory")
 	casesDir := fs.String("cases-dir", "snapcase", "Cases directory under root")
-	dryRun := fs.Bool("dry-run", false, "Show updates without writing")
-	noConfirm := fs.Bool("no-confirm", false, "Skip confirmation prompt")
-	yes := fs.Bool("yes", false, "Skip confirmation prompt")
-	var tags stringList
-	var names stringList
-	fs.Var(&tags, "tag", "Tag filter")
-	fs.Var(&names, "case", "Case name filter")
-	_ = fs.Parse(args)
-
-	confirm := !*noConfirm && !*yes
-
-	absRoot := mustAbs(*root)
-	cases, errs := casefile.Find(absRoot, *casesDir)
-	for _, err := range errs {
-		fmt.Fprintln(os.Stderr, err)
-	}
-	filtered := casefile.Filter(cases, tags, names)
-
-	failed := len(errs) > 0
-	actions := []map[string]any{}
-	for _, c := range filtered {
-		if c.Kind != "regression" {
-			continue
-		}
-		if _, err := os.Stat(c.Actual); err != nil {
-			fmt.Fprintf(os.Stderr, "%s: %s not found: %v\n", c.Name, c.ActualLabel, err)
-			failed = true
-			continue
-		}
-		actions = append(actions, map[string]any{
-			"case": c,
-			"src":  c.Actual,
-			"dst":  c.Expected,
-		})
-	}
-
-	if len(actions) == 0 {
-		if failed {
-			os.Exit(1)
-		}
-		return
-	}
-
-	if *dryRun {
-		for _, action := range actions {
-			c := action["case"].(casefile.Case)
-			fmt.Printf("%s\t%s -> %s\n", c.Name, action["src"], action["dst"])
-		}
-		if failed {
-			os.Exit(1)
-		}
-		return
-	}
-
-	if confirm {
-		if !confirmActions("Accept current snapshots for %d case(s)? [y/N]: ", len(actions)) {
-			fmt.Fprintln(os.Stderr, "aborted")
-			os.Exit(1)
-		}
-	}
-
-	for _, action := range actions {
-		c := action["case"].(casefile.Case)
-		if err := copyFile(action["src"].(string), action["dst"].(string)); err != nil {
-			fmt.Fprintf(os.Stderr, "%s: %v\n", c.Name, err)
-			failed = true
-			continue
-		}
-		fmt.Printf("%s\taccepted\n", c.Name)
-	}
-	if failed {
-		os.Exit(1)
-	}
-}
-
-func cmdGolden(args []string) {
-	fs := flag.NewFlagSet("golden", flag.ExitOnError)
-	root := fs.String("root", ".", "Root directory")
-	casesDir := fs.String("cases-dir", "snapcase", "Cases directory under root")
+	saveID := fs.String("id", "", "Snapshot id (default: current git commit)")
+	format := fs.String("format", "json", "Output formats (json,ansi,html)")
 	var postWait optionalInt
 	var waitDone optionalBool
 	var doneTimeout optionalInt
 	fs.Var(&postWait, "post-wait", "Wait after scenario execution (ms)")
 	fs.Var(&waitDone, "wait-done", "Wait for scenario completion notification")
 	fs.Var(&doneTimeout, "done-timeout", "Scenario completion timeout (ms)")
-	dryRun := fs.Bool("dry-run", false, "Show updates without writing")
 	var tags stringList
 	var names stringList
 	fs.Var(&tags, "tag", "Tag filter")
 	fs.Var(&names, "case", "Case name filter")
 	_ = fs.Parse(args)
 
+	formats := parseFormats(*format, map[string]bool{"json": true})
+	for key := range formats {
+		if key != "json" && key != "ansi" && key != "html" {
+			fmt.Fprintf(os.Stderr, "unsupported format: %s\n", key)
+			os.Exit(2)
+		}
+	}
+
 	absRoot := mustAbs(*root)
+	resultsRoot := resolveResultsRoot(absRoot, *casesDir)
 	cases, errs := casefile.Find(absRoot, *casesDir)
 	for _, err := range errs {
 		fmt.Fprintln(os.Stderr, err)
 	}
-	filtered := casefile.Filter(cases, tags, names)
+	filtered := filterByKind(casefile.Filter(cases, tags, names), "regression")
 
-	failed := len(errs) > 0
-	if *dryRun {
-		for _, c := range filtered {
-			if c.Kind != "golden" {
-				continue
-			}
-			fmt.Printf("%s\t%s -> %s\n", c.Name, c.Golden, c.Expected)
+	id := *saveID
+	if id == "" {
+		var err error
+		id, err = resolveCommitID(absRoot, "")
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "failed to resolve id: %v\n", err)
+			os.Exit(2)
 		}
-		if failed {
-			os.Exit(1)
-		}
-		return
 	}
 
-	if goldenFailed, _ := goldenCases(filtered, goldenConfig{
-		absRoot: absRoot,
+	cfg := runConfig{
+		absRoot:     absRoot,
+		resultsRoot: resultsRoot,
+		formats:     formats,
 		overrides: waitOverrides{
 			postWait:    postWait,
 			waitDone:    waitDone,
 			doneTimeout: doneTimeout,
 		},
-	}); goldenFailed {
-		failed = true
-	}
-	if failed {
-		os.Exit(1)
-	}
-}
-
-type goldenConfig struct {
-	absRoot   string
-	overrides waitOverrides
-}
-
-func goldenCases(cases []casefile.Case, cfg goldenConfig) (bool, map[string][]string) {
-	failed := false
-	logs := map[string][]string{}
-	actions := []casefile.Case{}
-	for _, c := range cases {
-		if c.Kind != "golden" {
-			continue
-		}
-		if _, err := os.Stat(c.Golden); err != nil {
-			fmt.Fprintf(os.Stderr, "%s: golden scenario not found: %v\n", c.Name, err)
-			failed = true
-			continue
-		}
-		actions = append(actions, c)
 	}
 
-	for _, c := range actions {
-		casePostWait, caseWaitDone, caseDoneTimeout := resolveWaits(c, cfg.overrides)
-		res, err := collector.Collect(collector.Options{
-			Scenario:      c.Golden,
-			Width:         c.Width,
-			Height:        c.Height,
-			WaitMS:        c.Wait,
-			PostWaitMS:    casePostWait,
-			WaitDone:      caseWaitDone,
-			DoneTimeoutMS: caseDoneTimeout,
-			RPCTimeoutMS:  c.RPCTimeout,
-			DataHome:      c.DataHome,
-			ConfigHome:    c.ConfigHome,
-			LogFile:       c.LogFile,
-			LogLevel:      c.LogLevel,
-			WorkDir:       cfg.absRoot,
-			RTP:           c.RTP,
-		})
+	failed := len(errs) > 0
+	for _, c := range filtered {
+		res, err := collectSnapshot(c, c.Scenario, cfg, "save")
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "%s: %v\n", c.Name, err)
 			failed = true
 			continue
 		}
-		if caseWaitDone && !res.WaitedDone {
-			fmt.Fprintf(os.Stderr, "%s: wait_done timeout (possible input wait; prefer vim.api.nvim_cmd)\n", c.Name)
-		}
-		if len(res.Logs) > 0 {
-			logs[c.Name] = append(logs[c.Name], res.Logs...)
-			if err := writeScenarioLogs(cfg.absRoot, c.Name, "golden", res.Logs); err != nil {
-				fmt.Fprintf(os.Stderr, "%s: %v\n", c.Name, err)
-				failed = true
-				continue
-			}
-		}
-		if err := writeJSON(c.Expected, res.Snapshot); err != nil {
+		resultDir := filepath.Join(resultsRoot, "regression", c.Name)
+		if err := os.MkdirAll(resultDir, 0o755); err != nil {
 			fmt.Fprintf(os.Stderr, "%s: %v\n", c.Name, err)
 			failed = true
 			continue
 		}
-		fmt.Printf("%s\tgenerated\n", c.Name)
+		if err := writeSnapshotOutputs(resultDir, "snapshot-"+id, res.Snapshot, formats); err != nil {
+			fmt.Fprintf(os.Stderr, "%s: %v\n", c.Name, err)
+			failed = true
+			continue
+		}
+		fmt.Printf("%s\tok\n", c.Name)
 	}
-	return failed, logs
+
+	if failed {
+		os.Exit(1)
+	}
+}
+
+func cmdRegressionTest(args []string) {
+	fs := flag.NewFlagSet("regression test", flag.ExitOnError)
+	root := fs.String("root", ".", "Root directory")
+	casesDir := fs.String("cases-dir", "snapcase", "Cases directory under root")
+	baseID := fs.String("base", "", "Base snapshot id")
+	targetID := fs.String("target", "", "Target snapshot id (default: current git commit)")
+	diffFormat := fs.String("diff-format", "text", "Diff formats (text,ansi,html,png)")
+	diffAlways := fs.Bool("diff-always", false, "Write diffs even if no difference")
+	output := fs.String("output", "summary", "Output format (summary,diff,json)")
+	var tags stringList
+	var names stringList
+	fs.Var(&tags, "tag", "Tag filter")
+	fs.Var(&names, "case", "Case name filter")
+	_ = fs.Parse(args)
+
+	if *baseID == "" {
+		fmt.Fprintln(os.Stderr, "--base is required")
+		os.Exit(2)
+	}
+
+	formats := parseFormats(*diffFormat, map[string]bool{"text": true})
+	for key := range formats {
+		if key != "text" && key != "ansi" && key != "html" && key != "png" {
+			fmt.Fprintf(os.Stderr, "unsupported format: %s\n", key)
+			os.Exit(2)
+		}
+	}
+	if *output != "summary" && *output != "diff" && *output != "json" {
+		fmt.Fprintf(os.Stderr, "unsupported output: %s\n", *output)
+		os.Exit(2)
+	}
+
+	absRoot := mustAbs(*root)
+	resultsRoot := resolveResultsRoot(absRoot, *casesDir)
+	cases, errs := casefile.Find(absRoot, *casesDir)
+	for _, err := range errs {
+		fmt.Fprintln(os.Stderr, err)
+	}
+	filtered := filterByKind(casefile.Filter(cases, tags, names), "regression")
+
+	target := *targetID
+	if target == "" {
+		var err error
+		target, err = resolveCommitID(absRoot, "")
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "failed to resolve target id: %v\n", err)
+			os.Exit(2)
+		}
+	}
+
+	compareItems := make([]compareCase, 0, len(filtered))
+	for _, c := range filtered {
+		resultDir := filepath.Join(resultsRoot, "regression", c.Name)
+		diffDir := filepath.Join(resultDir, "diff")
+		compareItems = append(compareItems, compareCase{
+			Name:          c.Name,
+			Title:         c.Title,
+			Kind:          c.Kind,
+			Tags:          c.Tags,
+			ExpectedPath:  filepath.Join(resultDir, "snapshot-"+*baseID+".json"),
+			ActualPath:    filepath.Join(resultDir, "snapshot-"+target+".json"),
+			ExpectedLabel: *baseID,
+			ActualLabel:   target,
+			DiffDir:       diffDir,
+		})
+	}
+
+	results, summary, failed, hasDiff := compareCases(compareItems, formats, *diffAlways, *output == "diff")
+	if len(errs) > 0 {
+		failed = true
+	}
+
+	if *output == "json" {
+		out := map[string]any{
+			"root":    absRoot,
+			"summary": summary,
+			"cases":   results,
+		}
+		payload, err := json.MarshalIndent(out, "", "  ")
+		if err != nil {
+			fmt.Fprintln(os.Stderr, err)
+			os.Exit(2)
+		}
+		fmt.Println(string(payload))
+	} else if *output == "diff" {
+		printCompareDiff(results)
+	} else {
+		diffHeader := "diff_paths"
+		if len(formats) == 1 {
+			for key := range formats {
+				diffHeader = "diff_path(" + key + ")"
+			}
+		}
+		printCompareText(results, diffHeader, len(formats) == 1)
+	}
+
+	if failed {
+		os.Exit(2)
+	}
+	if hasDiff {
+		os.Exit(1)
+	}
+}
+
+func cmdGoldenTest(args []string) {
+	fs := flag.NewFlagSet("golden test", flag.ExitOnError)
+	root := fs.String("root", ".", "Root directory")
+	casesDir := fs.String("cases-dir", "snapcase", "Cases directory under root")
+	format := fs.String("format", "json", "Snapshot formats (json,ansi,html)")
+	diffFormat := fs.String("diff-format", "text", "Diff formats (text,ansi,html,png)")
+	diffAlways := fs.Bool("diff-always", false, "Write diffs even if no difference")
+	output := fs.String("output", "summary", "Output format (summary,diff,json)")
+	var postWait optionalInt
+	var waitDone optionalBool
+	var doneTimeout optionalInt
+	fs.Var(&postWait, "post-wait", "Wait after scenario execution (ms)")
+	fs.Var(&waitDone, "wait-done", "Wait for scenario completion notification")
+	fs.Var(&doneTimeout, "done-timeout", "Scenario completion timeout (ms)")
+	var tags stringList
+	var names stringList
+	fs.Var(&tags, "tag", "Tag filter")
+	fs.Var(&names, "case", "Case name filter")
+	_ = fs.Parse(args)
+
+	formats := parseFormats(*format, map[string]bool{"json": true})
+	for key := range formats {
+		if key != "json" && key != "ansi" && key != "html" {
+			fmt.Fprintf(os.Stderr, "unsupported format: %s\n", key)
+			os.Exit(2)
+		}
+	}
+	diffFormats := parseFormats(*diffFormat, map[string]bool{"text": true})
+	for key := range diffFormats {
+		if key != "text" && key != "ansi" && key != "html" && key != "png" {
+			fmt.Fprintf(os.Stderr, "unsupported diff format: %s\n", key)
+			os.Exit(2)
+		}
+	}
+	if *output != "summary" && *output != "diff" && *output != "json" {
+		fmt.Fprintf(os.Stderr, "unsupported output: %s\n", *output)
+		os.Exit(2)
+	}
+
+	absRoot := mustAbs(*root)
+	resultsRoot := resolveResultsRoot(absRoot, *casesDir)
+	cases, errs := casefile.Find(absRoot, *casesDir)
+	for _, err := range errs {
+		fmt.Fprintln(os.Stderr, err)
+	}
+	filtered := filterByKind(casefile.Filter(cases, tags, names), "golden")
+
+	cfg := runConfig{
+		absRoot:     absRoot,
+		resultsRoot: resultsRoot,
+		formats:     formats,
+		overrides: waitOverrides{
+			postWait:    postWait,
+			waitDone:    waitDone,
+			doneTimeout: doneTimeout,
+		},
+	}
+
+	failed := len(errs) > 0
+	compareItems := make([]compareCase, 0, len(filtered))
+	for _, c := range filtered {
+		resultDir := filepath.Join(resultsRoot, "golden", c.Name)
+		baselineDir := filepath.Join(resultDir, "baseline")
+		actualDir := filepath.Join(resultDir, "actual")
+
+		goldenRes, err := collectSnapshot(c, c.Golden, cfg, "golden")
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "%s: golden: %v\n", c.Name, err)
+			failed = true
+			continue
+		}
+		if err := writeSnapshotOutputs(baselineDir, "snapshot", goldenRes.Snapshot, formats); err != nil {
+			fmt.Fprintf(os.Stderr, "%s: %v\n", c.Name, err)
+			failed = true
+			continue
+		}
+
+		targetRes, err := collectSnapshot(c, c.Target, cfg, "target")
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "%s: target: %v\n", c.Name, err)
+			failed = true
+			continue
+		}
+		if err := writeSnapshotOutputs(actualDir, "snapshot", targetRes.Snapshot, formats); err != nil {
+			fmt.Fprintf(os.Stderr, "%s: %v\n", c.Name, err)
+			failed = true
+			continue
+		}
+
+		diffDir := filepath.Join(resultDir, "diff")
+		compareItems = append(compareItems, compareCase{
+			Name:          c.Name,
+			Title:         c.Title,
+			Kind:          c.Kind,
+			Tags:          c.Tags,
+			ExpectedPath:  filepath.Join(baselineDir, "snapshot.json"),
+			ActualPath:    filepath.Join(actualDir, "snapshot.json"),
+			ExpectedLabel: "baseline",
+			ActualLabel:   "actual",
+			DiffDir:       diffDir,
+		})
+	}
+
+	results, summary, compareFailed, hasDiff := compareCases(compareItems, diffFormats, *diffAlways, *output == "diff")
+	if compareFailed {
+		failed = true
+	}
+
+	if *output == "json" {
+		out := map[string]any{
+			"root":    absRoot,
+			"summary": summary,
+			"cases":   results,
+		}
+		payload, err := json.MarshalIndent(out, "", "  ")
+		if err != nil {
+			fmt.Fprintln(os.Stderr, err)
+			os.Exit(2)
+		}
+		fmt.Println(string(payload))
+	} else if *output == "diff" {
+		printCompareDiff(results)
+	} else {
+		diffHeader := "diff_paths"
+		if len(diffFormats) == 1 {
+			for key := range diffFormats {
+				diffHeader = "diff_path(" + key + ")"
+			}
+		}
+		printCompareText(results, diffHeader, len(diffFormats) == 1)
+	}
+
+	if failed {
+		os.Exit(2)
+	}
+	if hasDiff {
+		os.Exit(1)
+	}
 }
 
 func workflowYAML(name, root, casesDir, diffFormat string) string {
@@ -1097,23 +1029,22 @@ func workflowYAML(name, root, casesDir, diffFormat string) string {
 		"        run: |",
 		"          curl -sSL https://github.com/kyoh86/nvim-snap/releases/latest/download/nvim-snap -o nvim-snap",
 		"          chmod +x nvim-snap",
-		"      - name: Report snapshots",
+		"      - name: Save regression snapshots",
 		"        run: |",
-		"          ./nvim-snap report --root " + root + " --cases-dir " + casesDir + " --output diff --diff-format " + diffFormat + " --diff-always",
-		"      - name: Upload diffs",
+		"          ./nvim-snap regression save --root " + root + " --cases-dir " + casesDir,
+		"      - name: Compare regression snapshots",
+		"        run: |",
+		"          ./nvim-snap regression test --root " + root + " --cases-dir " + casesDir + " --base \"${GITHUB_SHA}\" --target \"${GITHUB_SHA}\" --output diff --diff-format " + diffFormat + " --diff-always",
+		"      - name: Run golden tests",
+		"        run: |",
+		"          ./nvim-snap golden test --root " + root + " --cases-dir " + casesDir + " --output diff --diff-format " + diffFormat + " --diff-always",
+		"      - name: Upload results",
 		"        if: always()",
 		"        uses: actions/upload-artifact@v4",
 		"        with:",
-		"          name: nvim-snap-diff",
+		"          name: nvim-snap-result",
 		"          path: |",
-		"            .nvim-snap-diff/*",
-		"      - name: Upload logs",
-		"        if: always()",
-		"        uses: actions/upload-artifact@v4",
-		"        with:",
-		"          name: nvim-snap-log",
-		"          path: |",
-		"            .nvim-snap-log/*",
+		"            " + casesDir + "/.result/**",
 		"",
 	}
 	return strings.Join(lines, "\n")
@@ -1136,34 +1067,41 @@ func cmdInit(args []string) {
 	fmt.Println(*path)
 }
 
-func cmdNew(args []string) {
-	fs := flag.NewFlagSet("new", flag.ExitOnError)
+func cmdRegressionNew(args []string) {
+	cmdNewByKind(args, "regression")
+}
+
+func cmdGoldenNew(args []string) {
+	cmdNewByKind(args, "golden")
+}
+
+func cmdNewByKind(args []string, kind string) {
+	fs := flag.NewFlagSet(kind+" new", flag.ExitOnError)
 	root := fs.String("root", ".", "Root directory")
 	casesDir := fs.String("cases-dir", "snapcase", "Cases directory under root")
 	name := fs.String("name", "", "Case name")
 	title := fs.String("title", "", "Case title")
-	kind := fs.String("kind", "regression", "regression|golden")
 	force := fs.Bool("force", false, "Overwrite existing files")
 	var tags stringList
 	fs.Var(&tags, "tag", "Tag")
 	_ = fs.Parse(args)
 
-	if *kind != "regression" && *kind != "golden" {
-		fmt.Fprintln(os.Stderr, "--kind must be regression or golden")
-		os.Exit(2)
-	}
-
 	absRoot := mustAbs(*root)
-	casesRoot := filepath.Join(absRoot, *casesDir)
+	casesRoot := resolveCasesRoot(absRoot, *casesDir)
 	if err := os.MkdirAll(casesRoot, 0o755); err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
 	}
+	if err := ensureResultsGitignore(casesRoot); err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		os.Exit(1)
+	}
+
 	caseName := *name
 	if caseName == "" {
 		caseName = randomName(8)
 	}
-	caseDir := filepath.Join(casesRoot, caseName)
+	caseDir := filepath.Join(casesRoot, kind, caseName)
 	if !*force {
 		if _, err := os.Stat(caseDir); err == nil {
 			fmt.Fprintf(os.Stderr, "case directory already exists: %s\n", caseDir)
@@ -1175,24 +1113,16 @@ func cmdNew(args []string) {
 		os.Exit(1)
 	}
 
-	if err := writeCaseGitignore(filepath.Join(caseDir, ".gitignore"), *force); err != nil {
+	scenario := ""
+	if kind == "regression" {
+		scenario = "scenario.lua"
+	}
+	if err := writeSnapcaseJSON(filepath.Join(caseDir, "snapcase.json"), *title, kind, tags, scenario, *force); err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
 	}
-	if err := writeSnapcaseJSON(filepath.Join(caseDir, "snapcase.json"), *title, *kind, tags, *force); err != nil {
-		fmt.Fprintln(os.Stderr, err)
-		os.Exit(1)
-	}
-	if *kind == "golden" {
-		_ = os.MkdirAll(filepath.Join(caseDir, "baseline"), 0o755)
-		_ = os.MkdirAll(filepath.Join(caseDir, "actual"), 0o755)
-	} else {
-		_ = os.MkdirAll(filepath.Join(caseDir, "accepted"), 0o755)
-		_ = os.MkdirAll(filepath.Join(caseDir, "current"), 0o755)
-	}
-	_ = os.MkdirAll(filepath.Join(caseDir, "diff"), 0o755)
 
-	if *kind == "regression" {
+	if kind == "regression" {
 		if err := writeFile(filepath.Join(caseDir, "scenario.lua"), regressionScenario(caseName), *force); err != nil {
 			fmt.Fprintln(os.Stderr, err)
 			os.Exit(1)
@@ -1293,27 +1223,18 @@ var timeNow = func() time.Time {
 	return time.Now()
 }
 
-func writeCaseGitignore(path string, force bool) error {
-	contents := strings.Join([]string{
-		".nvim-data/",
-		".nvim-config/",
-		"current/",
-		"baseline/",
-		"actual/",
-		"diff/",
-		"",
-	}, "\n")
-	return writeFile(path, contents, force)
-}
-
-func writeSnapcaseJSON(path, title, kind string, tags []string, force bool) error {
+func writeSnapcaseJSON(path, title, kind string, tags []string, scenario string, force bool) error {
 	payload := map[string]any{
 		"version":     1,
-		"kind":        kind,
-		"scenario":    "scenario.lua",
 		"data_home":   ".nvim-data",
 		"config_home": ".nvim-config",
-		"rtp": []string{"."},
+		"rtp":         []string{"."},
+	}
+	if kind != "" {
+		payload["kind"] = kind
+	}
+	if scenario != "" {
+		payload["scenario"] = scenario
 	}
 	if title != "" {
 		payload["title"] = title
@@ -1338,6 +1259,26 @@ func writeFile(path, contents string, force bool) error {
 		return err
 	}
 	return os.WriteFile(path, []byte(contents), 0o644)
+}
+
+func ensureResultsGitignore(casesRoot string) error {
+	path := filepath.Join(casesRoot, ".gitignore")
+	entry := ".result/"
+	data, err := os.ReadFile(path)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return os.WriteFile(path, []byte(entry+"\n"), 0o644)
+		}
+		return err
+	}
+	lines := strings.Split(string(data), "\n")
+	for _, line := range lines {
+		if strings.TrimSpace(line) == entry {
+			return nil
+		}
+	}
+	lines = append(lines, entry)
+	return os.WriteFile(path, []byte(strings.Join(lines, "\n")), 0o644)
 }
 
 func regressionScenario(name string) string {

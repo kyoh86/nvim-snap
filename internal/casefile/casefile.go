@@ -52,32 +52,27 @@ func (s *Strings) UnmarshalJSON(data []byte) error {
 }
 
 type Case struct {
-	Name          string
-	Title         string
-	Kind          string
-	Tags          []string
-	Dir           string
-	Path          string
-	Scenario      string
-	Golden        string
-	Target        string
-	Expected      string
-	Actual        string
-	ExpectedLabel string
-	ActualLabel   string
-	DiffDir       string
-	Width         int
-	Height        int
-	Wait          int
-	PostWait      int
-	WaitDone      bool
-	DoneTimeout   int
-	RPCTimeout    int
-	LogFile       string
-	LogLevel      string
-	DataHome      string
-	ConfigHome    string
-	RTP           []string
+	Name        string
+	Title       string
+	Kind        string
+	Tags        []string
+	Dir         string
+	Path        string
+	Scenario    string
+	Golden      string
+	Target      string
+	Width       int
+	Height      int
+	Wait        int
+	PostWait    int
+	WaitDone    bool
+	DoneTimeout int
+	RPCTimeout  int
+	LogFile     string
+	LogLevel    string
+	DataHome    string
+	ConfigHome  string
+	RTP         []string
 }
 
 func Load(casePath, root string) (Case, error) {
@@ -92,24 +87,36 @@ func Load(casePath, root string) (Case, error) {
 	if cfg.Version < 1 {
 		return Case{}, errors.New("case version is required")
 	}
-	if cfg.Kind != "regression" && cfg.Kind != "golden" {
-		return Case{}, errors.New("case kind must be regression or golden")
-	}
 
 	caseDir := filepath.Dir(casePath)
 	name := filepath.Base(caseDir)
 	if name == "" || name == "." || name == string(filepath.Separator) {
 		return Case{}, errors.New("case dir name is required")
 	}
+	kindDir := filepath.Base(filepath.Dir(caseDir))
+	if kindDir != "regression" && kindDir != "golden" {
+		return Case{}, errors.New("case kind must be regression or golden")
+	}
+	if cfg.Kind != "" && cfg.Kind != kindDir {
+		return Case{}, errors.New("case kind must match directory")
+	}
+	kind := kindDir
 
 	title := cfg.Title
 	if title == "" {
 		title = name
 	}
 
-	scenario := cfg.Scenario
-	if scenario == "" {
-		scenario = "scenario.lua"
+	scenario := ""
+	if kind == "regression" {
+		scenario = cfg.Scenario
+		if scenario == "" {
+			scenario = "scenario.lua"
+		}
+	}
+	scenarioPath := ""
+	if scenario != "" {
+		scenarioPath = filepath.Join(caseDir, scenario)
 	}
 
 	dataHome := cfg.DataHome
@@ -122,44 +129,29 @@ func Load(casePath, root string) (Case, error) {
 	}
 
 	rtp := expandRTP(caseDir, root, cfg.RTP)
-	expectedDir := "accepted"
-	actualDir := "current"
-	expectedLabel := "accepted"
-	actualLabel := "current"
-	if cfg.Kind == "golden" {
-		expectedDir = "baseline"
-		actualDir = "actual"
-		expectedLabel = "baseline"
-		actualLabel = "actual"
-	}
 
 	return Case{
-		Name:          name,
-		Title:         title,
-		Kind:          cfg.Kind,
-		Tags:          filterTags(cfg.Tags),
-		Dir:           caseDir,
-		Path:          caseDir,
-		Scenario:      filepath.Join(caseDir, scenario),
-		Golden:        filepath.Join(caseDir, "golden.lua"),
-		Target:        filepath.Join(caseDir, "target.lua"),
-		Expected:      filepath.Join(caseDir, expectedDir, "snapshot.json"),
-		Actual:        filepath.Join(caseDir, actualDir, "snapshot.json"),
-		ExpectedLabel: expectedLabel,
-		ActualLabel:   actualLabel,
-		DiffDir:       filepath.Join(caseDir, "diff"),
-		Width:         positiveOrZero(cfg.Width),
-		Height:        positiveOrZero(cfg.Height),
-		Wait:          positiveOrZero(cfg.Wait),
-		PostWait:      positiveOrZero(cfg.PostWait),
-		WaitDone:      cfg.WaitDone,
-		DoneTimeout:   positiveOrZero(cfg.DoneTimeout),
-		RPCTimeout:    positiveOrZero(cfg.RPCTimeout),
-		LogFile:       optionalPath(caseDir, cfg.LogFile),
-		LogLevel:      cfg.LogLevel,
-		DataHome:      filepath.Join(caseDir, dataHome),
-		ConfigHome:    filepath.Join(caseDir, configHome),
-		RTP:           rtp,
+		Name:        name,
+		Title:       title,
+		Kind:        kind,
+		Tags:        filterTags(cfg.Tags),
+		Dir:         caseDir,
+		Path:        caseDir,
+		Scenario:    scenarioPath,
+		Golden:      filepath.Join(caseDir, "golden.lua"),
+		Target:      filepath.Join(caseDir, "target.lua"),
+		Width:       positiveOrZero(cfg.Width),
+		Height:      positiveOrZero(cfg.Height),
+		Wait:        positiveOrZero(cfg.Wait),
+		PostWait:    positiveOrZero(cfg.PostWait),
+		WaitDone:    cfg.WaitDone,
+		DoneTimeout: positiveOrZero(cfg.DoneTimeout),
+		RPCTimeout:  positiveOrZero(cfg.RPCTimeout),
+		LogFile:     optionalPath(caseDir, cfg.LogFile),
+		LogLevel:    cfg.LogLevel,
+		DataHome:    filepath.Join(caseDir, dataHome),
+		ConfigHome:  filepath.Join(caseDir, configHome),
+		RTP:         rtp,
 	}, nil
 }
 
@@ -173,10 +165,15 @@ func Find(root, casesDir string) ([]Case, []error) {
 	} else {
 		casesRoot = casesDir
 	}
-	matches, err := filepath.Glob(filepath.Join(casesRoot, "*", "snapcase.json"))
+	regressionMatches, err := filepath.Glob(filepath.Join(casesRoot, "regression", "*", "snapcase.json"))
 	if err != nil {
 		return nil, []error{err}
 	}
+	goldenMatches, err := filepath.Glob(filepath.Join(casesRoot, "golden", "*", "snapcase.json"))
+	if err != nil {
+		return nil, []error{err}
+	}
+	matches := append(regressionMatches, goldenMatches...)
 	var out []Case
 	var errs []error
 	for _, path := range matches {
