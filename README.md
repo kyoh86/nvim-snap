@@ -49,6 +49,9 @@ Use `${CASE}` or `${ROOT}` placeholders to target the case directory or the `--r
 
 - `list` list test cases
 - `init` scaffold a CI workflow
+- `capture` capture a snapshot from a scenario
+- `normalize` normalize a snapshot JSON
+- `compare` compare two snapshot JSON files
 - `regression new` scaffold a regression case
 - `regression save` save regression snapshots by id
 - `regression test` compare regression snapshots by id
@@ -64,6 +67,32 @@ nvim-snap list
 nvim-snap list --tag ui --tag regression
 nvim-snap list --case basic-regression
 nvim-snap list --json
+```
+
+### capture
+
+Capture a snapshot from a scenario.
+
+```sh
+nvim-snap capture --scenario scenario.lua --out ./out --format json,ansi,html
+```
+
+### normalize
+
+Normalize a snapshot JSON.
+
+```sh
+nvim-snap normalize --in snapshot.json --out normalized.json
+nvim-snap normalize --in snapshot.json
+```
+
+### compare
+
+Compare two snapshot JSON files.
+
+```sh
+nvim-snap compare --expected expected.json --actual actual.json --format text
+nvim-snap compare --expected expected.json --actual actual.json --format html --out diff.html
 ```
 
 ### regression new

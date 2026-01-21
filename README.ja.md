@@ -51,6 +51,9 @@ mise use github:kyoh86/nvim-snap
 
 - `list` テストケース一覧
 - `init` CI向けワークフロー雛形の作成
+- `capture` シナリオからスナップショットを取得
+- `normalize` スナップショットJSONを正規化
+- `compare` スナップショットJSONを比較
 - `regression new` リグレッションケース雛形の作成
 - `regression save` コミット単位で保存
 - `regression test` 保存済みスナップショットの比較
@@ -66,6 +69,32 @@ nvim-snap list
 nvim-snap list --tag ui --tag regression
 nvim-snap list --case basic-regression
 nvim-snap list --json
+```
+
+### capture
+
+シナリオからスナップショットを取得します。
+
+```sh
+nvim-snap capture --scenario scenario.lua --out ./out --format json,ansi,html
+```
+
+### normalize
+
+スナップショットJSONを正規化します。
+
+```sh
+nvim-snap normalize --in snapshot.json --out normalized.json
+nvim-snap normalize --in snapshot.json
+```
+
+### compare
+
+スナップショットJSONを比較します。
+
+```sh
+nvim-snap compare --expected expected.json --actual actual.json --format text
+nvim-snap compare --expected expected.json --actual actual.json --format html --out diff.html
 ```
 
 ### regression new

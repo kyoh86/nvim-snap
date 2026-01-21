@@ -176,6 +176,12 @@ func main() {
 	}
 
 	switch os.Args[1] {
+	case "capture":
+		cmdCapture(os.Args[2:])
+	case "normalize":
+		cmdNormalize(os.Args[2:])
+	case "compare":
+		cmdCompare(os.Args[2:])
 	case "list":
 		cmdList(os.Args[2:])
 	case "init":
@@ -195,10 +201,215 @@ func usage() {
 	fmt.Println("  nvim-snap <command> [options]")
 	fmt.Println("")
 	fmt.Println("commands:")
+	fmt.Println("  capture     capture a snapshot from a scenario")
+	fmt.Println("  normalize   normalize a snapshot JSON")
+	fmt.Println("  compare     compare two snapshot JSON files")
 	fmt.Println("  list        list test cases")
 	fmt.Println("  init        scaffold CI workflow")
 	fmt.Println("  regression  regression commands (new/save/test)")
 	fmt.Println("  golden      golden commands (new/test)")
+}
+
+func cmdCapture(args []string) {
+	fs := flag.NewFlagSet("capture", flag.ExitOnError)
+	scenario := fs.String("scenario", "", "Scenario file")
+	outDir := fs.String("out", "", "Output directory")
+	format := fs.String("format", "json", "Output formats (json,ansi,html)")
+	width := fs.Int("width", 0, "UI width")
+	height := fs.Int("height", 0, "UI height")
+	wait := fs.Int("wait", 0, "Wait before capture (ms)")
+	postWait := fs.Int("post-wait", 0, "Wait after scenario execution (ms)")
+	waitDone := fs.Bool("wait-done", false, "Wait for scenario completion notification")
+	doneTimeout := fs.Int("done-timeout", 0, "Scenario completion timeout (ms)")
+	rpcTimeout := fs.Int("rpc-timeout", 0, "RPC timeout (ms)")
+	nvimPath := fs.String("nvim", "", "Neovim executable path")
+	dataHome := fs.String("data-home", "", "XDG data home")
+	configHome := fs.String("config-home", "", "XDG config home")
+	logFile := fs.String("log-file", "", "Neovim log file path")
+	logLevel := fs.String("log-level", "", "Neovim log level")
+	workDir := fs.String("workdir", ".", "Working directory")
+	var rtp stringList
+	fs.Var(&rtp, "rtp", "Runtime path entry (comma separated or repeat)")
+	_ = fs.Parse(args)
+
+	if *scenario == "" {
+		fmt.Fprintln(os.Stderr, "--scenario is required")
+		os.Exit(2)
+	}
+	if *outDir == "" {
+		fmt.Fprintln(os.Stderr, "--out is required")
+		os.Exit(2)
+	}
+
+	formats := parseFormats(*format, map[string]bool{"json": true})
+	for key := range formats {
+		if key != "json" && key != "ansi" && key != "html" {
+			fmt.Fprintf(os.Stderr, "unsupported format: %s\n", key)
+			os.Exit(2)
+		}
+	}
+
+	res, err := collector.Collect(collector.Options{
+		Scenario:      *scenario,
+		NvimPath:      *nvimPath,
+		Width:         *width,
+		Height:        *height,
+		WaitMS:        *wait,
+		PostWaitMS:    *postWait,
+		WaitDone:      *waitDone,
+		DoneTimeoutMS: *doneTimeout,
+		RPCTimeoutMS:  *rpcTimeout,
+		DataHome:      *dataHome,
+		ConfigHome:    *configHome,
+		LogFile:       *logFile,
+		LogLevel:      *logLevel,
+		WorkDir:       mustAbs(*workDir),
+		RTP:           rtp,
+	})
+	if err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		os.Exit(1)
+	}
+	if *waitDone && !res.WaitedDone {
+		fmt.Fprintln(os.Stderr, "wait_done timeout (possible input wait; prefer vim.api.nvim_cmd)")
+	}
+	if err := writeSnapshotOutputs(*outDir, "snapshot", res.Snapshot, formats); err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		os.Exit(1)
+	}
+	fmt.Println("ok")
+}
+
+func cmdNormalize(args []string) {
+	fs := flag.NewFlagSet("normalize", flag.ExitOnError)
+	inPath := fs.String("in", "-", "Input snapshot JSON ('-' for stdin)")
+	outPath := fs.String("out", "-", "Output path ('-' for stdout)")
+	_ = fs.Parse(args)
+
+	var data []byte
+	if *inPath == "-" {
+		payload, err := io.ReadAll(os.Stdin)
+		if err != nil {
+			fmt.Fprintln(os.Stderr, err)
+			os.Exit(1)
+		}
+		data = payload
+	} else {
+		payload, err := os.ReadFile(*inPath)
+		if err != nil {
+			fmt.Fprintln(os.Stderr, err)
+			os.Exit(1)
+		}
+		data = payload
+	}
+
+	var snapshot snapshots.Snapshot
+	if err := json.Unmarshal(data, &snapshot); err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		os.Exit(1)
+	}
+	normalized := snapshots.Normalize(snapshot)
+	payload, err := json.MarshalIndent(normalized, "", "  ")
+	if err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		os.Exit(1)
+	}
+
+	if *outPath == "-" {
+		if _, err := os.Stdout.Write(payload); err != nil {
+			fmt.Fprintln(os.Stderr, err)
+			os.Exit(1)
+		}
+		if _, err := os.Stdout.Write([]byte("\n")); err != nil {
+			fmt.Fprintln(os.Stderr, err)
+			os.Exit(1)
+		}
+		return
+	}
+	if err := os.MkdirAll(filepath.Dir(*outPath), 0o755); err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		os.Exit(1)
+	}
+	if err := os.WriteFile(*outPath, payload, 0o644); err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		os.Exit(1)
+	}
+}
+
+func cmdCompare(args []string) {
+	fs := flag.NewFlagSet("compare", flag.ExitOnError)
+	expectedPath := fs.String("expected", "", "Expected snapshot JSON path")
+	actualPath := fs.String("actual", "", "Actual snapshot JSON path")
+	format := fs.String("format", "text", "Diff format (text,ansi,html,png)")
+	outPath := fs.String("out", "-", "Diff output path ('-' for stdout)")
+	ctxLen := fs.Int("context", 3, "Unified diff context lines")
+	_ = fs.Parse(args)
+
+	if *expectedPath == "" || *actualPath == "" {
+		fmt.Fprintln(os.Stderr, "--expected and --actual are required")
+		os.Exit(2)
+	}
+
+	expected, err := readSnapshot(*expectedPath)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "failed to read expected: %v\n", err)
+		os.Exit(1)
+	}
+	actual, err := readSnapshot(*actualPath)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "failed to read actual: %v\n", err)
+		os.Exit(1)
+	}
+
+	normExpected := snapshots.Normalize(expected)
+	normActual := snapshots.Normalize(actual)
+	if equalSnapshot(normExpected, normActual) {
+		fmt.Println("no_diff")
+		return
+	}
+
+	switch *format {
+	case "html":
+		html := htmldiff.RenderHTML(normExpected, normActual, "unified", "expected", "actual")
+		if err := writeCompareOutput(*outPath, []byte(html), true); err != nil {
+			fmt.Fprintf(os.Stderr, "failed to write diff: %v\n", err)
+			os.Exit(1)
+		}
+	case "png":
+		if *outPath == "-" {
+			fmt.Fprintln(os.Stderr, "png output requires a file path")
+			os.Exit(2)
+		}
+		html := htmldiff.RenderHTML(normExpected, normActual, "overlay", "expected", "actual")
+		if err := pngutil.WritePNGFromHTML(html, *outPath); err != nil {
+			fmt.Fprintf(os.Stderr, "failed to write diff: %v\n", err)
+			os.Exit(1)
+		}
+	case "ansi", "text":
+		var expectedText, actualText string
+		if *format == "ansi" {
+			expectedText = snapshots.RenderANSI(normExpected)
+			actualText = snapshots.RenderANSI(normActual)
+		} else {
+			expectedText = snapshots.RenderText(normExpected)
+			actualText = snapshots.RenderText(normActual)
+		}
+		diff, err := unifiedDiffTextContext("expected", "actual", expectedText, actualText, *ctxLen)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "failed to create diff: %v\n", err)
+			os.Exit(1)
+		}
+		if err := writeCompareOutput(*outPath, []byte(strings.TrimRight(diff, "\n")), false); err != nil {
+			fmt.Fprintf(os.Stderr, "failed to write diff: %v\n", err)
+			os.Exit(1)
+		}
+	default:
+		fmt.Fprintf(os.Stderr, "unsupported format: %s\n", *format)
+		os.Exit(2)
+	}
+
+	fmt.Println("diff")
+	os.Exit(1)
 }
 
 func usageRegression() {
@@ -567,6 +778,35 @@ func unifiedDiffText(fromLabel, toLabel, expected, actual string) (string, error
 		Context:  3,
 	}
 	return difflib.GetUnifiedDiffString(d)
+}
+
+func unifiedDiffTextContext(fromLabel, toLabel, expected, actual string, context int) (string, error) {
+	d := difflib.UnifiedDiff{
+		A:        difflib.SplitLines(expected),
+		B:        difflib.SplitLines(actual),
+		FromFile: fromLabel,
+		ToFile:   toLabel,
+		Context:  context,
+	}
+	return difflib.GetUnifiedDiffString(d)
+}
+
+func writeCompareOutput(path string, data []byte, raw bool) error {
+	if path == "" || path == "-" {
+		if _, err := os.Stdout.Write(data); err != nil {
+			return err
+		}
+		if raw {
+			_, err := os.Stdout.Write([]byte("\n"))
+			return err
+		}
+		_, err := os.Stdout.Write([]byte("\n"))
+		return err
+	}
+	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+		return err
+	}
+	return os.WriteFile(path, data, 0o644)
 }
 
 func writeDiffOutputs(diffDir, expectedLabel, actualLabel string, expected, actual snapshots.Snapshot, formats map[string]bool) (map[string]string, error) {
