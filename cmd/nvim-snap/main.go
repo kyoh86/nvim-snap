@@ -1311,7 +1311,7 @@ func workflowYAML(name, root, casesDir, diffFormat string) string {
 		"        with:",
 		"          name: nvim-snap-result",
 		"          path: |",
-		"            " + casesDir + "/.result/**",
+		"            " + filepath.ToSlash(filepath.Join(root, casesDir, ".result")) + "/**",
 		"",
 	}
 	return strings.Join(lines, "\n")
