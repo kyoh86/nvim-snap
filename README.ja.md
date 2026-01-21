@@ -167,7 +167,7 @@ nvim-snap init --path .github/workflows/nvim-snap.yml
 5. 比較  
    `nvim-snap regression test --base <base-id> --target <target-id>`
 
-CIでは、ベース側のスナップショットが存在する前提になるため、`.result/` のキャッシュ利用などで用意してください。
+`regression test` は保存済みのスナップショットのみ比較します。CIでは `.result/` をキャッシュしてベース側を用意してください。
 
 ### ゴールデンの流れ
 
@@ -187,6 +187,7 @@ CIでは、ベース側のスナップショットが存在する前提になる
 
 - 出力は `<root>/<cases-dir>/.result/` に保存されます。
 - `regression save` は既定で現在のGitコミットIDを使い、作業ツリーがdirtyだとエラーになります。
+- `regression test` はスナップショットを生成せず、保存済みの結果だけを比較します。
 - シナリオの中でプラグインが必要な場合は、 `vim.pack.add()` を使うのがおすすめです。
 - `vim.pack.add()` を使う場合は `snapcase.json` の `data_home` / `config_home` を明示的に設定してください。
 - Golden の実行では、設定した `data_home` / `config_home` の下でシナリオごとに分離します。

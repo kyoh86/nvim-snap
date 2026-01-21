@@ -166,7 +166,7 @@ nvim-snap init --path .github/workflows/nvim-snap.yml
 5. Compare
    `nvim-snap regression test --base <base-id> --target <target-id>`
 
-In CI, make sure the base snapshot is available (for example, via an Actions cache of `.result/`).
+`regression test` only compares existing snapshots. Store `.result/` as a cache in CI so the base id is available.
 
 ### Golden flow
 
@@ -186,6 +186,7 @@ In CI, make sure the base snapshot is available (for example, via an Actions cac
 
 - Outputs are stored under `<root>/<cases-dir>/.result/`.
 - `regression save` defaults to the current git commit id and fails on dirty trees.
+- `regression test` does not generate snapshots; it only compares saved results.
 - If your scenario needs plugins, using `vim.pack.add()` is recommended.
 - When using `vim.pack.add()`, set `data_home` / `config_home` in `snapcase.json`.
 - Golden runs isolate `data_home` / `config_home` per scenario under the configured paths.
