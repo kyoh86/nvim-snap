@@ -1500,7 +1500,7 @@ func writeSnapcaseJSON(path, title, kind string, tags []string, scenario string,
 		"version":     1,
 		"data_home":   ".nvim-data",
 		"config_home": ".nvim-config",
-		"rtp":         []string{"."},
+		"rtp":         []string{"${ROOT}"},
 	}
 	if kind != "" {
 		payload["kind"] = kind
