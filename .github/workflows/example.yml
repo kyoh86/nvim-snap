@@ -10,15 +10,15 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Setup Go
-        uses: actions/setup-go@v5
-        with:
-          go-version-file: go.mod
       - name: Install Neovim (nightly)
         uses: rhysd/action-setup-vim@v1
         with:
           neovim: true
           version: nightly
+      - name: Install nvim-snap
+        run: |
+          curl -sSL https://github.com/kyoh86/nvim-snap/releases/latest/download/nvim-snap -o nvim-snap
+          chmod +x nvim-snap
       - name: Restore snapshots cache
         uses: actions/cache@v4
         with:
@@ -36,30 +36,26 @@ jobs:
           echo "SNAP_TARGET=$GITHUB_SHA" >> $GITHUB_ENV
       - name: Save regression snapshots
         run: |
-          go run ./cmd/nvim-snap regression save \
+          ./nvim-snap regression save \
             --root snapcase-example \
             --cases-dir snapcase
       - name: Compare regression snapshots
         run: |
-          if find snapcase-example/snapcase/.result/regression -name "snapshot-${SNAP_BASE}.json" -print -quit | grep -q .; then
-            go run ./cmd/nvim-snap regression test \
-              --root snapcase-example \
-              --cases-dir snapcase \
-              --base "${SNAP_BASE}" \
-              --target "${SNAP_TARGET}" \
-              --output diff \
-              --diff-format text \
-              --diff-always
-          else
-            echo "base snapshot not found; skip regression compare"
-          fi
+          ./nvim-snap regression test \
+            --root snapcase-example \
+            --cases-dir snapcase \
+            --base "${SNAP_BASE}" \
+            --target "${SNAP_TARGET}" \
+            --output diff \
+            --diff-format html \
+            --diff-always
       - name: Run golden tests
         run: |
-          go run ./cmd/nvim-snap golden test \
+          ./nvim-snap golden test \
             --root snapcase-example \
             --cases-dir snapcase \
             --output diff \
-            --diff-format text \
+            --diff-format html \
             --diff-always
       - name: Upload results
         if: always()
