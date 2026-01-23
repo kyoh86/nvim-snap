@@ -41,7 +41,8 @@ jobs:
         run: |
           ./nvim-snap regression save \
             --root snapcase-example \
-            --cases-dir snapcase
+            --cases-dir snapcase \
+            --id "${SNAP_TARGET}"
       - name: Compare regression snapshots
         run: |
           ./nvim-snap regression test \

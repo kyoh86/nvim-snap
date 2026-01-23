@@ -1306,7 +1306,7 @@ func workflowYAML(name, root, casesDir, diffFormat string) string {
 		"          echo \"SNAP_TARGET=$GITHUB_SHA\" >> $GITHUB_ENV",
 		"      - name: Save regression snapshots",
 		"        run: |",
-		"          ./nvim-snap regression save --root " + root + " --cases-dir " + casesDir,
+		"          ./nvim-snap regression save --root " + root + " --cases-dir " + casesDir + " --id \"${SNAP_TARGET}\"",
 		"      - name: Compare regression snapshots",
 		"        run: |",
 		"          ./nvim-snap regression test --root " + root + " --cases-dir " + casesDir + " --base \"${SNAP_BASE}\" --target \"${SNAP_TARGET}\" --output diff --diff-format " + diffFormat + " --diff-always",
