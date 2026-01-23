@@ -1479,6 +1479,9 @@ func randomName(length int) string {
 	for i := range out {
 		seed = seed*1664525 + 1013904223
 		idx := seed % int64(len(chars))
+		if idx < 0 {
+			idx = -idx
+		}
 		out[i] = chars[idx]
 	}
 	return string(out)
