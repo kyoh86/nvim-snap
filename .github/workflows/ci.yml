@@ -19,7 +19,6 @@ jobs:
       - name: Test
         run: go test ./...
       - name: Mark releasable
-        if: github.ref == 'refs/heads/main'
         run: |
           gh api \
             --method POST \
