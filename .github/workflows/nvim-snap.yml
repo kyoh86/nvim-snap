@@ -1,12 +1,11 @@
-# yaml-language-server: $schema=https://json.schemastore.org/github-workflow.json
+name: nvim-snap
 
-name: Examples
 on:
   push:
   pull_request:
 
 jobs:
-  snapcase:
+  snap:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -30,7 +29,7 @@ PY
       - name: Restore snapshots cache
         uses: actions/cache@v4
         with:
-          path: snapcase-example/snapcase/.result
+          path: snapcase/.result
           key: nvim-snap-${{ runner.os }}-${{ github.sha }}
           restore-keys: |
             nvim-snap-${{ runner.os }}-
@@ -44,30 +43,17 @@ PY
           echo "SNAP_TARGET=$GITHUB_SHA" >> $GITHUB_ENV
       - name: Save regression snapshots
         run: |
-          ./nvim-snap regression save \
-            --root snapcase-example \
-            --cases-dir snapcase
+          ./nvim-snap regression save --root . --cases-dir snapcase
       - name: Compare regression snapshots
         run: |
-          ./nvim-snap regression test \
-            --root snapcase-example \
-            --cases-dir snapcase \
-            --base "${SNAP_BASE}" \
-            --target "${SNAP_TARGET}" \
-            --output diff \
-            --diff-format html \
-            --diff-always
+          ./nvim-snap regression test --root . --cases-dir snapcase --base "${SNAP_BASE}" --target "${SNAP_TARGET}" --output diff --diff-format html --diff-always
       - name: Run golden tests
         run: |
-          ./nvim-snap golden test \
-            --root snapcase-example \
-            --cases-dir snapcase \
-            --output diff \
-            --diff-format html \
-            --diff-always
+          ./nvim-snap golden test --root . --cases-dir snapcase --output diff --diff-format html --diff-always
       - name: Upload results
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: snapcase-example-result
-          path: snapcase-example/snapcase/.result/**
+          name: nvim-snap-result
+          path: |
+            snapcase/.result/**
