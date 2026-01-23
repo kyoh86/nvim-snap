@@ -15,7 +15,7 @@ jobs:
         with:
           neovim: true
           version: nightly
-      - uses: kyoh86/setup-nvim-snap-action@v1
+      - uses: kyoh86/setup-nvim-snap-action@main
         id: setup
       - uses: actions/cache@v4
         with:
@@ -31,7 +31,7 @@ jobs:
           BASE=${PR_BASE:-${EVENT_BEFORE:-$GITHUB_SHA}}
           echo "SNAP_BASE=$BASE" >> $GITHUB_ENV
           echo "SNAP_TARGET=$GITHUB_SHA" >> $GITHUB_ENV
-      - uses: kyoh86/nvim-snap-action@v1
+      - uses: kyoh86/nvim-snap-action@main
         with:
           nvim-snap-path: ${{ steps.setup.outputs.nvim-snap-path }}
           root: snapcase-example
