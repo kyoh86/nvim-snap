@@ -22,7 +22,7 @@ Outputs are stored under `<root>/<cases-dir>/.result/`.
 ### Requirements
 
 - Neovim (`nvim`)
-- `google-chrome`/`chromium`/`msedge`/`wkhtmltoimage` for PNG output
+- For PNG output, install one of `google-chrome`/`chromium`/`msedge`/`wkhtmltoimage`
 
 ### Download from releases
 
@@ -40,12 +40,16 @@ go build -o nvim-snap ./cmd/nvim-snap
 mise use github:kyoh86/nvim-snap
 ```
 
-## Commands
+## Test case layout
 
 Cases live under `snapcase/regression/<case-name>/snapcase.json` or `snapcase/golden/<case-name>/snapcase.json`.
 Case names come from the directory name, and `snapcase.json` holds the case metadata and capture settings.
 `snapcase.json` accepts `rtp` (string or list) to prepend runtimepath entries.
 Use `${CASE}` or `${ROOT}` placeholders to target the case directory or the `--root` path.
+
+## Commands
+
+Use the following commands with prepared test cases.
 
 - `list` list test cases
 - `init` scaffold a CI workflow
@@ -159,9 +163,9 @@ nvim-snap init --path .github/workflows/nvim-snap.yml
    `nvim-snap regression new --name my-case`
 2. Write the scenario
    `scenario.lua`
-3. Save snapshots at the base commit
+3. Generate and save snapshots at the base commit
    `nvim-snap regression save`
-4. Save snapshots at the target commit
+4. Generate and save snapshots at the target commit
    `nvim-snap regression save`
 5. Compare
    `nvim-snap regression test --base <base-id> --target <target-id>`

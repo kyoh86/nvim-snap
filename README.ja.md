@@ -15,14 +15,14 @@ nvim-snapは、NeovimのUIスナップショットに基づくテストを実行
 既定では `--root` はカレントディレクトリ、`--cases-dir` は `snapcase/` です。
 ケースは `<root>/<cases-dir>/regression/<case-name>/snapcase.json` または
 `<root>/<cases-dir>/golden/<case-name>/snapcase.json` に置きます。
-出力は `<root>/<cases-dir>/.result/` に保存します。
+出力は `<root>/<cases-dir>/.result/` に保存されます。
 
 ## インストール
 
 ### 依存関係
 
 - Neovim（`nvim`）
-- PNG出力に `google-chrome`/`chromium`/`msedge`/`wkhtmltoimage`
+- PNG出力を使用する場合はさらに `google-chrome`/`chromium`/`msedge`/`wkhtmltoimage` のいずれか
 
 ### リリースから取得
 
@@ -41,13 +41,17 @@ mise use github:kyoh86/nvim-snap
 ```
 
 
-## コマンド
+## テストケースの配置
 
 ケースは `snapcase/regression/<case-name>/snapcase.json` または
 `snapcase/golden/<case-name>/snapcase.json` に配置します。
 ケース名はディレクトリ名で決まり、`snapcase.json` にメタデータと取得設定を記述します。
 `snapcase.json` の `rtp` は文字列または配列で、runtimepathに追加するパスを指定します。
 `${CASE}`（ケースディレクトリ）と `${ROOT}`（`--root` のパス）のプレースホルダが使えます。
+
+## コマンド
+
+用意したテストケースに対して、以下のコマンドを使用できます。
 
 - `list` テストケース一覧
 - `init` CI向けワークフロー雛形の作成
@@ -160,9 +164,9 @@ nvim-snap init --path .github/workflows/nvim-snap.yml
    `nvim-snap regression new --name my-case`
 2. シナリオを書く  
    `scenario.lua`
-3. ベースコミットで保存  
+3. ベースコミットでスナップショットを作り保存  
    `nvim-snap regression save`
-4. ターゲットコミットで保存  
+4. ターゲットコミットでスナップショットを作り保存  
    `nvim-snap regression save`
 5. 比較  
    `nvim-snap regression test --base <base-id> --target <target-id>`
