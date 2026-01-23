@@ -16,6 +16,8 @@ jobs:
           neovim: true
           version: nightly
       - name: Install nvim-snap
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
           gh release download -R kyoh86/nvim-snap -p "nvim-snap_*_linux_amd64.tar.gz"
           tar -xzf nvim-snap_*_linux_amd64.tar.gz
