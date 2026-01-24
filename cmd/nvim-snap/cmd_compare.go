@@ -1,18 +1,16 @@
 package main
 
 import (
-	"encoding/json"
 	"flag"
 	"fmt"
 	"os"
 	"path/filepath"
-	"reflect"
 	"strings"
 
 	"github.com/kyoh86/nvim-snap/internal/htmldiff"
 	"github.com/kyoh86/nvim-snap/internal/pngutil"
+	"github.com/kyoh86/nvim-snap/internal/report"
 	"github.com/kyoh86/nvim-snap/internal/snapshots"
-	"github.com/pmezard/go-difflib/difflib"
 )
 
 func cmdCompare(args []string) {
@@ -29,12 +27,12 @@ func cmdCompare(args []string) {
 		os.Exit(2)
 	}
 
-	expected, err := readSnapshot(*expectedPath)
+	expected, err := snapshots.ReadJSON(*expectedPath)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "failed to read expected: %v\n", err)
 		os.Exit(1)
 	}
-	actual, err := readSnapshot(*actualPath)
+	actual, err := snapshots.ReadJSON(*actualPath)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "failed to read actual: %v\n", err)
 		os.Exit(1)
@@ -42,7 +40,7 @@ func cmdCompare(args []string) {
 
 	normExpected := snapshots.Normalize(expected)
 	normActual := snapshots.Normalize(actual)
-	if equalSnapshot(normExpected, normActual) {
+	if snapshots.Equal(normExpected, normActual) {
 		fmt.Println("no_diff")
 		return
 	}
@@ -73,7 +71,7 @@ func cmdCompare(args []string) {
 			expectedText = snapshots.RenderText(normExpected)
 			actualText = snapshots.RenderText(normActual)
 		}
-		diff, err := unifiedDiffTextContext("expected", "actual", expectedText, actualText, *ctxLen)
+		diff, err := report.UnifiedDiffText("expected", "actual", expectedText, actualText, *ctxLen)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "failed to create diff: %v\n", err)
 			os.Exit(1)
@@ -89,17 +87,6 @@ func cmdCompare(args []string) {
 
 	fmt.Println("diff")
 	os.Exit(1)
-}
-
-func unifiedDiffTextContext(fromLabel, toLabel, expected, actual string, context int) (string, error) {
-	d := difflib.UnifiedDiff{
-		A:        difflib.SplitLines(expected),
-		B:        difflib.SplitLines(actual),
-		FromFile: fromLabel,
-		ToFile:   toLabel,
-		Context:  context,
-	}
-	return difflib.GetUnifiedDiffString(d)
 }
 
 func writeCompareOutput(path string, data []byte, raw bool) error {
@@ -118,20 +105,4 @@ func writeCompareOutput(path string, data []byte, raw bool) error {
 		return err
 	}
 	return os.WriteFile(path, data, 0o644)
-}
-
-func readSnapshot(path string) (snapshots.Snapshot, error) {
-	var out snapshots.Snapshot
-	data, err := os.ReadFile(path)
-	if err != nil {
-		return out, err
-	}
-	if err := json.Unmarshal(data, &out); err != nil {
-		return out, err
-	}
-	return out, nil
-}
-
-func equalSnapshot(a, b snapshots.Snapshot) bool {
-	return reflect.DeepEqual(a, b)
 }

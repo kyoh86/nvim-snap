@@ -83,13 +83,6 @@ func cmdList(args []string) {
 	}
 }
 
-type runConfig struct {
-	absRoot     string
-	resultsRoot string
-	formats     map[string]bool
-	overrides   waitOverrides
-}
-
 func displayWidth(value string) int {
 	return utf8.RuneCountInString(value)
 }

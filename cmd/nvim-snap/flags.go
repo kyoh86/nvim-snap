@@ -79,3 +79,42 @@ func (o *optionalBool) Set(value string) error {
 func (o *optionalBool) IsBoolFlag() bool {
 	return true
 }
+
+func optionalIntPtr(value optionalInt) *int {
+	if !value.set {
+		return nil
+	}
+	return &value.value
+}
+
+func optionalBoolPtr(value optionalBool) *bool {
+	if !value.set {
+		return nil
+	}
+	return &value.value
+}
+
+func splitCSV(value string) []string {
+	out := []string{}
+	for item := range strings.SplitSeq(value, ",") {
+		trimmed := strings.TrimSpace(item)
+		if trimmed != "" {
+			out = append(out, trimmed)
+		}
+	}
+	return out
+}
+
+func parseFormats(value string, fallback map[string]bool) map[string]bool {
+	if value == "" {
+		return fallback
+	}
+	formats := map[string]bool{}
+	for _, item := range splitCSV(value) {
+		formats[item] = true
+	}
+	if len(formats) == 0 {
+		return fallback
+	}
+	return formats
+}

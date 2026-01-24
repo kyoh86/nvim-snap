@@ -3,8 +3,10 @@ package main
 import (
 	"flag"
 	"fmt"
-	"github.com/kyoh86/nvim-snap/internal/collector"
 	"os"
+
+	"github.com/kyoh86/nvim-snap/internal/collector"
+	"github.com/kyoh86/nvim-snap/internal/report"
 )
 
 func cmdCapture(args []string) {
@@ -70,7 +72,7 @@ func cmdCapture(args []string) {
 	if *waitDone && !res.WaitedDone {
 		fmt.Fprintln(os.Stderr, "wait_done timeout (possible input wait; prefer vim.api.nvim_cmd)")
 	}
-	if err := writeSnapshotOutputs(*outDir, "snapshot", res.Snapshot, formats); err != nil {
+	if err := report.WriteSnapshotOutputs(*outDir, "snapshot", res.Snapshot, formats); err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
 	}

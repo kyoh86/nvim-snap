@@ -8,6 +8,8 @@ import (
 	"path/filepath"
 	"strings"
 	"time"
+
+	"github.com/kyoh86/nvim-snap/internal/paths"
 )
 
 func cmdRegressionNew(args []string) {
@@ -30,7 +32,7 @@ func cmdNewByKind(args []string, kind string) {
 	_ = fs.Parse(args)
 
 	absRoot := mustAbs(*root)
-	casesRoot := resolveCasesRoot(absRoot, *casesDir)
+	casesRoot := paths.ResolveCasesRoot(absRoot, *casesDir)
 	if err := os.MkdirAll(casesRoot, 0o755); err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
@@ -82,16 +84,6 @@ func cmdNewByKind(args []string, kind string) {
 	}
 
 	fmt.Printf("created %s\n", caseDir)
-}
-
-func resolveCasesRoot(absRoot, casesDir string) string {
-	if casesDir == "" {
-		casesDir = "snapcase"
-	}
-	if filepath.IsAbs(casesDir) {
-		return casesDir
-	}
-	return filepath.Join(absRoot, casesDir)
 }
 
 func writeSnapcaseJSON(path, title, kind string, tags []string, scenario string, force bool) error {

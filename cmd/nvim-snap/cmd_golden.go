@@ -4,9 +4,13 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
-	"github.com/kyoh86/nvim-snap/internal/casefile"
 	"os"
 	"path/filepath"
+
+	"github.com/kyoh86/nvim-snap/internal/casefile"
+	"github.com/kyoh86/nvim-snap/internal/paths"
+	"github.com/kyoh86/nvim-snap/internal/report"
+	"github.com/kyoh86/nvim-snap/internal/runner"
 )
 
 func usageGolden() {
@@ -74,26 +78,25 @@ func cmdGoldenTest(args []string) {
 	}
 
 	absRoot := mustAbs(*root)
-	resultsRoot := resolveResultsRoot(absRoot, *casesDir)
+	resultsRoot := paths.ResolveResultsRoot(absRoot, *casesDir)
 	cases, errs := casefile.Find(absRoot, *casesDir)
 	for _, err := range errs {
 		fmt.Fprintln(os.Stderr, err)
 	}
-	filtered := filterByKind(casefile.Filter(cases, tags, names), "golden")
+	filtered := casefile.FilterByKind(casefile.Filter(cases, tags, names), "golden")
 
-	cfg := runConfig{
-		absRoot:     absRoot,
-		resultsRoot: resultsRoot,
-		formats:     formats,
-		overrides: waitOverrides{
-			postWait:    postWait,
-			waitDone:    waitDone,
-			doneTimeout: doneTimeout,
+	cfg := runner.Config{
+		Root:        absRoot,
+		ResultsRoot: resultsRoot,
+		Overrides: runner.WaitOverrides{
+			PostWait:    optionalIntPtr(postWait),
+			WaitDone:    optionalBoolPtr(waitDone),
+			DoneTimeout: optionalIntPtr(doneTimeout),
 		},
 	}
 
 	failed := len(errs) > 0
-	compareItems := make([]compareCase, 0, len(filtered))
+	compareItems := make([]report.CompareCase, 0, len(filtered))
 	for _, c := range filtered {
 		resultDir := filepath.Join(resultsRoot, "golden", c.Name)
 		baselineDir := filepath.Join(resultDir, "baseline")
@@ -103,32 +106,32 @@ func cmdGoldenTest(args []string) {
 		goldenConfigHome := filepath.Join(c.ConfigHome, "golden")
 		targetDataHome := filepath.Join(c.DataHome, "target")
 		targetConfigHome := filepath.Join(c.ConfigHome, "target")
-		goldenRes, err := collectSnapshot(c, c.Golden, cfg, "golden", goldenDataHome, goldenConfigHome)
+		goldenRes, err := runner.CollectCase(c, c.Golden, cfg, "golden", goldenDataHome, goldenConfigHome)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "%s: golden: %v\n", c.Name, err)
 			failed = true
 			continue
 		}
-		if err := writeSnapshotOutputs(baselineDir, "snapshot", goldenRes.Snapshot, formats); err != nil {
+		if err := report.WriteSnapshotOutputs(baselineDir, "snapshot", goldenRes.Snapshot, formats); err != nil {
 			fmt.Fprintf(os.Stderr, "%s: %v\n", c.Name, err)
 			failed = true
 			continue
 		}
 
-		targetRes, err := collectSnapshot(c, c.Target, cfg, "target", targetDataHome, targetConfigHome)
+		targetRes, err := runner.CollectCase(c, c.Target, cfg, "target", targetDataHome, targetConfigHome)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "%s: target: %v\n", c.Name, err)
 			failed = true
 			continue
 		}
-		if err := writeSnapshotOutputs(actualDir, "snapshot", targetRes.Snapshot, formats); err != nil {
+		if err := report.WriteSnapshotOutputs(actualDir, "snapshot", targetRes.Snapshot, formats); err != nil {
 			fmt.Fprintf(os.Stderr, "%s: %v\n", c.Name, err)
 			failed = true
 			continue
 		}
 
 		diffDir := filepath.Join(resultDir, "diff")
-		compareItems = append(compareItems, compareCase{
+		compareItems = append(compareItems, report.CompareCase{
 			Name:          c.Name,
 			Title:         c.Title,
 			Kind:          c.Kind,
@@ -141,7 +144,7 @@ func cmdGoldenTest(args []string) {
 		})
 	}
 
-	results, summary, compareFailed, hasDiff := compareCases(compareItems, diffFormats, *diffAlways, *output == "diff")
+	results, summary, compareFailed, hasDiff := report.CompareCases(compareItems, diffFormats, *diffAlways, *output == "diff")
 	if compareFailed {
 		failed = true
 	}
@@ -159,7 +162,7 @@ func cmdGoldenTest(args []string) {
 		}
 		fmt.Println(string(payload))
 	} else if *output == "diff" {
-		printCompareDiff(results)
+		report.PrintCompareDiff(results, os.Stdout, os.Stderr)
 	} else {
 		diffHeader := "diff_paths"
 		if len(diffFormats) == 1 {
@@ -167,7 +170,7 @@ func cmdGoldenTest(args []string) {
 				diffHeader = "diff_path(" + key + ")"
 			}
 		}
-		printCompareText(results, diffHeader, len(diffFormats) == 1)
+		report.PrintCompareText(results, diffHeader, len(diffFormats) == 1, os.Stdout)
 	}
 
 	if failed {

@@ -11,6 +11,9 @@ import (
 	"strings"
 
 	"github.com/kyoh86/nvim-snap/internal/casefile"
+	"github.com/kyoh86/nvim-snap/internal/paths"
+	"github.com/kyoh86/nvim-snap/internal/report"
+	"github.com/kyoh86/nvim-snap/internal/runner"
 )
 
 func usageRegression() {
@@ -68,12 +71,12 @@ func cmdRegressionSave(args []string) {
 	}
 
 	absRoot := mustAbs(*root)
-	resultsRoot := resolveResultsRoot(absRoot, *casesDir)
+	resultsRoot := paths.ResolveResultsRoot(absRoot, *casesDir)
 	cases, errs := casefile.Find(absRoot, *casesDir)
 	for _, err := range errs {
 		fmt.Fprintln(os.Stderr, err)
 	}
-	filtered := filterByKind(casefile.Filter(cases, tags, names), "regression")
+	filtered := casefile.FilterByKind(casefile.Filter(cases, tags, names), "regression")
 
 	id := *saveID
 	if id == "" {
@@ -85,20 +88,19 @@ func cmdRegressionSave(args []string) {
 		}
 	}
 
-	cfg := runConfig{
-		absRoot:     absRoot,
-		resultsRoot: resultsRoot,
-		formats:     formats,
-		overrides: waitOverrides{
-			postWait:    postWait,
-			waitDone:    waitDone,
-			doneTimeout: doneTimeout,
+	cfg := runner.Config{
+		Root:        absRoot,
+		ResultsRoot: resultsRoot,
+		Overrides: runner.WaitOverrides{
+			PostWait:    optionalIntPtr(postWait),
+			WaitDone:    optionalBoolPtr(waitDone),
+			DoneTimeout: optionalIntPtr(doneTimeout),
 		},
 	}
 
 	failed := len(errs) > 0
 	for _, c := range filtered {
-		res, err := collectSnapshot(c, c.Scenario, cfg, "save", "", "")
+		res, err := runner.CollectCase(c, c.Scenario, cfg, "save", "", "")
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "%s: %v\n", c.Name, err)
 			failed = true
@@ -110,7 +112,7 @@ func cmdRegressionSave(args []string) {
 			failed = true
 			continue
 		}
-		if err := writeSnapshotOutputs(resultDir, "snapshot-"+id, res.Snapshot, formats); err != nil {
+		if err := report.WriteSnapshotOutputs(resultDir, "snapshot-"+id, res.Snapshot, formats); err != nil {
 			fmt.Fprintf(os.Stderr, "%s: %v\n", c.Name, err)
 			failed = true
 			continue
@@ -156,12 +158,12 @@ func cmdRegressionTest(args []string) {
 	}
 
 	absRoot := mustAbs(*root)
-	resultsRoot := resolveResultsRoot(absRoot, *casesDir)
+	resultsRoot := paths.ResolveResultsRoot(absRoot, *casesDir)
 	cases, errs := casefile.Find(absRoot, *casesDir)
 	for _, err := range errs {
 		fmt.Fprintln(os.Stderr, err)
 	}
-	filtered := filterByKind(casefile.Filter(cases, tags, names), "regression")
+	filtered := casefile.FilterByKind(casefile.Filter(cases, tags, names), "regression")
 
 	target := *targetID
 	if target == "" {
@@ -173,11 +175,11 @@ func cmdRegressionTest(args []string) {
 		}
 	}
 
-	compareItems := make([]compareCase, 0, len(filtered))
+	compareItems := make([]report.CompareCase, 0, len(filtered))
 	for _, c := range filtered {
 		resultDir := filepath.Join(resultsRoot, "regression", c.Name)
 		diffDir := filepath.Join(resultDir, "diff")
-		compareItems = append(compareItems, compareCase{
+		compareItems = append(compareItems, report.CompareCase{
 			Name:          c.Name,
 			Title:         c.Title,
 			Kind:          c.Kind,
@@ -190,7 +192,7 @@ func cmdRegressionTest(args []string) {
 		})
 	}
 
-	results, summary, failed, hasDiff := compareCases(compareItems, formats, *diffAlways, *output == "diff")
+	results, summary, failed, hasDiff := report.CompareCases(compareItems, formats, *diffAlways, *output == "diff")
 	if len(errs) > 0 {
 		failed = true
 	}
@@ -208,7 +210,7 @@ func cmdRegressionTest(args []string) {
 		}
 		fmt.Println(string(payload))
 	} else if *output == "diff" {
-		printCompareDiff(results)
+		report.PrintCompareDiff(results, os.Stdout, os.Stderr)
 	} else {
 		diffHeader := "diff_paths"
 		if len(formats) == 1 {
@@ -216,7 +218,7 @@ func cmdRegressionTest(args []string) {
 				diffHeader = "diff_path(" + key + ")"
 			}
 		}
-		printCompareText(results, diffHeader, len(formats) == 1)
+		report.PrintCompareText(results, diffHeader, len(formats) == 1, os.Stdout)
 	}
 
 	if failed {

@@ -207,6 +207,16 @@ func Filter(cases []Case, tags []string, names []string) []Case {
 	return out
 }
 
+func FilterByKind(cases []Case, kind string) []Case {
+	out := make([]Case, 0, len(cases))
+	for _, c := range cases {
+		if c.Kind == kind {
+			out = append(out, c)
+		}
+	}
+	return out
+}
+
 func matchTags(caseTags, filter []string) bool {
 	if len(filter) == 0 {
 		return true
