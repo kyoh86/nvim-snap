@@ -23,14 +23,6 @@ jobs:
           key: nvim-snap-${{ runner.os }}-${{ github.sha }}
           restore-keys: |
             nvim-snap-${{ runner.os }}-
-      - name: Resolve regression ids
-        env:
-          PR_BASE: ${{ github.event.pull_request.base.sha }}
-          EVENT_BEFORE: ${{ github.event.before }}
-        run: |
-          BASE=${PR_BASE:-${EVENT_BEFORE:-$GITHUB_SHA}}
-          echo "SNAP_BASE=$BASE" >> $GITHUB_ENV
-          echo "SNAP_TARGET=$GITHUB_SHA" >> $GITHUB_ENV
       - uses: kyoh86/nvim-snap-action@main
         with:
           nvim-snap-path: ${{ steps.setup.outputs.nvim-snap-path }}
