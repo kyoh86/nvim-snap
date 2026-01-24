@@ -28,11 +28,8 @@ jobs:
           nvim-snap-path: ${{ steps.setup.outputs.nvim-snap-path }}
           root: snapcase-example
           cases-dir: snapcase
-          mode: both
           diff-format: html
           diff-always: true
-          snapshot-format: json
-          skip-on-miss: false
       - name: Upload results
         if: always()
         uses: actions/upload-artifact@v4
