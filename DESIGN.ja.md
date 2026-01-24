@@ -39,6 +39,16 @@ nvim-snapは、NeovimのUIスナップショットに基づくテストを実行
 低レイヤーは `capture/normalize/compare` をパス指定で完結するプリミティブとして提供する。
 高レイヤーはケース単位の運用を担い、一覧化・一括実行・比較を受け持つ。
 
+### 実装レイヤー（内部構成）
+
+CLIは引数解釈と入出力の切替に専念し、実行/比較/出力の責務は内部パッケージに分離する。
+
+- `internal/runner` 実行と収集（シナリオ起動、待機、ログ収集）
+- `internal/report` 比較結果の集計と出力（diff生成、サマリ整形）
+- `internal/snapshots` スナップショット構造と正規化・入出力・レンダリング
+- `internal/paths` ケース/結果ディレクトリの解決
+- `internal/casefile` `snapcase.json` の読み込みと解釈
+
 ## 設計
 
 ### 低レイヤーのコマンド
