@@ -13,7 +13,7 @@ import (
 	"github.com/kyoh86/nvim-snap/internal/snapshots"
 )
 
-func cmdCompare(args []string) {
+func cmdCompare(args []string) error {
 	fs := flag.NewFlagSet("compare", flag.ExitOnError)
 	expectedPath := fs.String("expected", "", "Expected snapshot JSON path")
 	actualPath := fs.String("actual", "", "Actual snapshot JSON path")
@@ -23,44 +23,38 @@ func cmdCompare(args []string) {
 	_ = fs.Parse(args)
 
 	if *expectedPath == "" || *actualPath == "" {
-		fmt.Fprintln(os.Stderr, "--expected and --actual are required")
-		os.Exit(2)
+		return exitErrorf(2, "--expected and --actual are required")
 	}
 
 	expected, err := snapshots.ReadJSON(*expectedPath)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "failed to read expected: %v\n", err)
-		os.Exit(1)
+		return exitErrorf(1, "failed to read expected: %v", err)
 	}
 	actual, err := snapshots.ReadJSON(*actualPath)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "failed to read actual: %v\n", err)
-		os.Exit(1)
+		return exitErrorf(1, "failed to read actual: %v", err)
 	}
 
 	normExpected := snapshots.Normalize(expected)
 	normActual := snapshots.Normalize(actual)
 	if snapshots.Equal(normExpected, normActual) {
 		fmt.Println("no_diff")
-		return
+		return nil
 	}
 
 	switch *format {
 	case "html":
 		html := htmldiff.RenderHTML(normExpected, normActual, "unified", "expected", "actual")
 		if err := writeCompareOutput(*outPath, []byte(html), true); err != nil {
-			fmt.Fprintf(os.Stderr, "failed to write diff: %v\n", err)
-			os.Exit(1)
+			return exitErrorf(1, "failed to write diff: %v", err)
 		}
 	case "png":
 		if *outPath == "-" {
-			fmt.Fprintln(os.Stderr, "png output requires a file path")
-			os.Exit(2)
+			return exitErrorf(2, "png output requires a file path")
 		}
 		html := htmldiff.RenderHTML(normExpected, normActual, "overlay", "expected", "actual")
 		if err := pngutil.WritePNGFromHTML(html, *outPath); err != nil {
-			fmt.Fprintf(os.Stderr, "failed to write diff: %v\n", err)
-			os.Exit(1)
+			return exitErrorf(1, "failed to write diff: %v", err)
 		}
 	case "ansi", "text":
 		var expectedText, actualText string
@@ -73,20 +67,17 @@ func cmdCompare(args []string) {
 		}
 		diff, err := report.UnifiedDiffText("expected", "actual", expectedText, actualText, *ctxLen)
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "failed to create diff: %v\n", err)
-			os.Exit(1)
+			return exitErrorf(1, "failed to create diff: %v", err)
 		}
 		if err := writeCompareOutput(*outPath, []byte(strings.TrimRight(diff, "\n")), false); err != nil {
-			fmt.Fprintf(os.Stderr, "failed to write diff: %v\n", err)
-			os.Exit(1)
+			return exitErrorf(1, "failed to write diff: %v", err)
 		}
 	default:
-		fmt.Fprintf(os.Stderr, "unsupported format: %s\n", *format)
-		os.Exit(2)
+		return exitErrorf(2, "unsupported format: %s", *format)
 	}
 
 	fmt.Println("diff")
-	os.Exit(1)
+	return ExitError{Code: 1, Silent: true}
 }
 
 func writeCompareOutput(path string, data []byte, raw bool) error {

@@ -12,15 +12,15 @@ import (
 	"github.com/kyoh86/nvim-snap/internal/paths"
 )
 
-func cmdRegressionNew(args []string) {
-	cmdNewByKind(args, "regression")
+func cmdRegressionNew(args []string) error {
+	return cmdNewByKind(args, "regression")
 }
 
-func cmdGoldenNew(args []string) {
-	cmdNewByKind(args, "golden")
+func cmdGoldenNew(args []string) error {
+	return cmdNewByKind(args, "golden")
 }
 
-func cmdNewByKind(args []string, kind string) {
+func cmdNewByKind(args []string, kind string) error {
 	fs := flag.NewFlagSet(kind+" new", flag.ExitOnError)
 	root := fs.String("root", ".", "Root directory")
 	casesDir := fs.String("cases-dir", "snapcase", "Cases directory under root")
@@ -34,12 +34,10 @@ func cmdNewByKind(args []string, kind string) {
 	absRoot := mustAbs(*root)
 	casesRoot := paths.ResolveCasesRoot(absRoot, *casesDir)
 	if err := os.MkdirAll(casesRoot, 0o755); err != nil {
-		fmt.Fprintln(os.Stderr, err)
-		os.Exit(1)
+		return exitError(1, err)
 	}
 	if err := ensureResultsGitignore(casesRoot); err != nil {
-		fmt.Fprintln(os.Stderr, err)
-		os.Exit(1)
+		return exitError(1, err)
 	}
 
 	caseName := *name
@@ -49,13 +47,11 @@ func cmdNewByKind(args []string, kind string) {
 	caseDir := filepath.Join(casesRoot, kind, caseName)
 	if !*force {
 		if _, err := os.Stat(caseDir); err == nil {
-			fmt.Fprintf(os.Stderr, "case directory already exists: %s\n", caseDir)
-			os.Exit(1)
+			return exitErrorf(1, "case directory already exists: %s", caseDir)
 		}
 	}
 	if err := os.MkdirAll(caseDir, 0o755); err != nil {
-		fmt.Fprintln(os.Stderr, err)
-		os.Exit(1)
+		return exitError(1, err)
 	}
 
 	scenario := ""
@@ -63,27 +59,24 @@ func cmdNewByKind(args []string, kind string) {
 		scenario = "scenario.lua"
 	}
 	if err := writeSnapcaseJSON(filepath.Join(caseDir, "snapcase.json"), *title, kind, tags, scenario, *force); err != nil {
-		fmt.Fprintln(os.Stderr, err)
-		os.Exit(1)
+		return exitError(1, err)
 	}
 
 	if kind == "regression" {
 		if err := writeFile(filepath.Join(caseDir, "scenario.lua"), regressionScenario(caseName), *force); err != nil {
-			fmt.Fprintln(os.Stderr, err)
-			os.Exit(1)
+			return exitError(1, err)
 		}
 	} else {
 		if err := writeFile(filepath.Join(caseDir, "golden.lua"), goldenScenario(caseName, "golden"), *force); err != nil {
-			fmt.Fprintln(os.Stderr, err)
-			os.Exit(1)
+			return exitError(1, err)
 		}
 		if err := writeFile(filepath.Join(caseDir, "target.lua"), goldenScenario(caseName, "target"), *force); err != nil {
-			fmt.Fprintln(os.Stderr, err)
-			os.Exit(1)
+			return exitError(1, err)
 		}
 	}
 
 	fmt.Printf("created %s\n", caseDir)
+	return nil
 }
 
 func writeSnapcaseJSON(path, title, kind string, tags []string, scenario string, force bool) error {

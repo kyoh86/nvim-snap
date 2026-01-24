@@ -9,7 +9,7 @@ import (
 	"github.com/kyoh86/nvim-snap/internal/report"
 )
 
-func cmdCapture(args []string) {
+func cmdCapture(args []string) error {
 	fs := flag.NewFlagSet("capture", flag.ExitOnError)
 	scenario := fs.String("scenario", "", "Scenario file")
 	outDir := fs.String("out", "", "Output directory")
@@ -32,19 +32,16 @@ func cmdCapture(args []string) {
 	_ = fs.Parse(args)
 
 	if *scenario == "" {
-		fmt.Fprintln(os.Stderr, "--scenario is required")
-		os.Exit(2)
+		return exitErrorf(2, "--scenario is required")
 	}
 	if *outDir == "" {
-		fmt.Fprintln(os.Stderr, "--out is required")
-		os.Exit(2)
+		return exitErrorf(2, "--out is required")
 	}
 
 	formats := parseFormats(*format, map[string]bool{"json": true})
 	for key := range formats {
 		if key != "json" && key != "ansi" && key != "html" {
-			fmt.Fprintf(os.Stderr, "unsupported format: %s\n", key)
-			os.Exit(2)
+			return exitErrorf(2, "unsupported format: %s", key)
 		}
 	}
 
@@ -66,15 +63,14 @@ func cmdCapture(args []string) {
 		RTP:           rtp,
 	})
 	if err != nil {
-		fmt.Fprintln(os.Stderr, err)
-		os.Exit(1)
+		return exitError(1, err)
 	}
 	if *waitDone && !res.WaitedDone {
 		fmt.Fprintln(os.Stderr, "wait_done timeout (possible input wait; prefer vim.api.nvim_cmd)")
 	}
 	if err := report.WriteSnapshotOutputs(*outDir, "snapshot", res.Snapshot, formats); err != nil {
-		fmt.Fprintln(os.Stderr, err)
-		os.Exit(1)
+		return exitError(1, err)
 	}
 	fmt.Println("ok")
+	return nil
 }

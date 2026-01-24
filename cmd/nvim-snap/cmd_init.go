@@ -3,7 +3,6 @@ package main
 import (
 	"flag"
 	"fmt"
-	"os"
 	"path/filepath"
 	"strings"
 )
@@ -53,7 +52,7 @@ func workflowYAML(name, root, casesDir, diffFormat string) string {
 	return strings.Join(lines, "\n")
 }
 
-func cmdInit(args []string) {
+func cmdInit(args []string) error {
 	fs := flag.NewFlagSet("init", flag.ExitOnError)
 	path := fs.String("path", ".github/workflows/nvim-snap.yml", "Workflow path")
 	root := fs.String("root", ".", "Root directory")
@@ -64,8 +63,8 @@ func cmdInit(args []string) {
 	_ = fs.Parse(args)
 
 	if err := writeFile(*path, workflowYAML(*name, *root, *casesDir, *diffFormat), *force); err != nil {
-		fmt.Fprintln(os.Stderr, err)
-		os.Exit(1)
+		return exitError(1, err)
 	}
 	fmt.Println(*path)
+	return nil
 }

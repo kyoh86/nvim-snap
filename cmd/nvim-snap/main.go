@@ -6,29 +6,38 @@ import (
 )
 
 func main() {
-	if len(os.Args) < 2 {
+	if err := run(os.Args); err != nil {
+		if !isSilent(err) && err.Error() != "" {
+			fmt.Fprintln(os.Stderr, err)
+		}
+		os.Exit(exitCode(err))
+	}
+}
+
+func run(args []string) error {
+	if len(args) < 2 {
 		usage()
-		os.Exit(2)
+		return usageError()
 	}
 
-	switch os.Args[1] {
+	switch args[1] {
 	case "capture":
-		cmdCapture(os.Args[2:])
+		return cmdCapture(args[2:])
 	case "normalize":
-		cmdNormalize(os.Args[2:])
+		return cmdNormalize(args[2:])
 	case "compare":
-		cmdCompare(os.Args[2:])
+		return cmdCompare(args[2:])
 	case "list":
-		cmdList(os.Args[2:])
+		return cmdList(args[2:])
 	case "init":
-		cmdInit(os.Args[2:])
+		return cmdInit(args[2:])
 	case "regression":
-		cmdRegression(os.Args[2:])
+		return cmdRegression(args[2:])
 	case "golden":
-		cmdGolden(os.Args[2:])
+		return cmdGolden(args[2:])
 	default:
 		usage()
-		os.Exit(2)
+		return usageError()
 	}
 }
 

@@ -12,7 +12,7 @@ import (
 	"github.com/kyoh86/nvim-snap/internal/casefile"
 )
 
-func cmdList(args []string) {
+func cmdList(args []string) error {
 	fs := flag.NewFlagSet("list", flag.ExitOnError)
 	root := fs.String("root", ".", "Root directory")
 	casesDir := fs.String("cases-dir", "snapcase", "Cases directory under root")
@@ -46,8 +46,7 @@ func cmdList(args []string) {
 		}
 		payload, err := json.MarshalIndent(out, "", "  ")
 		if err != nil {
-			fmt.Fprintln(os.Stderr, err)
-			os.Exit(1)
+			return exitError(1, err)
 		}
 		fmt.Println(string(payload))
 	} else {
@@ -79,8 +78,9 @@ func cmdList(args []string) {
 		}
 	}
 	if len(errs) > 0 {
-		os.Exit(2)
+		return ExitError{Code: 2, Silent: true}
 	}
+	return nil
 }
 
 func displayWidth(value string) int {

@@ -26,25 +26,25 @@ func usageRegression() {
 	fmt.Println("  test  compare saved snapshots by id")
 }
 
-func cmdRegression(args []string) {
+func cmdRegression(args []string) error {
 	if len(args) == 0 {
 		usageRegression()
-		os.Exit(2)
+		return usageError()
 	}
 	switch args[0] {
 	case "new":
-		cmdRegressionNew(args[1:])
+		return cmdRegressionNew(args[1:])
 	case "save":
-		cmdRegressionSave(args[1:])
+		return cmdRegressionSave(args[1:])
 	case "test":
-		cmdRegressionTest(args[1:])
+		return cmdRegressionTest(args[1:])
 	default:
 		usageRegression()
-		os.Exit(2)
+		return usageError()
 	}
 }
 
-func cmdRegressionSave(args []string) {
+func cmdRegressionSave(args []string) error {
 	fs := flag.NewFlagSet("regression save", flag.ExitOnError)
 	root := fs.String("root", ".", "Root directory")
 	casesDir := fs.String("cases-dir", "snapcase", "Cases directory under root")
@@ -65,8 +65,7 @@ func cmdRegressionSave(args []string) {
 	formats := parseFormats(*format, map[string]bool{"json": true})
 	for key := range formats {
 		if key != "json" && key != "ansi" && key != "html" {
-			fmt.Fprintf(os.Stderr, "unsupported format: %s\n", key)
-			os.Exit(2)
+			return exitErrorf(2, "unsupported format: %s", key)
 		}
 	}
 
@@ -83,8 +82,7 @@ func cmdRegressionSave(args []string) {
 		var err error
 		id, err = resolveCommitID(absRoot, "")
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "failed to resolve id: %v\n", err)
-			os.Exit(2)
+			return exitErrorf(2, "failed to resolve id: %v", err)
 		}
 	}
 
@@ -121,11 +119,12 @@ func cmdRegressionSave(args []string) {
 	}
 
 	if failed {
-		os.Exit(1)
+		return ExitError{Code: 1, Silent: true}
 	}
+	return nil
 }
 
-func cmdRegressionTest(args []string) {
+func cmdRegressionTest(args []string) error {
 	fs := flag.NewFlagSet("regression test", flag.ExitOnError)
 	root := fs.String("root", ".", "Root directory")
 	casesDir := fs.String("cases-dir", "snapcase", "Cases directory under root")
@@ -141,20 +140,17 @@ func cmdRegressionTest(args []string) {
 	_ = fs.Parse(args)
 
 	if *baseID == "" {
-		fmt.Fprintln(os.Stderr, "--base is required")
-		os.Exit(2)
+		return exitErrorf(2, "--base is required")
 	}
 
 	formats := parseFormats(*diffFormat, map[string]bool{"text": true})
 	for key := range formats {
 		if key != "text" && key != "ansi" && key != "html" && key != "png" {
-			fmt.Fprintf(os.Stderr, "unsupported format: %s\n", key)
-			os.Exit(2)
+			return exitErrorf(2, "unsupported format: %s", key)
 		}
 	}
 	if *output != "summary" && *output != "diff" && *output != "json" {
-		fmt.Fprintf(os.Stderr, "unsupported output: %s\n", *output)
-		os.Exit(2)
+		return exitErrorf(2, "unsupported output: %s", *output)
 	}
 
 	absRoot := mustAbs(*root)
@@ -170,8 +166,7 @@ func cmdRegressionTest(args []string) {
 		var err error
 		target, err = resolveCommitID(absRoot, "")
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "failed to resolve target id: %v\n", err)
-			os.Exit(2)
+			return exitErrorf(2, "failed to resolve target id: %v", err)
 		}
 	}
 
@@ -205,8 +200,7 @@ func cmdRegressionTest(args []string) {
 		}
 		payload, err := json.MarshalIndent(out, "", "  ")
 		if err != nil {
-			fmt.Fprintln(os.Stderr, err)
-			os.Exit(2)
+			return exitError(2, err)
 		}
 		fmt.Println(string(payload))
 	} else if *output == "diff" {
@@ -222,11 +216,12 @@ func cmdRegressionTest(args []string) {
 	}
 
 	if failed {
-		os.Exit(2)
+		return ExitError{Code: 2, Silent: true}
 	}
 	if hasDiff {
-		os.Exit(1)
+		return ExitError{Code: 1, Silent: true}
 	}
+	return nil
 }
 
 func gitHead(absRoot string) (string, error) {

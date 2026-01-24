@@ -22,23 +22,23 @@ func usageGolden() {
 	fmt.Println("  test  run golden+target scenarios and compare")
 }
 
-func cmdGolden(args []string) {
+func cmdGolden(args []string) error {
 	if len(args) == 0 {
 		usageGolden()
-		os.Exit(2)
+		return usageError()
 	}
 	switch args[0] {
 	case "new":
-		cmdGoldenNew(args[1:])
+		return cmdGoldenNew(args[1:])
 	case "test":
-		cmdGoldenTest(args[1:])
+		return cmdGoldenTest(args[1:])
 	default:
 		usageGolden()
-		os.Exit(2)
+		return usageError()
 	}
 }
 
-func cmdGoldenTest(args []string) {
+func cmdGoldenTest(args []string) error {
 	fs := flag.NewFlagSet("golden test", flag.ExitOnError)
 	root := fs.String("root", ".", "Root directory")
 	casesDir := fs.String("cases-dir", "snapcase", "Cases directory under root")
@@ -61,20 +61,17 @@ func cmdGoldenTest(args []string) {
 	formats := parseFormats(*format, map[string]bool{"json": true})
 	for key := range formats {
 		if key != "json" && key != "ansi" && key != "html" {
-			fmt.Fprintf(os.Stderr, "unsupported format: %s\n", key)
-			os.Exit(2)
+			return exitErrorf(2, "unsupported format: %s", key)
 		}
 	}
 	diffFormats := parseFormats(*diffFormat, map[string]bool{"text": true})
 	for key := range diffFormats {
 		if key != "text" && key != "ansi" && key != "html" && key != "png" {
-			fmt.Fprintf(os.Stderr, "unsupported diff format: %s\n", key)
-			os.Exit(2)
+			return exitErrorf(2, "unsupported diff format: %s", key)
 		}
 	}
 	if *output != "summary" && *output != "diff" && *output != "json" {
-		fmt.Fprintf(os.Stderr, "unsupported output: %s\n", *output)
-		os.Exit(2)
+		return exitErrorf(2, "unsupported output: %s", *output)
 	}
 
 	absRoot := mustAbs(*root)
@@ -157,8 +154,7 @@ func cmdGoldenTest(args []string) {
 		}
 		payload, err := json.MarshalIndent(out, "", "  ")
 		if err != nil {
-			fmt.Fprintln(os.Stderr, err)
-			os.Exit(2)
+			return exitError(2, err)
 		}
 		fmt.Println(string(payload))
 	} else if *output == "diff" {
@@ -174,9 +170,10 @@ func cmdGoldenTest(args []string) {
 	}
 
 	if failed {
-		os.Exit(2)
+		return ExitError{Code: 2, Silent: true}
 	}
 	if hasDiff {
-		os.Exit(1)
+		return ExitError{Code: 1, Silent: true}
 	}
+	return nil
 }
