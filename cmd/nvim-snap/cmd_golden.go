@@ -146,7 +146,8 @@ func cmdGoldenTest(args []string) error {
 		failed = true
 	}
 
-	if *output == "json" {
+	switch *output {
+	case "json":
 		out := map[string]any{
 			"root":    absRoot,
 			"summary": summary,
@@ -157,9 +158,9 @@ func cmdGoldenTest(args []string) error {
 			return exitError(2, err)
 		}
 		fmt.Println(string(payload))
-	} else if *output == "diff" {
+	case "diff":
 		report.PrintCompareDiff(results, os.Stdout, os.Stderr)
-	} else {
+	default:
 		diffHeader := "diff_paths"
 		if len(diffFormats) == 1 {
 			for key := range diffFormats {

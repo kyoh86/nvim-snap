@@ -159,7 +159,7 @@ func Collect(opts Options) (Result, error) {
 			log("%s messages failed: %v", tag, err)
 			return
 		}
-		for _, line := range strings.Split(out, "\n") {
+		for line := range strings.SplitSeq(out, "\n") {
 			line = strings.TrimSpace(line)
 			if line == "" {
 				continue
@@ -336,10 +336,8 @@ end`
 	}
 	resetFlush(state, flushCh)
 	waitMS := defaultInt(opts.WaitMS, 200)
-	retries := defaultInt(opts.FlushRetry, 3)
-	if retries < 1 {
-		retries = 1
-	}
+	retries := max(defaultInt(opts.FlushRetry, 3), 1)
+flushLoop:
 	for attempt := 1; attempt <= retries; attempt++ {
 		log("redraw attempt %d/%d", attempt, retries)
 		if err := v.Command("redraw"); err != nil {
@@ -362,8 +360,7 @@ end`
 			result.GotFlush = true
 			result.WaitedFlush = true
 			log("wait flush ok")
-			attempt = retries
-			break
+			break flushLoop
 		case <-time.After(time.Duration(waitMS) * time.Millisecond):
 			result.GotFlush = false
 			log("wait flush timeout")
@@ -405,7 +402,7 @@ func wrapClosed(err error, closeNvim func() error) error {
 	}
 	var exitErr *exec.ExitError
 	if errors.As(closeErr, &exitErr) {
-		return fmt.Errorf("%w (nvim exited: %s; headless input wait? prefer vim.api.nvim_cmd)", err, exitErr.ProcessState.String())
+		return fmt.Errorf("%w (nvim exited: %s; headless input wait? prefer vim.api.nvim_cmd)", err, exitErr.String())
 	}
 	return fmt.Errorf("%w (close error: %v)", err, closeErr)
 }
