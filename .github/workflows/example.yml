@@ -37,8 +37,6 @@ jobs:
           root: snapcase-example
           cases-dir: snapcase
           mode: both
-          base-id: ${{ env.SNAP_BASE }}
-          target-id: ${{ env.SNAP_TARGET }}
           diff-format: html
           diff-always: true
           snapshot-format: json
