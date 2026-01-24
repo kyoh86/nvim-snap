@@ -122,7 +122,17 @@ func Collect(opts Options) (Result, error) {
 		copts = append(copts, nvim.ChildProcessDir(opts.WorkDir))
 	}
 
+	doneWait := 0
+	if opts.WaitDone {
+		doneWait = defaultInt(opts.DoneTimeoutMS, 5000)
+	}
 	rpcTimeout := defaultInt(opts.RPCTimeoutMS, 2000)
+	if doneWait > 0 {
+		minTimeout := doneWait + 500
+		if rpcTimeout < minTimeout {
+			rpcTimeout = minTimeout
+		}
+	}
 	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(rpcTimeout)*time.Millisecond)
 	defer cancel()
 	copts = append(copts, nvim.ChildProcessContext(ctx))
@@ -306,7 +316,6 @@ end`
 
 	result := Result{}
 	if opts.WaitDone {
-		doneWait := defaultInt(opts.DoneTimeoutMS, 5000)
 		log("wait done start: %dms", doneWait)
 		select {
 		case <-doneCh:
