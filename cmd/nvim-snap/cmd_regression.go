@@ -1,12 +1,16 @@
 package main
 
 import (
+	"bytes"
 	"encoding/json"
 	"flag"
 	"fmt"
-	"github.com/kyoh86/nvim-snap/internal/casefile"
 	"os"
+	"os/exec"
 	"path/filepath"
+	"strings"
+
+	"github.com/kyoh86/nvim-snap/internal/casefile"
 )
 
 func usageRegression() {
@@ -221,4 +225,36 @@ func cmdRegressionTest(args []string) {
 	if hasDiff {
 		os.Exit(1)
 	}
+}
+
+func gitHead(absRoot string) (string, error) {
+	cmd := exec.Command("git", "-C", absRoot, "rev-parse", "HEAD")
+	out, err := cmd.Output()
+	if err != nil {
+		return "", err
+	}
+	return strings.TrimSpace(string(out)), nil
+}
+
+func gitDirty(absRoot string) (bool, error) {
+	cmd := exec.Command("git", "-C", absRoot, "status", "--porcelain")
+	out, err := cmd.Output()
+	if err != nil {
+		return false, err
+	}
+	return len(bytes.TrimSpace(out)) > 0, nil
+}
+
+func resolveCommitID(absRoot, id string) (string, error) {
+	if id != "" {
+		return id, nil
+	}
+	dirty, err := gitDirty(absRoot)
+	if err != nil {
+		return "", err
+	}
+	if dirty {
+		return "", fmt.Errorf("working tree is dirty")
+	}
+	return gitHead(absRoot)
 }

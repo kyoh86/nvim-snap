@@ -1,16 +1,13 @@
 package main
 
 import (
-	"bytes"
 	"encoding/json"
 	"fmt"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"sort"
 	"strings"
 	"text/tabwriter"
-	"unicode/utf8"
 
 	"github.com/kyoh86/nvim-snap/internal/casefile"
 	"github.com/kyoh86/nvim-snap/internal/collector"
@@ -65,38 +62,6 @@ func resolveWaits(c casefile.Case, overrides waitOverrides) (int, bool, int) {
 		caseDoneTimeout = overrides.doneTimeout.value
 	}
 	return casePostWait, caseWaitDone, caseDoneTimeout
-}
-
-func displayWidth(value string) int {
-	return utf8.RuneCountInString(value)
-}
-
-func formatPath(path string) string {
-	cwd, err := os.Getwd()
-	if err != nil {
-		return path
-	}
-	if abs, err := filepath.Abs(path); err == nil {
-		path = abs
-	}
-	if absCwd, err := filepath.Abs(cwd); err == nil && absCwd == path {
-		return "."
-	}
-	rel, err := filepath.Rel(cwd, path)
-	if err != nil || rel == "" || strings.HasPrefix(rel, "..") {
-		return path
-	}
-	return rel
-}
-
-func resolveCasesRoot(absRoot, casesDir string) string {
-	if casesDir == "" {
-		casesDir = "snapcase"
-	}
-	if filepath.IsAbs(casesDir) {
-		return casesDir
-	}
-	return filepath.Join(absRoot, casesDir)
 }
 
 func resolveResultsRoot(absRoot, casesDir string) string {
@@ -187,38 +152,6 @@ func writeScenarioLogs(resultsRoot, caseName, stage string, logs []string) error
 	}
 	path := filepath.Join(destDir, fmt.Sprintf("%s.%s.log", caseName, stage))
 	return writeText(path, strings.Join(logs, "\n")+"\n")
-}
-
-func gitHead(absRoot string) (string, error) {
-	cmd := exec.Command("git", "-C", absRoot, "rev-parse", "HEAD")
-	out, err := cmd.Output()
-	if err != nil {
-		return "", err
-	}
-	return strings.TrimSpace(string(out)), nil
-}
-
-func gitDirty(absRoot string) (bool, error) {
-	cmd := exec.Command("git", "-C", absRoot, "status", "--porcelain")
-	out, err := cmd.Output()
-	if err != nil {
-		return false, err
-	}
-	return len(bytes.TrimSpace(out)) > 0, nil
-}
-
-func resolveCommitID(absRoot, id string) (string, error) {
-	if id != "" {
-		return id, nil
-	}
-	dirty, err := gitDirty(absRoot)
-	if err != nil {
-		return "", err
-	}
-	if dirty {
-		return "", fmt.Errorf("working tree is dirty")
-	}
-	return gitHead(absRoot)
 }
 
 type compareCase struct {
@@ -326,35 +259,6 @@ func unifiedDiffText(fromLabel, toLabel, expected, actual string) (string, error
 		Context:  3,
 	}
 	return difflib.GetUnifiedDiffString(d)
-}
-
-func unifiedDiffTextContext(fromLabel, toLabel, expected, actual string, context int) (string, error) {
-	d := difflib.UnifiedDiff{
-		A:        difflib.SplitLines(expected),
-		B:        difflib.SplitLines(actual),
-		FromFile: fromLabel,
-		ToFile:   toLabel,
-		Context:  context,
-	}
-	return difflib.GetUnifiedDiffString(d)
-}
-
-func writeCompareOutput(path string, data []byte, raw bool) error {
-	if path == "" || path == "-" {
-		if _, err := os.Stdout.Write(data); err != nil {
-			return err
-		}
-		if raw {
-			_, err := os.Stdout.Write([]byte("\n"))
-			return err
-		}
-		_, err := os.Stdout.Write([]byte("\n"))
-		return err
-	}
-	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
-		return err
-	}
-	return os.WriteFile(path, data, 0o644)
 }
 
 func writeDiffOutputs(diffDir, expectedLabel, actualLabel string, expected, actual snapshots.Snapshot, formats map[string]bool) (map[string]string, error) {
@@ -496,18 +400,6 @@ func writeText(path, contents string) error {
 		return err
 	}
 	return os.WriteFile(path, []byte(contents), 0o644)
-}
-
-func readSnapshot(path string) (snapshots.Snapshot, error) {
-	var out snapshots.Snapshot
-	data, err := os.ReadFile(path)
-	if err != nil {
-		return out, err
-	}
-	if err := json.Unmarshal(data, &out); err != nil {
-		return out, err
-	}
-	return out, nil
 }
 
 func mustAbs(path string) string {

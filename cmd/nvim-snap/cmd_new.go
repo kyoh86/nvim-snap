@@ -84,6 +84,16 @@ func cmdNewByKind(args []string, kind string) {
 	fmt.Printf("created %s\n", caseDir)
 }
 
+func resolveCasesRoot(absRoot, casesDir string) string {
+	if casesDir == "" {
+		casesDir = "snapcase"
+	}
+	if filepath.IsAbs(casesDir) {
+		return casesDir
+	}
+	return filepath.Join(absRoot, casesDir)
+}
+
 func writeSnapcaseJSON(path, title, kind string, tags []string, scenario string, force bool) error {
 	payload := map[string]any{
 		"version":     1,

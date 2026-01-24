@@ -1,15 +1,18 @@
 package main
 
 import (
+	"encoding/json"
 	"flag"
 	"fmt"
 	"os"
+	"path/filepath"
 	"reflect"
 	"strings"
 
 	"github.com/kyoh86/nvim-snap/internal/htmldiff"
 	"github.com/kyoh86/nvim-snap/internal/pngutil"
 	"github.com/kyoh86/nvim-snap/internal/snapshots"
+	"github.com/pmezard/go-difflib/difflib"
 )
 
 func cmdCompare(args []string) {
@@ -86,6 +89,47 @@ func cmdCompare(args []string) {
 
 	fmt.Println("diff")
 	os.Exit(1)
+}
+
+func unifiedDiffTextContext(fromLabel, toLabel, expected, actual string, context int) (string, error) {
+	d := difflib.UnifiedDiff{
+		A:        difflib.SplitLines(expected),
+		B:        difflib.SplitLines(actual),
+		FromFile: fromLabel,
+		ToFile:   toLabel,
+		Context:  context,
+	}
+	return difflib.GetUnifiedDiffString(d)
+}
+
+func writeCompareOutput(path string, data []byte, raw bool) error {
+	if path == "" || path == "-" {
+		if _, err := os.Stdout.Write(data); err != nil {
+			return err
+		}
+		if raw {
+			_, err := os.Stdout.Write([]byte("\n"))
+			return err
+		}
+		_, err := os.Stdout.Write([]byte("\n"))
+		return err
+	}
+	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+		return err
+	}
+	return os.WriteFile(path, data, 0o644)
+}
+
+func readSnapshot(path string) (snapshots.Snapshot, error) {
+	var out snapshots.Snapshot
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return out, err
+	}
+	if err := json.Unmarshal(data, &out); err != nil {
+		return out, err
+	}
+	return out, nil
 }
 
 func equalSnapshot(a, b snapshots.Snapshot) bool {

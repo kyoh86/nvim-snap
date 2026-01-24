@@ -4,9 +4,12 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
-	"github.com/kyoh86/nvim-snap/internal/casefile"
 	"os"
+	"path/filepath"
 	"strings"
+	"unicode/utf8"
+
+	"github.com/kyoh86/nvim-snap/internal/casefile"
 )
 
 func cmdList(args []string) {
@@ -85,4 +88,26 @@ type runConfig struct {
 	resultsRoot string
 	formats     map[string]bool
 	overrides   waitOverrides
+}
+
+func displayWidth(value string) int {
+	return utf8.RuneCountInString(value)
+}
+
+func formatPath(path string) string {
+	cwd, err := os.Getwd()
+	if err != nil {
+		return path
+	}
+	if abs, err := filepath.Abs(path); err == nil {
+		path = abs
+	}
+	if absCwd, err := filepath.Abs(cwd); err == nil && absCwd == path {
+		return "."
+	}
+	rel, err := filepath.Rel(cwd, path)
+	if err != nil || rel == "" || strings.HasPrefix(rel, "..") {
+		return path
+	}
+	return rel
 }
