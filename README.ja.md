@@ -59,6 +59,37 @@ mise use github:kyoh86/nvim-snap
 ケースの名前はディレクトリ名で決まり、`snapcase.json` にメタデータと取得設定を記述します。
 `snapcase.json` の詳細は「snapcase.json」の項を参照してください。
 
+## テストの種類
+
+- リグレッション: 同一シナリオの結果をコミット単位で保存し比較する
+- ゴールデン: golden/targetを同一実行で比較する
+
+## 実用時の流れ
+
+### リグレッションの流れ
+
+1. リグレッションケースを作る  
+   `nvim-snap regression new --name my-case`
+2. シナリオを書く  
+   `scenario.lua`
+3. ベースコミットでスナップショットを作り保存  
+   `nvim-snap regression save`
+4. ターゲットコミットでスナップショットを作り保存  
+   `nvim-snap regression save`
+5. 比較  
+   `nvim-snap regression test --base <base-id> --target <target-id>`
+
+`regression test` は保存済みのスナップショットのみ比較します。CIでは `.result/` をキャッシュしてベース側を用意してください。
+
+### ゴールデンの流れ
+
+1. ゴールデンケースを作る  
+   `nvim-snap golden new --name my-case`
+2. シナリオを書く  
+   `golden.lua` / `target.lua`
+3. 実行と比較  
+   `nvim-snap golden test --output summary --diff-format html`
+
 ## コマンド
 
 用意したテストケースに対して、以下のコマンドを使用できます。
@@ -165,37 +196,6 @@ CI向けワークフロー雛形を作成します。
 ```sh
 nvim-snap init --path .github/workflows/nvim-snap.yml
 ```
-
-## 実用時の流れ
-
-### リグレッションの流れ
-
-1. リグレッションケースを作る  
-   `nvim-snap regression new --name my-case`
-2. シナリオを書く  
-   `scenario.lua`
-3. ベースコミットでスナップショットを作り保存  
-   `nvim-snap regression save`
-4. ターゲットコミットでスナップショットを作り保存  
-   `nvim-snap regression save`
-5. 比較  
-   `nvim-snap regression test --base <base-id> --target <target-id>`
-
-`regression test` は保存済みのスナップショットのみ比較します。CIでは `.result/` をキャッシュしてベース側を用意してください。
-
-### ゴールデンの流れ
-
-1. ゴールデンケースを作る  
-   `nvim-snap golden new --name my-case`
-2. シナリオを書く  
-   `golden.lua` / `target.lua`
-3. 実行と比較  
-   `nvim-snap golden test --output summary --diff-format html`
-
-## テストの種類
-
-- リグレッション: 同一シナリオの結果をコミット単位で保存し比較する
-- ゴールデン: golden/targetを同一実行で比較する
 
 ## 注意点
 
