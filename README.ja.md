@@ -12,10 +12,14 @@ nvim-snapは、NeovimのUIスナップショットに基づくテストを実行
 ![diff overlayの例](docs/diff-overlay.png)
 
 このリポジトリ内に `snapcase-example` を同梱しているので、そのままケースを実行して動作を確認できます。
-既定では `--root` はカレントディレクトリ、`--cases-dir` は `snapcase/` です。
-ケースは `<root>/<cases-dir>/regression/<case-name>/snapcase.json` または
-`<root>/<cases-dir>/golden/<case-name>/snapcase.json` に置きます。
-出力は `<root>/<cases-dir>/.result/` に保存されます。
+詳しい配置ルールは「テストケースの配置」、実行方法は `list` と `regression` / `golden` の項を参照してください。
+
+例:
+
+```sh
+nvim-snap list --root snapcase-example
+nvim-snap golden test --root snapcase-example
+```
 
 ## インストール
 
