@@ -12,10 +12,14 @@ Regression compares snapshots saved per commit, while golden compares the golden
 ![diff overlay example](docs/diff-overlay.png)
 
 This repository includes `snapcase-example`, so you can run the cases as-is to confirm behavior.
-By default, `--root` is the current directory and `--cases-dir` is `snapcase/`.
-Cases live under `<root>/<cases-dir>/regression/<case-name>/snapcase.json` or
-`<root>/<cases-dir>/golden/<case-name>/snapcase.json`.
-Outputs are stored under `<root>/<cases-dir>/.result/`.
+For the layout rules, see "Test case layout"; for how to run, see `list` and the `regression` / `golden` sections.
+
+Example:
+
+```sh
+nvim-snap list --root snapcase-example
+nvim-snap golden test --root snapcase-example
+```
 
 ## Installation
 
@@ -42,7 +46,16 @@ mise use github:kyoh86/nvim-snap
 
 ## Test case layout
 
-Cases live under `snapcase/regression/<case-name>/snapcase.json` or `snapcase/golden/<case-name>/snapcase.json`.
+Place cases as one of the following `snapcase.json` paths.
+
+- `snapcase/`
+    - `regression/`
+        - `<case-name>/`
+            - `snapcase.json`
+    - `golden/`
+        - `<case-name>/`
+            - `snapcase.json`
+
 Case names come from the directory name, and `snapcase.json` holds the case metadata and capture settings.
 `snapcase.json` accepts `rtp` (string or list) to prepend runtimepath entries.
 Use `${CASE}` or `${ROOT}` placeholders to target the case directory or the `--root` path.

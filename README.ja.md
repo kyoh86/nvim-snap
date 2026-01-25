@@ -44,12 +44,20 @@ go build -o nvim-snap ./cmd/nvim-snap
 mise use github:kyoh86/nvim-snap
 ```
 
-
 ## テストケースの配置
 
-ケースは `snapcase/regression/<case-name>/snapcase.json` または
-`snapcase/golden/<case-name>/snapcase.json` に配置します。
-ケース名はディレクトリ名で決まり、`snapcase.json` にメタデータと取得設定を記述します。
+ケースは以下のいずれかの`snapcase.json`として配置します。
+
+- `snapcase/`
+    - `regression/`
+        - `<case-name>/`
+            - `snapcase.json`
+    - `golden/`
+        - `<case-name>/`
+            - `snapcase.json`
+
+ケースの名前はディレクトリ名で決まり、`snapcase.json` にメタデータと取得設定を記述します。
+
 `snapcase.json` の `rtp` は文字列または配列で、runtimepathに追加するパスを指定します。
 `${CASE}`（ケースディレクトリ）と `${ROOT}`（`--root` のパス）のプレースホルダが使えます。
 
