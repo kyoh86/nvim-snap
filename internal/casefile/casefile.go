@@ -137,8 +137,8 @@ func Load(casePath, root string) (Case, error) {
 		RPCTimeout:  positiveOrZero(cfg.RPCTimeout),
 		LogFile:     optionalPath(caseDir, cfg.LogFile),
 		LogLevel:    cfg.LogLevel,
-		DataHome:    filepath.Join(caseDir, dataHome),
-		ConfigHome:  filepath.Join(caseDir, configHome),
+		DataHome:    optionalPath(caseDir, dataHome),
+		ConfigHome:  optionalPath(caseDir, configHome),
 		RTP:         rtp,
 	}, nil
 }

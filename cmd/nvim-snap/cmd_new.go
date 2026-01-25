@@ -54,7 +54,7 @@ func cmdNewByKind(args []string, kind string) error {
 		return exitError(1, err)
 	}
 
-	if err := writeSnapcaseJSON(filepath.Join(caseDir, "snapcase.json"), *title, kind, tags, *force); err != nil {
+	if err := writeSnapcaseJSON(filepath.Join(caseDir, "snapcase.json"), *title, tags, *force); err != nil {
 		return exitError(1, err)
 	}
 
@@ -75,15 +75,12 @@ func cmdNewByKind(args []string, kind string) error {
 	return nil
 }
 
-func writeSnapcaseJSON(path, title, kind string, tags []string, force bool) error {
+func writeSnapcaseJSON(path, title string, tags []string, force bool) error {
 	payload := map[string]any{
 		"version":     1,
 		"data_home":   ".nvim-data",
 		"config_home": ".nvim-config",
 		"rtp":         []string{"${ROOT}"},
-	}
-	if kind != "" {
-		payload["kind"] = kind
 	}
 	if title != "" {
 		payload["title"] = title

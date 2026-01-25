@@ -38,7 +38,7 @@ func cmdCompare(args []string) error {
 	normExpected := snapshots.Normalize(expected)
 	normActual := snapshots.Normalize(actual)
 	if snapshots.Equal(normExpected, normActual) {
-		fmt.Println("no_diff")
+		fmt.Fprintln(os.Stderr, "no_diff")
 		return nil
 	}
 
@@ -76,7 +76,7 @@ func cmdCompare(args []string) error {
 		return exitErrorf(2, "unsupported format: %s", *format)
 	}
 
-	fmt.Println("diff")
+	fmt.Fprintln(os.Stderr, "diff")
 	return ExitError{Code: 1, Silent: true}
 }
 
