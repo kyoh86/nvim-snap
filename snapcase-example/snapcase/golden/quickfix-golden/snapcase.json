@@ -1,4 +1,5 @@
 {
+  "$schema": "https://raw.githubusercontent.com/kyoh86/nvim-snap/main/snapcase.schema.json",
   "version": 1,
   "title": "Quickfix Golden",
   "tags": [

@@ -77,6 +77,7 @@ func cmdNewByKind(args []string, kind string) error {
 
 func writeSnapcaseJSON(path, title string, tags []string, force bool) error {
 	payload := map[string]any{
+		"$schema":    "https://raw.githubusercontent.com/kyoh86/nvim-snap/main/snapcase.schema.json",
 		"version":     1,
 		"data_home":   ".nvim-data",
 		"config_home": ".nvim-config",
