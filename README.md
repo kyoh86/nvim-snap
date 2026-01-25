@@ -52,9 +52,12 @@ Place cases as one of the following `snapcase.json` paths.
     - `regression/`
         - `<case-name>/`
             - `snapcase.json`
+            - `scenario.lua`
     - `golden/`
         - `<case-name>/`
             - `snapcase.json`
+            - `golden.lua`
+            - `target.lua`
 
 Case names come from the directory name, and `snapcase.json` holds the case metadata and capture settings.
 See the "snapcase.json" section for details.
@@ -202,7 +205,7 @@ nvim-snap init --path .github/workflows/nvim-snap.yml
 
 `snapcase.json` is the case definition file. At minimum, set `version`, and add `title` / `tags` as needed.
 For regression the scenario file is fixed to `scenario.lua`; for golden it is `golden.lua` / `target.lua`.
-See `snapcase-example/snapcase.schema.json` for the full set of fields.
+See `snapcase.schema.json` for the full set of fields.
 
 ## Notes
 

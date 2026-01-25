@@ -12,7 +12,6 @@ nvim-snap golden test --root snapcase-example --cases-dir snapcase --output diff
 
 ## 構成
 
-- `snapcase.schema.json` ケース定義と取得設定用のJSON Schema
 - `snapcase/` サンプルケース
   - `regression/` リグレッションケース
     - `diff-example/` 差分確認向けのリグレッションケース

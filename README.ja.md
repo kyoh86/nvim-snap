@@ -52,9 +52,12 @@ mise use github:kyoh86/nvim-snap
     - `regression/`
         - `<case-name>/`
             - `snapcase.json`
+            - `scenario.lua`
     - `golden/`
         - `<case-name>/`
             - `snapcase.json`
+            - `golden.lua`
+            - `target.lua`
 
 ケースの名前はディレクトリ名で決まり、`snapcase.json` にメタデータと取得設定を記述します。
 `snapcase.json` の詳細は「snapcase.json」の項を参照してください。
@@ -201,7 +204,7 @@ nvim-snap init --path .github/workflows/nvim-snap.yml
 
 `snapcase.json` はケース定義ファイルです。最低限 `version` を指定し、必要に応じて `title` / `tags` を設定します。
 実行ファイル名はリグレッションでは `scenario.lua`、ゴールデンでは `golden.lua` / `target.lua` で固定です。
-詳細な項目は `snapcase-example/snapcase.schema.json` を参照してください。
+詳細な項目は `snapcase.schema.json` を参照してください。
 
 ## 注意点
 

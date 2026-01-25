@@ -12,7 +12,6 @@ nvim-snap golden test --root snapcase-example --cases-dir snapcase --output diff
 
 ## Layout
 
-- `snapcase.schema.json` JSON Schema for case definition and capture settings
 - `snapcase/` sample cases
   - `regression/` regression cases
     - `diff-example/` regression case with diff-oriented scenarios
