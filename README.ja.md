@@ -64,8 +64,8 @@ mise use github:kyoh86/nvim-snap
 
 ## テストの種類
 
-- リグレッション: 同一シナリオの結果をコミット単位で保存して比較します
-- ゴールデン: golden/target を同一実行で比較します
+- リグレッション: 保存された同一シナリオのスナップショットをコミット間などで比較することで、変更を検出することを目的にしています。
+- ゴールデン: golden/target の2つのシナリオの実行結果を同一実行で比較して、期待した結果（golden）と対象（target）の不一致を検出することを目的にしています。
 
 ## 実用時の流れ
 
@@ -83,6 +83,7 @@ mise use github:kyoh86/nvim-snap
    `nvim-snap regression test --base <base-id> --target <target-id>`
 
 `regression test` は保存済みのスナップショットのみ比較します。CIでは `.result/` をキャッシュしてベース側を用意してください。
+詳細は[リグレッションケースのスナップショットの取り扱い](./docs/regression/snapshot.ja.md)を参照してください。
 
 ### ゴールデンの流れ
 

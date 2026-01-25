@@ -83,6 +83,7 @@ See the [snapcase.md](./docs/snapcase.md) for details.
    `nvim-snap regression test --base <base-id> --target <target-id>`
 
 `regression test` only compares existing snapshots. Store `.result/` as a cache in CI so the base id is available.
+See [Regression snapshot handling](./docs/regression/snapshot.md) for details.
 
 ### Golden flow
 
