@@ -7,11 +7,11 @@
     "version": {
       "type": "integer",
       "minimum": 1,
-      "description": "snapcase.jsonのバージョン"
+      "description": "Schema version (currently 1)"
     },
     "title": {
       "type": "string",
-      "description": "表示名（省略時はケース名）"
+      "description": "Display name (default: case directory name)"
     },
     "kind": {
       "type": "string",
@@ -19,14 +19,14 @@
         "regression",
         "golden"
       ],
-      "description": "テスト種別（ディレクトリ名と一致させる）"
+      "description": "Case type (must match the parent directory)"
     },
     "tags": {
       "type": "array",
       "items": {
         "type": "string"
       },
-      "description": "タグの配列"
+      "description": "List of tags"
     },
     "width": {
       "type": "integer",
@@ -60,11 +60,11 @@
     "rpc_timeout": {
       "type": "integer",
       "minimum": 1,
-      "description": "RPC timeout (ms)"
+      "description": "RPC timeout (ms). When wait_done is enabled, this is bumped above done_timeout."
     },
     "log_file": {
       "type": "string",
-      "description": "Neovim log file path (NVIM_LOG_FILE)"
+      "description": "Neovim log file path (NVIM_LOG_FILE). Relative paths are resolved from the case directory."
     },
     "log_level": {
       "type": "string",
@@ -72,11 +72,11 @@
     },
     "data_home": {
       "type": "string",
-      "description": "XDG data home (default: .nvim-data)"
+      "description": "XDG data home (default: .nvim-data). Relative paths are resolved from the case directory."
     },
     "config_home": {
       "type": "string",
-      "description": "XDG config home (default: .nvim-config)"
+      "description": "XDG config home (default: .nvim-config). Relative paths are resolved from the case directory."
     },
     "rtp": {
       "oneOf": [
@@ -94,8 +94,7 @@
     }
   },
   "required": [
-    "version",
-    "kind"
+    "version"
   ],
   "additionalProperties": false
 }
