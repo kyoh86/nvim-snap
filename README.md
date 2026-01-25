@@ -96,6 +96,7 @@ See the "snapcase.json" section for details.
 ## Commands
 
 Use the following commands with prepared test cases.
+Command details follow below; for flags and options, see each command’s `--help`.
 
 - `list` list test cases
 - `init` scaffold a CI workflow
