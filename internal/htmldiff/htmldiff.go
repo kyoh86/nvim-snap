@@ -35,7 +35,7 @@ func RenderHTML(expected, actual snapshots.Snapshot, defaultView, expectedLabel,
 	pairs, expectedLineKinds, actualLineKinds, expectedCells, actualCells := alignLines(expectedLines, actualLines)
 
 	expectedPlain := renderAligned(expected, pairs, nil, nil, "", true)
-	actualPlain := renderAligned(actual, pairs, nil, nil, "", true)
+	actualPlain := renderAligned(actual, pairs, nil, nil, "added", true)
 	expectedAligned := renderAligned(expected, pairs, expectedLineKinds, expectedCells, "removed", false)
 	actualAligned := renderAligned(actual, pairs, actualLineKinds, actualCells, "added", false)
 

@@ -7,5 +7,5 @@ vim.fn.setline(1, {
   "removed",
   "delta",
   "epsilon",
-  "zeta",
+  "zet",
 })
