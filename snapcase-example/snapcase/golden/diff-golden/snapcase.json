@@ -1,0 +1,14 @@
+{
+  "version": 1,
+  "title": "Diff Golden Example",
+  "tags": [
+    "golden",
+    "example",
+    "diff"
+  ],
+  "data_home": ".nvim-data",
+  "config_home": ".nvim-config",
+  "rtp": [
+    "${ROOT}"
+  ]
+}
