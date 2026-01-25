@@ -212,10 +212,13 @@ See `snapcase.schema.json` for the full set of fields.
 
 - Outputs are stored under `<root>/<cases-dir>/.result/`.
 - `regression save` defaults to the current git commit id and fails on dirty trees.
+  - To save on dirty trees, pass an explicit `--id`.
 - `regression test` does not generate snapshots; it only compares saved results.
-- JSON outputs include `expected_path` and `actual_path`.
 - If your scenario needs plugins, using `vim.pack.add()` is recommended.
-- When using `vim.pack.add()`, set `data_home` / `config_home` in `snapcase.json`.
-- Golden runs isolate `data_home` / `config_home` per scenario under the configured paths.
-- In headless runs, commands that may prompt for input can block. Prefer `vim.api.nvim_cmd` to `vim.cmd`.
-- When using `wait_done`, call `require("nvim_snap").done()` in your scenario.
+  - When using `vim.pack.add()`, set `data_home` / `config_home` in `snapcase.json`.
+  - If `data_home` / `config_home` are not set, cases and your local Neovim can interfere.
+- Scenarios run in headless Neovim.
+  - Commands that may prompt for input can block. Prefer `vim.api.nvim_cmd` to `vim.cmd`.
+- If your scenario uses async work, signal completion explicitly.
+  - Set `wait_done` to `true` in `snapcase.json`.
+  - Call `require("nvim_snap").done()` when it is safe to capture.

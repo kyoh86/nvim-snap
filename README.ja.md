@@ -207,14 +207,18 @@ nvim-snap init --path .github/workflows/nvim-snap.yml
 実行ファイル名はリグレッションでは `scenario.lua`、ゴールデンでは `golden.lua` / `target.lua` で固定です。
 詳細な項目は `snapcase.schema.json` を参照してください。
 
-## 注意点
+## 補足と注意点
 
-- 出力は `<root>/<cases-dir>/.result/` に保存されます。
+- テスト結果の出力は `<root>/<cases-dir>/.result/` に保存されます。
 - `regression save` は既定で現在のGitコミットIDを使い、作業ツリーがdirtyだとエラーになります。
+    - Dirtyでもsaveしたい場合は、`--id`フラグで適切なIDを明示してください。
 - `regression test` はスナップショットを生成せず、保存済みの結果だけを比較します。
-- JSON出力には `expected_path` と `actual_path` が含まれます。
 - シナリオの中でプラグインが必要な場合は、 `vim.pack.add()` を使うのがおすすめです。
-- `vim.pack.add()` を使う場合は `snapcase.json` の `data_home` / `config_home` を明示的に設定してください。
-- Golden の実行では、設定した `data_home` / `config_home` の下でシナリオごとに分離します。
-- headless実行では入力待ちが発生するコマンドが止まることがあります。`vim.cmd` より `vim.api.nvim_cmd` を推奨します。
-- `wait_done` を使う場合は `require("nvim_snap").done()` を呼び出してください。
+    - `vim.pack.add()` を使う場合は `snapcase.json` の `data_home` / `config_home` を明示的に設定してください。
+    - `data_home`や`config_home`を指定しない場合Neovim環境やテストケースと相互に干渉します。
+- テストケースの実行にはNeovimのheadlessモードを使用しています。
+    - 入力待ちが発生する処理が入力待ちのまま止まることがあります。
+    - 一部のコマンドは標準コマンドを含めて入力待ちを生じさせやすいです。`vim.cmd` より `vim.api.nvim_cmd` の使用を推奨します。
+- 非同期処理を呼び出す場合は、シナリオの終了を知らせる必要があります。
+    - `snapcase.json` の `wait_done` を `true` にします。
+    - シナリオの終了時（キャプチャを取っていいタイミング）に `require("nvim_snap").done()` を呼び出してください。
