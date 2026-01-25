@@ -1,13 +1,11 @@
 # snapcase-example
 
-このREADMEはサンプルケースの最小構成と実行方法に限定した説明です。
-
 `nvim-snap` を使ったスナップショット生成の最小構成です。
 
 ## 使い方
 
-```sh
-nvim-snap golden test --root snapcase-example --cases-dir snapcase --output diff --diff-format text
+```console
+$ nvim-snap golden test --root snapcase-example --cases-dir snapcase --output diff --diff-format text
 ```
 
 ## 構成
@@ -15,11 +13,24 @@ nvim-snap golden test --root snapcase-example --cases-dir snapcase --output diff
 - `snapcase/` サンプルケース
   - `regression/` リグレッションケース
     - `diff-example/` 差分確認向けのリグレッションケース
+    - `layout-splits/` 分割レイアウト向けのリグレッションケース
   - `golden/` ゴールデンケース
+    - `floating-golden/` 浮動ウインドウ向けのゴールデンケース
     - `qlean-hidden/` `vim.pack.add()` で `qlean.nvim` を取得するゴールデンケース
     - `qlean-quickfix/` `vim.pack.add()` で `qlean.nvim` を取得するゴールデンケース
+    - `quickfix-golden/` quickfix向けのゴールデンケース
+- `failure/` 意図的にdiffが出るケース（プレビュー/検証用）
+  - `golden/` ゴールデンケース
+    - `diff-golden/` 必ずdiffが出るゴールデンケース
+
+## 失敗ケース
+
+goldenで比較したときにdiffが出るケースを別のディレクトリ(`failure`)に用意しています
+
+```console
+$ nvim-snap golden test --root snapcase-example --cases-dir failure --output diff --diff-format text
+```
 
 ## 補足
 
-`snapcase.json` はケースごとの capture 設定に使います。  
 `qlean-*` は `git` とネットワークアクセス、`vim.pack` が使えるNeovim（0.12+）が必要です。
