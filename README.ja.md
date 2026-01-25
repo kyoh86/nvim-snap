@@ -57,9 +57,7 @@ mise use github:kyoh86/nvim-snap
             - `snapcase.json`
 
 ケースの名前はディレクトリ名で決まり、`snapcase.json` にメタデータと取得設定を記述します。
-
-`snapcase.json` の `rtp` は文字列または配列で、runtimepathに追加するパスを指定します。
-`${CASE}`（ケースディレクトリ）と `${ROOT}`（`--root` のパス）のプレースホルダが使えます。
+`snapcase.json` の詳細は「snapcase.json」の項を参照してください。
 
 ## コマンド
 

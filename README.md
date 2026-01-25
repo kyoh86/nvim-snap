@@ -57,8 +57,7 @@ Place cases as one of the following `snapcase.json` paths.
             - `snapcase.json`
 
 Case names come from the directory name, and `snapcase.json` holds the case metadata and capture settings.
-`snapcase.json` accepts `rtp` (string or list) to prepend runtimepath entries.
-Use `${CASE}` or `${ROOT}` placeholders to target the case directory or the `--root` path.
+See the "snapcase.json" section for details.
 
 ## Commands
 
