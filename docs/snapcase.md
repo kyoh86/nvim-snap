@@ -1,6 +1,6 @@
 # snapcase.json
 
-`snapcase.json` defines a test case. The case type is determined by the directory (`regression/` or `golden/`).
+`snapcase.json` defines a test case.
 
 ## Minimal example
 

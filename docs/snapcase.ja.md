@@ -1,6 +1,6 @@
 # snapcase.json
 
-`snapcase.json` はテストケース定義ファイルです。ケース種別はディレクトリ名（`regression/` または `golden/`）で決まります。
+`snapcase.json` はテストケース定義ファイルです。
 
 ## 最小構成
 
