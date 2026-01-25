@@ -199,7 +199,7 @@ nvim-snap init --path .github/workflows/nvim-snap.yml
 
 ## snapcase.json
 
-`snapcase.json` はケース定義ファイルです。最低限 `version` を指定し、必要に応じて `title` / `kind` / `tags` を設定します。
+`snapcase.json` はケース定義ファイルです。最低限 `version` を指定し、必要に応じて `title` / `tags` を設定します。
 実行ファイル名はリグレッションでは `scenario.lua`、ゴールデンでは `golden.lua` / `target.lua` で固定です。
 詳細な項目は `snapcase-example/snapcase.schema.json` を参照してください。
 

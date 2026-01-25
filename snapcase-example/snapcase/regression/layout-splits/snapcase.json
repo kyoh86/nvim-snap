@@ -1,7 +1,6 @@
 {
   "version": 1,
   "title": "Layout Splits",
-  "kind": "regression",
   "tags": [
     "layout",
     "regression",

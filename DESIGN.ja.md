@@ -75,12 +75,12 @@ CLIでは `nvim-snap <command>` で呼び出す。
 - `list`: テストケースの一覧を表示する
   - 入力: `--root`（既定は `.`）、`--cases-dir`（既定は `snapcase`）
   - 対象: `<root>/<cases-dir>/{regression|golden}/*/snapcase.json`
-  - 出力: 一覧（name/title/kind/tags/path）
+  - 出力: 一覧（name/title/tags/path）
   - 形式: 既定はテキスト、`--json` でJSON出力
   - JSON出力:
     - `root` ルートディレクトリ
     - `cases[]` ケース配列
-      - `name` / `title` / `kind` / `tags` / `path`（絶対パス）
+      - `name` / `title` / `tags` / `path`（絶対パス）
     - 例:
       ```json
       {
@@ -89,7 +89,6 @@ CLIでは `nvim-snap <command>` で呼び出す。
           {
             "name": "case-name",
             "title": "Case Title",
-            "kind": "regression",
             "tags": [
               "ui",
               "regression"
@@ -158,7 +157,6 @@ CLIでは `nvim-snap <command>` で呼び出す。
 
 - `version` 定義のバージョン
 - `title` 表示名（任意、既定はケース名）
-- `kind` `regression` または `golden`
 - `tags` タグ配列（任意）
   - ケース名はディレクトリ名で決まり、`snapcase.json` には書かない
 
@@ -167,7 +165,6 @@ CLIでは `nvim-snap <command>` で呼び出す。
 {
   "version": 1,
   "title": "Basic Regression",
-  "kind": "regression",
   "tags": [
     "ui",
     "regression"

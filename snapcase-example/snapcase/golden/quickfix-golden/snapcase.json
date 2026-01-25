@@ -1,7 +1,6 @@
 {
   "version": 1,
   "title": "Quickfix Golden",
-  "kind": "golden",
   "tags": [
     "quickfix",
     "golden",

@@ -13,14 +13,6 @@
       "type": "string",
       "description": "Display name (default: case directory name)"
     },
-    "kind": {
-      "type": "string",
-      "enum": [
-        "regression",
-        "golden"
-      ],
-      "description": "Case type (must match the parent directory)"
-    },
     "tags": {
       "type": "array",
       "items": {

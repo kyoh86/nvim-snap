@@ -15,7 +15,6 @@ import (
 type Config struct {
 	Version     int      `json:"version"`
 	Title       string   `json:"title"`
-	Kind        string   `json:"kind"`
 	Tags        []string `json:"tags"`
 	Width       int      `json:"width"`
 	Height      int      `json:"height"`
@@ -95,9 +94,6 @@ func Load(casePath, root string) (Case, error) {
 	kindDir := filepath.Base(filepath.Dir(caseDir))
 	if kindDir != "regression" && kindDir != "golden" {
 		return Case{}, errors.New("case kind must be regression or golden")
-	}
-	if cfg.Kind != "" && cfg.Kind != kindDir {
-		return Case{}, errors.New("case kind must match directory")
 	}
 	kind := kindDir
 

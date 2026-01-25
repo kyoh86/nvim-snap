@@ -1,7 +1,6 @@
 {
   "version": 1,
   "title": "Qlean closes quickfix window",
-  "kind": "golden",
   "tags": [
     "qlean",
     "golden",

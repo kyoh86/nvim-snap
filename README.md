@@ -200,7 +200,7 @@ nvim-snap init --path .github/workflows/nvim-snap.yml
 
 ## snapcase.json
 
-`snapcase.json` is the case definition file. At minimum, set `version`, and add `title` / `kind` / `tags` as needed.
+`snapcase.json` is the case definition file. At minimum, set `version`, and add `title` / `tags` as needed.
 For regression the scenario file is fixed to `scenario.lua`; for golden it is `golden.lua` / `target.lua`.
 See `snapcase-example/snapcase.schema.json` for the full set of fields.
 
