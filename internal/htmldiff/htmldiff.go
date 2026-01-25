@@ -373,13 +373,14 @@ func wrapHTML(unified string, expectedPlain, actualPlain, expectedAligned, actua
       --border: #d8dfe6;
       --shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
       --diff-add: #dff6e7;
-      --diff-add-strong: #2fa24f;
+      --diff-add-strong: #1f8f45;
       --diff-del: #fde2e1;
-      --diff-del-strong: #d45757;
+      --diff-del-strong: #c34a4a;
       --diff-change: #fff2cc;
-      --diff-add-soft: rgba(47, 162, 79, 0.18);
-      --diff-del-soft: rgba(212, 87, 87, 0.18);
-      --diff-change-soft: rgba(245, 201, 74, 0.2);
+      --diff-change-strong: #c98c00;
+      --diff-add-soft: rgba(34, 197, 94, 0.32);
+      --diff-del-soft: rgba(239, 68, 68, 0.32);
+      --diff-change-soft: rgba(245, 158, 11, 0.32);
     }
     body {
       margin: 0;
@@ -468,9 +469,18 @@ func wrapHTML(unified string, expectedPlain, actualPlain, expectedAligned, actua
     .overlay-stack .layer.overlay .cell {
       background: transparent !important;
     }
-    .overlay-stack .layer.overlay .cell.diff.removed { background: var(--diff-del-soft) !important; }
-    .overlay-stack .layer.overlay .cell.diff.added { background: var(--diff-add-soft) !important; }
-    .overlay-stack .layer.overlay .cell.diff.changed { background: var(--diff-change-soft) !important; }
+    .overlay-stack .layer.overlay .cell.diff.removed {
+      background: var(--diff-del-soft) !important;
+      box-shadow: inset 0 -2px 0 var(--diff-del-strong);
+    }
+    .overlay-stack .layer.overlay .cell.diff.added {
+      background: var(--diff-add-soft) !important;
+      box-shadow: inset 0 -2px 0 var(--diff-add-strong);
+    }
+    .overlay-stack .layer.overlay .cell.diff.changed {
+      background: var(--diff-change-soft) !important;
+      box-shadow: inset 0 -2px 0 var(--diff-change-strong);
+    }
     .overlay-stack .layer.overlay .line.diff.removed { background: var(--diff-del-soft) !important; }
     .overlay-stack .layer.overlay .line.diff.added { background: var(--diff-add-soft) !important; }
     .overlay-stack .layer.overlay .line.diff.changed { background: var(--diff-change-soft) !important; }
@@ -503,9 +513,18 @@ func wrapHTML(unified string, expectedPlain, actualPlain, expectedAligned, actua
     .line.diff.removed { background: var(--diff-del); }
     .line.diff.added { background: var(--diff-add); }
     .line.diff.changed { background: var(--diff-change); }
-    .cell.diff.removed { background: var(--diff-del-soft); }
-    .cell.diff.added { background: var(--diff-add-soft); }
-    .cell.diff.changed { background: var(--diff-change-soft); }
+    .cell.diff.removed {
+      background: var(--diff-del-soft);
+      box-shadow: inset 0 -2px 0 var(--diff-del-strong);
+    }
+    .cell.diff.added {
+      background: var(--diff-add-soft);
+      box-shadow: inset 0 -2px 0 var(--diff-add-strong);
+    }
+    .cell.diff.changed {
+      background: var(--diff-change-soft);
+      box-shadow: inset 0 -2px 0 var(--diff-change-strong);
+    }
     .hidden { display: none; }
   </style>
 </head>
