@@ -59,6 +59,37 @@ Place cases as one of the following `snapcase.json` paths.
 Case names come from the directory name, and `snapcase.json` holds the case metadata and capture settings.
 See the "snapcase.json" section for details.
 
+## Test types
+
+- Regression: compare snapshots saved per commit from the same scenario
+- Golden: compare golden and target scenario outputs in the same run
+
+## Typical workflow
+
+### Regression flow
+
+1. Create a regression case
+   `nvim-snap regression new --name my-case`
+2. Write the scenario
+   `scenario.lua`
+3. Generate and save snapshots at the base commit
+   `nvim-snap regression save`
+4. Generate and save snapshots at the target commit
+   `nvim-snap regression save`
+5. Compare
+   `nvim-snap regression test --base <base-id> --target <target-id>`
+
+`regression test` only compares existing snapshots. Store `.result/` as a cache in CI so the base id is available.
+
+### Golden flow
+
+1. Create a golden case
+   `nvim-snap golden new --name my-case`
+2. Write scenarios
+   `golden.lua` / `target.lua`
+3. Run and compare
+   `nvim-snap golden test --output summary --diff-format html`
+
 ## Commands
 
 Use the following commands with prepared test cases.
@@ -167,36 +198,11 @@ Scaffold a CI workflow.
 nvim-snap init --path .github/workflows/nvim-snap.yml
 ```
 
-## Practical Flow
+## snapcase.json
 
-### Regression flow
-
-1. Create a regression case
-   `nvim-snap regression new --name my-case`
-2. Write the scenario
-   `scenario.lua`
-3. Generate and save snapshots at the base commit
-   `nvim-snap regression save`
-4. Generate and save snapshots at the target commit
-   `nvim-snap regression save`
-5. Compare
-   `nvim-snap regression test --base <base-id> --target <target-id>`
-
-`regression test` only compares existing snapshots. Store `.result/` as a cache in CI so the base id is available.
-
-### Golden flow
-
-1. Create a golden case
-   `nvim-snap golden new --name my-case`
-2. Write scenarios
-   `golden.lua` / `target.lua`
-3. Run and compare
-   `nvim-snap golden test --output summary --diff-format html`
-
-## Test Types
-
-- Regression: compare snapshots saved per commit from the same scenario
-- Golden: compare golden and target scenario outputs in the same run
+`snapcase.json` is the case definition file. At minimum, set `version`, and add `title` / `kind` / `tags` as needed.
+For regression the scenario file is fixed to `scenario.lua`; for golden it is `golden.lua` / `target.lua`.
+See `snapcase-example/snapcase.schema.json` for the full set of fields.
 
 ## Notes
 

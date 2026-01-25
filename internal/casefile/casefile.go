@@ -17,7 +17,6 @@ type Config struct {
 	Title       string   `json:"title"`
 	Kind        string   `json:"kind"`
 	Tags        []string `json:"tags"`
-	Scenario    string   `json:"scenario"`
 	Width       int      `json:"width"`
 	Height      int      `json:"height"`
 	Wait        int      `json:"wait"`
@@ -107,16 +106,9 @@ func Load(casePath, root string) (Case, error) {
 		title = name
 	}
 
-	scenario := ""
-	if kind == "regression" {
-		scenario = cfg.Scenario
-		if scenario == "" {
-			scenario = "scenario.lua"
-		}
-	}
 	scenarioPath := ""
-	if scenario != "" {
-		scenarioPath = filepath.Join(caseDir, scenario)
+	if kind == "regression" {
+		scenarioPath = filepath.Join(caseDir, "scenario.lua")
 	}
 
 	dataHome := cfg.DataHome

@@ -28,10 +28,6 @@
       },
       "description": "タグの配列"
     },
-    "scenario": {
-      "type": "string",
-      "description": "Scenario script path for regression (default: scenario.lua)"
-    },
     "width": {
       "type": "integer",
       "minimum": 1,

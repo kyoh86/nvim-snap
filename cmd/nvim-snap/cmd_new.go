@@ -54,11 +54,7 @@ func cmdNewByKind(args []string, kind string) error {
 		return exitError(1, err)
 	}
 
-	scenario := ""
-	if kind == "regression" {
-		scenario = "scenario.lua"
-	}
-	if err := writeSnapcaseJSON(filepath.Join(caseDir, "snapcase.json"), *title, kind, tags, scenario, *force); err != nil {
+	if err := writeSnapcaseJSON(filepath.Join(caseDir, "snapcase.json"), *title, kind, tags, *force); err != nil {
 		return exitError(1, err)
 	}
 
@@ -79,7 +75,7 @@ func cmdNewByKind(args []string, kind string) error {
 	return nil
 }
 
-func writeSnapcaseJSON(path, title, kind string, tags []string, scenario string, force bool) error {
+func writeSnapcaseJSON(path, title, kind string, tags []string, force bool) error {
 	payload := map[string]any{
 		"version":     1,
 		"data_home":   ".nvim-data",
@@ -88,9 +84,6 @@ func writeSnapcaseJSON(path, title, kind string, tags []string, scenario string,
 	}
 	if kind != "" {
 		payload["kind"] = kind
-	}
-	if scenario != "" {
-		payload["scenario"] = scenario
 	}
 	if title != "" {
 		payload["title"] = title

@@ -6,7 +6,6 @@
     "diff",
     "example"
   ],
-  "scenario": "scenario.lua",
   "data_home": ".nvim-data",
   "config_home": ".nvim-config",
   "rtp": [
