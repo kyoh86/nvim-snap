@@ -9,7 +9,7 @@ nvim-snapは、NeovimのUIスナップショットに基づくテストを実行
 
 ## 例
 
-![diff overlayの例](docs/diff-overlay.png)
+<img src="docs/diff-overlay.png" width="480" />
 
 このリポジトリ内に `snapcase-example` を同梱しているので、そのままケースを実行して動作を確認できます。
 詳しい配置ルールは「テストケースの配置」、実行方法は `list` と `regression` / `golden` の項を参照してください。
