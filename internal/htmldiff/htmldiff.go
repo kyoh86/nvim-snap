@@ -377,10 +377,10 @@ func wrapHTML(unified string, expectedPlain, actualPlain, expectedAligned, actua
       --diff-del: #fde2e1;
       --diff-del-strong: #f31a1a;
       --diff-change: #fff2cc;
-      --diff-change-strong: #c98c00;
-      --diff-add-soft: rgba(34, 197, 94, 0.22);
-      --diff-del-soft: rgba(255, 38, 38, 0.22);
-      --diff-change-soft: rgba(255, 204, 11, 0.22);
+      --diff-change-strong: #b87900;
+      --diff-add-soft: rgba(34, 197, 94, 0.26);
+      --diff-del-soft: rgba(255, 38, 38, 0.26);
+      --diff-change-soft: rgba(230, 180, 20, 0.26);
     }
     body {
       margin: 0;
@@ -470,15 +470,12 @@ func wrapHTML(unified string, expectedPlain, actualPlain, expectedAligned, actua
       background: transparent !important;
     }
     .overlay-stack .layer.overlay .cell.diff.removed {
-      background: var(--diff-del-soft) !important;
       box-shadow: inset 0 -2px 0 var(--diff-del-strong);
     }
     .overlay-stack .layer.overlay .cell.diff.added {
-      background: var(--diff-add-soft) !important;
       box-shadow: inset 0 -2px 0 var(--diff-add-strong);
     }
     .overlay-stack .layer.overlay .cell.diff.changed {
-      background: var(--diff-change-soft) !important;
       box-shadow: inset 0 -2px 0 var(--diff-change-strong);
     }
     .overlay-stack .layer.overlay .line.diff.removed { background: var(--diff-del-soft) !important; }
