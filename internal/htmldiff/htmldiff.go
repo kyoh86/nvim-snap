@@ -373,14 +373,14 @@ func wrapHTML(unified string, expectedPlain, actualPlain, expectedAligned, actua
       --border: #d8dfe6;
       --shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
       --diff-add: #dff6e7;
-      --diff-add-strong: #1f8f45;
+      --diff-add-strong: #1faf45;
       --diff-del: #fde2e1;
-      --diff-del-strong: #c34a4a;
+      --diff-del-strong: #f31a1a;
       --diff-change: #fff2cc;
       --diff-change-strong: #c98c00;
-      --diff-add-soft: rgba(34, 197, 94, 0.32);
-      --diff-del-soft: rgba(239, 68, 68, 0.32);
-      --diff-change-soft: rgba(245, 158, 11, 0.32);
+      --diff-add-soft: rgba(34, 197, 94, 0.22);
+      --diff-del-soft: rgba(255, 38, 38, 0.22);
+      --diff-change-soft: rgba(255, 204, 11, 0.22);
     }
     body {
       margin: 0;
