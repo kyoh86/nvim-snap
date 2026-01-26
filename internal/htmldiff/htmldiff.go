@@ -504,7 +504,7 @@ func wrapHTML(unified string, expectedPlain, actualPlain, expectedAligned, actua
     }
     .cell {
       display: inline-block;
-      min-width: 0.6ch;
+      width: 1ch;
       white-space: pre;
     }
     .line.diff.removed { background: var(--diff-del); }
