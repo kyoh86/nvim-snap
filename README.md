@@ -9,7 +9,7 @@ Regression compares snapshots saved per commit, while golden compares the golden
 
 ## Example
 
-![diff overlay example](docs/diff-overlay.png)
+<img src="docs/diff-overlay.png" width="480" />
 
 This repository includes `snapcase-example`, so you can run the cases as-is to confirm behavior.
 For the layout rules, see "Test case layout"; for how to run, see `list` and the `regression` / `golden` sections.
